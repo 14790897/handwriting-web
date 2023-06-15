@@ -1,12 +1,19 @@
 <template>
-  <div id="app">
-    <nav>
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </nav>
-    <router-view/>
-  </div>
+  <UserLayout>
+      <router-view />
+  </UserLayout>
 </template>
+
+<script>
+import UserLayout from './views/UserLayout.vue';
+
+export default {
+  name: 'App',
+  components: {
+    UserLayout
+  }
+};
+</script>
 
 <style>
 #app {

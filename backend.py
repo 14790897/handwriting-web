@@ -88,6 +88,33 @@ def generate_handwriting():
                          as_attachment=True)
 
 
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    logger.info(f"Received username: {username}")  # 打印接收到的用户名
+    logger.info(f"Received password: {password}")  # 打印接收到的密码
+    if r.exists(username) and r.get(username) == password:
+        session.permanent = True
+        session['username'] = username
+        print('session/login', session)
+        return {'status': 'success'}, 200
+    else:
+        return {'status': 'failed', 'message': 'Login failed. Check your username and password.'}, 401
+    
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    if not r.exists(username):
+        r.set(username, password)
+        session['username'] = username
+        return jsonify({'status': 'success', 'message': 'Account created successfully. You can now log in.'})
+    else:
+        return jsonify({'status': 'fail', 'message': 'Username already exists. Choose a different one.'})
+    
 @app.before_request
 def before_request():
     g.db  = MySQLdb.connect(
