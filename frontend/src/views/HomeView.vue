@@ -133,7 +133,7 @@ export default {
         }
 
         const response = await axios.post(
-          '/api/generate_handwriting',
+          'https://testhand.liuweiqing.top/api/generate_handwriting',
           formData,
           {
             headers: {
