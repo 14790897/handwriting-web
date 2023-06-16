@@ -21,6 +21,8 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 @app.route('/api/generate_handwriting', methods=['POST'])
 def generate_handwriting():
     data = request.form
+    print('request.form', data)
+    print('request.files', request.files)
     text_to_generate = data['text']
     if data['preview'] == 'true':
         #截短字符，只生成一面
