@@ -9,7 +9,7 @@ import os
 import MySQLdb
 from flask import g
 import zipfile
-import ast
+import ast, io
 
 app = Flask(__name__)
 
@@ -132,7 +132,7 @@ def before_request():
     autocommit = True,
     ssl_mode = "VERIFY_IDENTITY",
     ssl      = {
-        "ca": "/etc/ssl/cert.pem"
+    "ca": "/etc/ssl/certs/ca-certificates.crt"   #dokcer使用： ca": "/etc/ssl/cert.pem"  
     }
     )
 

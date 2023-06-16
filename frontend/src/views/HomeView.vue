@@ -128,9 +128,8 @@ export default {
         formData.append("perturb_y_sigma", this.perturbYSigma);
         formData.append("perturb_theta_sigma", this.perturbThetaSigma);
         formData.append("word_spacing", this.wordSpacing);
-        if (this.preview){
-          formData.append("preview", this.preview);
-        }
+        formData.append("preview", this.preview);
+        
 
         const response = await axios.post(
           'https://testhand.liuweiqing.top/api/generate_handwriting',
