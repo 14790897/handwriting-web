@@ -9,7 +9,7 @@ import os
 import MySQLdb
 from flask import g
 import zipfile
-
+import ast
 
 app = Flask(__name__)
 
@@ -30,7 +30,9 @@ def generate_handwriting():
         background=Image.open(data['background_image']),
         font=ImageFont.truetype(data['font'], size=int(data['font_size'])),
         line_spacing=int(data['line_spacing']) + int(data['font_size']),
-        fill=(int(data['red']), int(data['green']), int(data['blue'])),  # 字体“颜色”
+        fill_rgba = ast.literal_eval(data['fill']),
+        fill = fill_rgba[:3],  # Ignore the alpha value
+        # fill=(int(data['red']), int(data['green']), int(data['blue'])),  # 字体“颜色”
         left_margin=int(data['left_margin']),
         top_margin=int(data['top_margin']),
         right_margin=int(data['right_margin']) - int(data['word_spacing']) * 2,
