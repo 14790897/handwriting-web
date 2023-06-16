@@ -1,10 +1,10 @@
-version: '1.0'
+version: '3'
 
 services:
   frontend:
     build: 
-      context: ./frontend/dockerfile.frontend
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: dockerfile.frontend
     image: 14790897/frontend_handwriting:latest
     ports:
       - "2345:80"
@@ -13,8 +13,8 @@ services:
 
   backend:
     build: 
-      context: ./backend/dockerfile.backend
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: dockerfile.backend
     image: 14790897/backend_handwriting:latest
     ports:
       - "5000:5000"
