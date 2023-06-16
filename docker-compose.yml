@@ -1,0 +1,20 @@
+version: '1.0'
+
+services:
+  frontend:
+    build: 
+      context: ./frontend/dockerfile.frontend
+      dockerfile: Dockerfile
+    image: 14790897/frontend_handwriting:latest
+    ports:
+      - "2345:80"
+    depends_on: 
+      - backend
+
+  backend:
+    build: 
+      context: ./backend/dockerfile.backend
+      dockerfile: Dockerfile
+    image: 14790897/backend_handwriting:latest
+    ports:
+      - "5000:5000"

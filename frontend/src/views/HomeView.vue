@@ -170,20 +170,49 @@ export default {
       // 实现你的导出逻辑...
     },
     save() {
-      // 实现你的保存逻辑...
+      // 这个方法可以用来保存当前的参数设置
+      // 这里我们将它们保存到 localStorage
+      const settings = {
+        text: this.text,
+        // 注意，文件类型的参数（如 font 和 backgroundImage）不能保存
+        fontSize: this.fontSize,
+        lineSpacing: this.lineSpacing,
+        fill: this.fill,
+        width: this.width,
+        height: this.height,
+        marginTop: this.marginTop,
+        marginBottom: this.marginBottom,
+        marginLeft: this.marginLeft,
+        marginRight: this.marginRight,
+        // ...其他你希望保存的参数...
+      };
+       localStorage.setItem('handwriting-settings', JSON.stringify(settings));
     },
     loadPreset() {
-      // 实现你的预设加载逻辑...
+      // 这个方法可以用来载入之前保存的参数设置
+      const settingsJson = localStorage.getItem('handwriting-settings');
+      if (settingsJson) {
+        const settings = JSON.parse(settingsJson);
+        this.text = settings.text;
+        this.fontSize = settings.fontSize;
+        this.lineSpacing = settings.lineSpacing;
+         this.fill = settings.fill;
+        this.width = settings.width;
+        this.height = settings.height;
+        this.marginTop = settings.marginTop;
+        this.marginBottom = settings.marginBottom;
+        this.marginLeft = settings.marginLeft;
+        this.marginRight = settings.marginRight;
+        // ...其他你希望载入的参数...
+      } else {
+        alert('没有找到保存的预设');
+      }
     },
     onBackgroundImageChange(event) {
       this.backgroundImage = event.target.files[0];
     },
     onFontChange(event) {
       this.font = event.target.files[0];
-    },
-    generateHandwrite() {
-      // You would need to call an API endpoint to generate the handwriting
-      // The details of that are beyond the scope of this example
     },
   },
 };
