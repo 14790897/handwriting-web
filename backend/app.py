@@ -20,15 +20,20 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 
 @app.route('/api/generate_handwriting', methods=['POST'])
 def generate_handwriting():
-    data = request.get_json()
+    data = request.form
     text_to_generate = data['text']
-    if data['preview']:
+    if data['preview'] == 'true':
         #截短字符，只生成一面
         preview_length = 400  # 可以调整为所需的预览长度
         text_to_generate = text_to_generate[:preview_length]
+    background_image = request.files['background_image'].read()
+    background_image = Image.open(io.BytesIO(background_image))
+    font = request.files['font_path'].read()
+    font = ImageFont.truetype(io.BytesIO(font), size=int(data['font_size']))
+
     template = Template(
-        background=Image.open(data['background_image']),
-        font=ImageFont.truetype(data['font'], size=int(data['font_size'])),
+        background=background_image,
+        font=font,
         line_spacing=int(data['line_spacing']) + int(data['font_size']),
         fill_rgba = ast.literal_eval(data['fill']),
         fill = fill_rgba[:3],  # Ignore the alpha value

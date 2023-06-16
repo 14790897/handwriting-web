@@ -89,7 +89,7 @@ export default {
       marginLeft: 50,
       marginRight: 50,
       previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
-      previeW: false,
+      preview: false,
       lineSpacingSigma: 0, // 默认值，可以根据实际需要更改
       fontSizeSigma: 0, // 默认值，可以根据实际需要更改
       wordSpacingSigma: 0, // 默认值，可以根据实际需要更改
