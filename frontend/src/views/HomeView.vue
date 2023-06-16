@@ -184,6 +184,8 @@ export default {
         marginBottom: this.marginBottom,
         marginLeft: this.marginLeft,
         marginRight: this.marginRight,
+        backgroundImage: this.backgroundImage,
+        font_path: this.font_path,
         // ...其他你希望保存的参数...
       };
        localStorage.setItem('handwriting-settings', JSON.stringify(settings));
@@ -203,6 +205,8 @@ export default {
         this.marginBottom = settings.marginBottom;
         this.marginLeft = settings.marginLeft;
         this.marginRight = settings.marginRight;
+        this.backgroundImage = settings.backgroundImage;
+        this.font_path = settings.font_path;
         // ...其他你希望载入的参数...
       } else {
         alert('没有找到保存的预设');
