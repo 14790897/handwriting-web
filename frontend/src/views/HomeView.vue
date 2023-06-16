@@ -57,7 +57,7 @@
   <div class="buttons">
     <button @click="preview">预览</button>
     <button @click="export_file">导出</button>
-    <button @click="save">保存</button>
+    <button @click="savePreset">保存</button>
     <button @click="loadPreset">载入预设</button>
     <button @click="generateHandwriting">生成手写图片</button>
   </div>
@@ -102,9 +102,6 @@ export default {
     };
   },
   methods: {
-    selectFile(event) {
-      this.fontPath = event.target.files[0];
-    },
     async generateHandwriting() {
       try {
         const formData = new FormData();
@@ -168,7 +165,7 @@ export default {
     export_file() {
       // 实现你的导出逻辑...
     },
-    save() {
+    savePreset() {
       // 这个方法可以用来保存当前的参数设置
       // 这里我们将它们保存到 localStorage
       const settings = {
@@ -184,7 +181,7 @@ export default {
         marginLeft: this.marginLeft,
         marginRight: this.marginRight,
         backgroundImage: this.backgroundImage,
-        font_path: this.font_path,
+        font_path: this.fontPath,
         // ...其他你希望保存的参数...
       };
        localStorage.setItem('handwriting-settings', JSON.stringify(settings));
@@ -197,7 +194,7 @@ export default {
         this.text = settings.text;
         this.fontSize = settings.fontSize;
         this.lineSpacing = settings.lineSpacing;
-         this.fill = settings.fill;
+        this.fill = settings.fill;
         this.width = settings.width;
         this.height = settings.height;
         this.marginTop = settings.marginTop;
@@ -215,7 +212,7 @@ export default {
       this.backgroundImage = event.target.files[0];
     },
     onFontChange(event) {
-      this.font = event.target.files[0];
+      this.fontPath = event.target.files[0];
     },
   },
 };
