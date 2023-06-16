@@ -2,19 +2,15 @@ version: '3'
 
 services:
   frontend:
-    build: 
-      context: ./frontend
-      dockerfile: dockerfile.frontend
-    image: 14790897/frontend_handwriting:latest
+
+    image: 14790897/frontend-handwriting:latest
     ports:
       - "2345:80"
     depends_on: 
       - backend
 
   backend:
-    build: 
-      context: ./backend
-      dockerfile: dockerfile.backend
-    image: 14790897/backend_handwriting:latest
+
+    image: 14790897/backend-handwriting:latest
     ports:
       - "5000:5000"
