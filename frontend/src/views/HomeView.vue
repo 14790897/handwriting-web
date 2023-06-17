@@ -1,76 +1,77 @@
 <template>
   <div class="container">
-  <div id="form">
-    <div>
-      <label>Text:
-        <textarea v-model="text" placeholder="请输入要转换的文字"></textarea>
-      </label>
+    
+    <div id="form">
+      <div>
+        <label>Text:
+          <textarea v-model="text" placeholder="请输入要转换的文字"></textarea>
+        </label>
 
-      <label>Font File:
-        <input type="file" @change="onFontChange" />
-      </label>
+        <label>Font File:
+          <input type="file" @change="onFontChange" />
+        </label>
 
-      <label>Background Image File:
-        <input type="file" @change="onBackgroundImageChange" />
-      </label>
+        <label>Background Image File:
+          <input type="file" @change="onBackgroundImageChange" />
+        </label>
 
-      <label>Font Size:
-        <input type="number" v-model="fontSize" />
-      </label>
+        <label>Font Size:
+          <input type="number" v-model="fontSize" />
+        </label>
 
-      <label>Line Spacing:
-        <input type="number" v-model="lineSpacing" />
-      </label>
+        <label>Line Spacing:
+          <input type="number" v-model="lineSpacing" />
+        </label>
 
-      <label>Fill Color (RGBA):
-        <input type="text" v-model="fill" />
-      </label>
+        <label>Fill Color (RGBA):
+          <input type="text" v-model="fill" />
+        </label>
 
-      <label>Width:
-        <input type="number" v-model="width" />
-      </label>
+        <label>Width:
+          <input type="number" v-model="width" />
+        </label>
 
-      <label>Height:
-        <input type="number" v-model="height" />
-      </label>
+        <label>Height:
+          <input type="number" v-model="height" />
+        </label>
 
-      <label>Top Margin:
-        <input type="number" v-model="marginTop" />
-      </label>
+        <label>Top Margin:
+          <input type="number" v-model="marginTop" />
+        </label>
 
-      <label>Bottom Margin:
-        <input type="number" v-model="marginBottom" />
-      </label>
+        <label>Bottom Margin:
+          <input type="number" v-model="marginBottom" />
+        </label>
 
-      <label>Left Margin:
-        <input type="number" v-model="marginLeft" />
-      </label>
+        <label>Left Margin:
+          <input type="number" v-model="marginLeft" />
+        </label>
 
-      <label>Right Margin:
-        <input type="number" v-model="marginRight" />
-      </label>
+        <label>Right Margin:
+          <input type="number" v-model="marginRight" />
+        </label>
 
-      <!-- More inputs for other parameters... -->
-    </div>
-
-  </div>
-  <div class="buttons">
-    <button @click="preview">预览</button>
-    <button @click="export_file">导出</button>
-    <button @click="savePreset">保存</button>
-    <button @click="loadPreset">载入预设</button>
-    <button @click="generateHandwriting">生成手写图片</button>
-  </div>
-  <!-- 预览区 -->
-      <div class="preview">
-        <h2>预览：</h2>
-        <img :src="previewImage" alt="预览图像" style="width: 600px;"/>
+        <!-- More inputs for other parameters... -->
       </div>
+    </div> 
+    <div class="buttons">
+      <button @click="preview">预览</button>
+      <button @click="export_file">导出</button>
+      <button @click="savePreset">保存</button>
+      <button @click="loadPreset">载入预设</button>
+      <button @click="generateHandwriting">生成手写图片</button>
+    </div>
+    <!-- 预览区 -->
+    <div class="preview">
+      <h2>预览：</h2>
+      <img :src="previewImage" alt="预览图像" style="width: 600px;"/>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+
 
 export default {
   data() {
@@ -98,7 +99,7 @@ export default {
       perturbYSigma: 0, // 默认值，可以根据实际需要更改
       perturbThetaSigma: 0, // 默认值，可以根据实际需要更改
       wordSpacing: 0, // 默认值，可以根据实际需要更改
-
+      
     };
   },
   methods: {
@@ -215,6 +216,7 @@ export default {
       this.fontPath = event.target.files[0];
     },
   },
+  
 };
 </script>
 
@@ -300,4 +302,5 @@ export default {
     flex: 1 0 100%;
   }
 }
+
 </style>

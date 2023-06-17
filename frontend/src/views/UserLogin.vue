@@ -1,7 +1,7 @@
 <template>
   <div class="container">
       <div class="row justify-content-center">
-          <div class="col-md-6">
+          <div class="col-12">
               <div class="card border-primary my-5">
                 <h2 class="mb-3">{{ $t('message.login') }}</h2>
                 <div class="card-body">
@@ -53,7 +53,4 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  margin-top: 100px;
-}
 </style>
