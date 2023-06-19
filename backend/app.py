@@ -11,6 +11,13 @@ import mysql.connector
 from flask import g
 import zipfile
 import ast, io
+import logging
+
+# 创建一个logger
+logger = logging.getLogger(__name__)
+
+# 设置日志级别
+logger.setLevel(logging.DEBUG)  # 这会设置日志级别为DEBUG
 
 app = Flask(__name__)
 
