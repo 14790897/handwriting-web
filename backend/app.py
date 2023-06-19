@@ -18,7 +18,7 @@ SECRET_KEY='437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88'
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 128 * 1024 * 1024
 
 @app.route('/api/generate_handwriting', methods=['POST'])
 def generate_handwriting():
