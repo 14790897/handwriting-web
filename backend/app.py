@@ -56,7 +56,7 @@ def generate_handwriting():
         perturb_theta_sigma=float(data['perturb_theta_sigma']),  # 笔画旋转偏移随机扰动
     )
     images = handwrite(text_to_generate, template)
-    cursor = cnx.cursor()
+    cursor = g.cnx.cursor()
 
     # 创建一个BytesIO对象，用于保存.zip文件的内容
     zip_io = io.BytesIO()
@@ -81,10 +81,10 @@ def generate_handwriting():
                 # 执行 SQL 语句
                 cursor.execute(sql, params)
                 # 提交到数据库执行
-                cnx.commit()
+                g.cnx.commit()
             except:
                 # 发生错误时回滚
-                cnx.rollback()
+                g.cnx.rollback()
 
             if data['preview']:
                 return send_file(io.BytesIO(image_data), mimetype='image/png')
@@ -128,13 +128,13 @@ def register():
     
 @app.before_request
 def before_request():
-    cnx = mysql.connector.connect(
+    g.cnx = mysql.connector.connect(
   host="localhost",
   user="myuser",
   password="mypassword",
 )
 
-    # cnx  = mysql.connector.connect(
+    # g.cnx  = mysql.connector.connect(
     #     user='root', 
     #     password=os.getenv('MYSQL_ROOT_PASSWORD'),
     #     host='127.0.0.1',
@@ -142,7 +142,7 @@ def before_request():
     
 @app.after_request
 def after_request(response):
-    cnx.close()
+    g.cnx.close()
     return response
 
 
