@@ -1,16 +1,25 @@
-version: '3'
+version: "3"
 
 services:
   frontend:
-
     image: 14790897/frontend-handwriting:latest
     ports:
       - "2345:80"
-    depends_on: 
+    depends_on:
       - backend
 
   backend:
-
     image: 14790897/backend-handwriting:latest
     ports:
       - "5000:5000"
+
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+
+    ports:
+      - 3306:3306

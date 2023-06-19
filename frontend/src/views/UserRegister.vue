@@ -1,23 +1,23 @@
 <template>
     <div class="d-flex align-items-center justify-content-center" style="height: 100vh;">
         <div class="card p-4" style="width: 400px;">
-            <div v-if="notification.show" class="alert" :class="notification.type === 'success' ? 'alert-success' : 'alert-danger'">
-                {{ notification.message }}// todo 修改多语言
+          <div v-if="notification.show" class="alert" :class="notification.type === 'success' ? 'alert-success' : 'alert-danger'">
+            {{ notification.message }}// todo 修改多语言
+          </div>
+          <h2 class="mb-3">{{ $t('message.register') }}</h2>
+          <form @submit.prevent="submitForm">
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
             </div>
-            <h2 class="mb-3">{{ $t('message.register') }}</h2>
-            <form @submit.prevent="submitForm">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">{{ $t('message.register') }}</button>
-            </form>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">{{ $t('message.register') }}</button>
+          </form>
         </div>
-    </div>
+      </div>
 </template>
 
 

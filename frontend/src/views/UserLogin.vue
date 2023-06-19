@@ -1,26 +1,20 @@
 <template>
-  <div class="container">
-      <div class="row justify-content-center">
-          <div class="col-12">
-              <div class="card border-primary my-5">
-                <h2 class="mb-3">{{ $t('message.login') }}</h2>
-                <div class="card-body">
-                      <form @submit.prevent="submitForm">
-                          <div class="form-group">
-                              <label for="username">Username</label>
-                              <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
-                          </div>
-                          <div class="form-group">
-                              <label for="password">Password</label>
-                              <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
-                          </div>
-                          <button type="submit" class="btn btn-primary w-100">{{ $t('message.login') }}</button>
-                      </form>
-                  </div>
-              </div>
-          </div>
+  <div class="d-flex align-items-center justify-content-center" style="height: 100vh;">
+        <div class="card p-4" style="width: 400px;">
+          <h2 class="mb-3">{{ $t('message.login') }}</h2>
+          <form @submit.prevent="submitForm">
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">{{ $t('message.login') }}</button>
+          </form>
+        </div>
       </div>
-  </div>
 </template>
 
 <script>
