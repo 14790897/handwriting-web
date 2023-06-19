@@ -130,7 +130,8 @@ def register():
 def before_request():
     cnx = mysql.connector.connect(
   host="localhost",
-  user="root"
+  user="myuser",
+  password="mypassword",
 )
 
     # cnx  = mysql.connector.connect(
