@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # 这会设置日志级别为DEBUG
 
 app = Flask(__name__)
+app.logger.setLevel(logging.DEBUG)
 
 SECRET_KEY='437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88'
 app.config['SECRET_KEY'] = SECRET_KEY
