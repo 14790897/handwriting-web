@@ -128,11 +128,16 @@ def register():
     
 @app.before_request
 def before_request():
-    cnx  = mysql.connector.connect(
-        user='root', 
-        password=os.getenv('MYSQL_ROOT_PASSWORD'),
-        host='127.0.0.1',
-        database=os.getenv('MYSQL_DATABASE'))
+    cnx = mysql.connector.connect(
+  host="localhost",
+  user="root"
+)
+
+    # cnx  = mysql.connector.connect(
+    #     user='root', 
+    #     password=os.getenv('MYSQL_ROOT_PASSWORD'),
+    #     host='127.0.0.1',
+    #     database=os.getenv('MYSQL_DATABASE'))
     
 @app.after_request
 def after_request(response):
