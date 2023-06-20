@@ -12,6 +12,8 @@ from flask import g
 import zipfile
 import ast, io
 import logging
+from flask_cors import CORS
+
 
 # 创建一个logger
 logger = logging.getLogger(__name__)
@@ -20,6 +22,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # 这会设置日志级别为DEBUG
 
 app = Flask(__name__)
+CORS(app)
+
 app.logger.setLevel(logging.DEBUG)
 
 SECRET_KEY='437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88'
