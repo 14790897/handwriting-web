@@ -115,7 +115,7 @@ export default {
         formData.append("width", this.width);
         formData.append("height", this.height);
         formData.append("top_margin", this.marginTop);
-        formData.append("bottom_marginbottom", this.marginBottom);
+        formData.append("bottom_margin", this.marginBottom);
         formData.append("left_margin", this.marginLeft);
         formData.append("right_margin", this.marginRight);
         formData.append("line_spacing_sigma", this.lineSpacingSigma);
