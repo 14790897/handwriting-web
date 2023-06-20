@@ -35,7 +35,7 @@ def generate_handwriting():
         required_fields = ['text', 'font_size', 'line_spacing', 'fill', 'left_margin', 'top_margin', 
                            'right_margin', 'bottom_margin', 'word_spacing', 'line_spacing_sigma', 
                            'font_size_sigma', 'word_spacing_sigma', 'perturb_x_sigma', 'perturb_y_sigma', 
-                           'perturb_theta_sigma']
+                           'perturb_theta_sigma', 'preview']
         for field in required_fields:
             if field not in data:
                 return jsonify({'status': 'fail', 'message': f'Missing required field: {field}'}), 400
