@@ -35,7 +35,7 @@ def generate_handwriting():
         required_fields = ['text', 'font_size', 'line_spacing', 'fill', 'left_margin', 'top_margin', 
                            'right_margin', 'bottom_margin', 'word_spacing', 'line_spacing_sigma', 
                            'font_size_sigma', 'word_spacing_sigma', 'perturb_x_sigma', 'perturb_y_sigma', 
-                           'perturb_theta_sigma', 'preview']
+                           'perturb_theta_sigma', 'preview', 'background_image', 'font_path']
         for field in required_fields:
             if field not in data:
                 return jsonify({'status': 'fail', 'message': f'Missing required field: {field}'}), 400
@@ -73,6 +73,7 @@ def generate_handwriting():
             perturb_theta_sigma=float(data['perturb_theta_sigma']),  # 笔画旋转偏移随机扰动
         )
         images = handwrite(text_to_generate, template)
+        logger.info('images generated successfully')
         cursor = g.cnx.cursor()
 
         # 创建一个BytesIO对象，用于保存.zip文件的内容
