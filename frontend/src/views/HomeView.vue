@@ -128,7 +128,9 @@ export default {
         formData.append("word_spacing", this.wordSpacing);
         formData.append("preview", this.preview);
         
-
+        for (let pair of formData.entries()) {
+          console.log(pair[0] + ', ' + pair[1]);
+        }
         const response = await axios.post(
           'https://testhand.liuweiqing.top/api/generate_handwriting',
           formData,
