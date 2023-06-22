@@ -23,6 +23,19 @@ logger = logging.getLogger(__name__)
 # 设置日志级别
 logger.setLevel(logging.DEBUG)  # 这会设置日志级别为DEBUG
 
+# 创建 console handler，并设置级别为 ERROR
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+
+# 创建 formatter
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# 把 formatter 添加到 ch
+ch.setFormatter(formatter)
+
+# 把 ch 添加到 logger
+logger.addHandler(ch)
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
@@ -37,6 +50,8 @@ app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 def generate_handwriting():
+    if not session[name]:
+        return jsonify({"status": "error", "message": "You haven't login." }), 500
     try:
         data = request.form
         required_fields = [
@@ -133,7 +148,7 @@ def generate_handwriting():
                 except:
                     # 发生错误时回滚
                     g.cnx.rollback()
-
+                    logger.info(f"An error occurred: {e}")
                 if data["preview"]:
                     return send_file(io.BytesIO(image_data), mimetype="image/png")
 
@@ -158,12 +173,17 @@ def login():
     password = data.get("password")
     logger.info(f"Received username: {username}")  # 打印接收到的用户名
     logger.info(f"Received password: {password}")  # 打印接收到的密码
-    if r.exists(username) and r.get(username) == password:
+    cursor = g.cnx.cursor()
+    cursor.execute(f"SELECT password FROM users WHERE username=%s", (username,))
+    result = cursor.fetchone()
+
+    if result and result[0] == password:
         session.permanent = True
         session["username"] = username
-        print("session/login", session)
+        logger.info("Login success for user: {username}")
         return {"status": "success"}, 200
     else:
+        logger.error("Login failed for user: {username}")
         return {
             "status": "failed",
             "message": "Login failed. Check your username and password.",
@@ -175,21 +195,47 @@ def register():
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
-    if not r.exists(username):
-        r.set(username, password)
-        session["username"] = username
-        return jsonify(
-            {
-                "status": "success",
-                "message": "Account created successfully. You can now log in.",
-            }
-        )
+    cursor = g.cnx.cursor()
+    cursor.execute(f"SELECT * FROM users WHERE username=%s", (username,))
+    result = cursor.fetchone()
+
+
+    if not result:
+        try:
+            cursor.execute(
+                f"INSERT INTO users (username, password) VALUES (%s, %s)",
+                (username, password),
+            )
+            g.cnx.commit()
+            session["username"] = username
+            logger.info(f"User: {username} registered successfully.")
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "Account created successfully. You can now log in.",
+                }
+            )
+        except mysql.connector.Error as err:
+            logger.error(f"Failed to insert user: {username} into DB. Error: {err}")
+            return (
+                jsonify(
+                    {
+                        "status": "fail",
+                        "message": "Error occurred during registration.",
+                    }
+                ),
+                500,
+            )
     else:
-        return jsonify(
-            {
-                "status": "fail",
-                "message": "Username already exists. Choose a different one.",
-            }
+        logger.error(f"Username: {username} already exists.")
+        return (
+            jsonify(
+                {
+                    "status": "fail",
+                    "message": "Username already exists. Choose a different one.",
+                }
+            ),
+            400,
         )
 
 
@@ -216,7 +262,7 @@ if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
     # good luck 6/16/2023
 
-'''
+"""
 CREATE TABLE user_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) UNIQUE, 
@@ -224,4 +270,4 @@ CREATE TABLE user_images (
     upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-'''
+"""
