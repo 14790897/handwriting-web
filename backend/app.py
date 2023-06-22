@@ -215,3 +215,13 @@ def after_request(response):
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
     # good luck 6/16/2023
+
+'''
+CREATE TABLE user_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE, 
+    image BLOB,
+    upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+'''
