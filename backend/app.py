@@ -174,7 +174,7 @@ def login():
     logger.info(f"Received username: {username}")  # 打印接收到的用户名
     logger.info(f"Received password: {password}")  # 打印接收到的密码
     cursor = g.cnx.cursor()
-    cursor.execute(f"SELECT password FROM users WHERE username=%s", (username,))
+    cursor.execute(f"SELECT password FROM user_images WHERE username=%s", (username,))
     result = cursor.fetchone()
 
     if result and result[0] == password:
@@ -196,14 +196,14 @@ def register():
     username = data.get("username")
     password = data.get("password")
     cursor = g.cnx.cursor()
-    cursor.execute(f"SELECT * FROM users WHERE username=%s", (username,))
+    cursor.execute(f"SELECT * FROM user_images WHERE username=%s", (username,))
     result = cursor.fetchone()
 
 
     if not result:
         try:
             cursor.execute(
-                f"INSERT INTO users (username, password) VALUES (%s, %s)",
+                f"INSERT INTO user_images (username, password) VALUES (%s, %s)",
                 (username, password),
             )
             g.cnx.commit()
