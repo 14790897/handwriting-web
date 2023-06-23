@@ -261,7 +261,8 @@ def after_request(response):
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
     # good luck 6/16/2023
-
+    
+数据库初始化操作
 """
 CREATE TABLE user_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -271,3 +272,9 @@ CREATE TABLE user_images (
 );
 
 """
+'''
+数据库结构
+mysql -u root -p进入数据库
+USE your_database;数据库中的一个库
+describe user_images;表：
+'''
