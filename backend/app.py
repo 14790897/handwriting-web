@@ -15,6 +15,7 @@ import zipfile
 import ast, io
 import logging
 from flask_cors import CORS
+from datetime import timedelta
 
 
 # 创建一个logger
@@ -46,6 +47,8 @@ app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "None"
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
+app.permanent_session_lifetime = timedelta(minutes=5000000)
+
 
 
 @app.route("/api/generate_handwriting", methods=["POST"])
