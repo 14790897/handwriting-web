@@ -50,7 +50,7 @@ app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 def generate_handwriting():
-    if not session[name]:
+    if not session["username"]:
         return jsonify({"status": "error", "message": "You haven't login." }), 500
     try:
         data = request.form
