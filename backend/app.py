@@ -261,8 +261,9 @@ def after_request(response):
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
     # good luck 6/16/2023
-    
+'''    
 数据库初始化操作
+'''
 """
 CREATE TABLE user_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
