@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, session
 from PIL import Image, ImageFont
 from handright import Template, handwrite
 from threading import Thread
