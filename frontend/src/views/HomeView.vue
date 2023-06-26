@@ -112,7 +112,7 @@ export default {
   },
   methods: {
     async generateHandwriting() {
-      try {
+      
         const formData = new FormData();
         formData.append("text", this.text);
         formData.append("font_path", this.fontPath);
@@ -139,7 +139,7 @@ export default {
         for (let pair of formData.entries()) {
           console.log(pair[0] + ', ' + pair[1]);
         }
-        const response = await axios.post(
+        axios.post(
           'https://testhand.liuweiqing.top/api/generate_handwriting',
           formData,
           {
@@ -148,103 +148,107 @@ export default {
             },
             responseType: 'blob', // 这里设置为'blob'
           }
-        );
+        ).then((response) => {
+          if (response.headers['content-type'] === 'image/png') {
+            // 处理预览图像
+            const blobUrl = URL.createObjectURL(response.data);
+            // 将预览图像的 URL 保存到数据属性中
+            this.previewImage = blobUrl;
+            // 设置提示信息
+            this.message = '预览图像已加载。';
 
-        if (response.headers['content-type'] === 'image/png') {
-          // 处理预览图像
-          const blobUrl = URL.createObjectURL(response.data);
-          // 将预览图像的 URL 保存到数据属性中
-          this.previewImage = blobUrl;
-          // 设置提示信息
-          this.message = '预览图像已加载。';
+          } else if (response.headers['content-type'] === 'application/zip') {
+            // 处理.zip文件
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'images.zip'); // 或任何其他文件名
+            document.body.appendChild(link);
+            link.click();
+            // 设置提示信息
+            this.message = '文件已下载。';
 
-        } else if (response.headers['content-type'] === 'application/zip') {
-          // 处理.zip文件
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'images.zip'); // 或任何其他文件名
-          document.body.appendChild(link);
-          link.click();
-          // 设置提示信息
-          this.message = '文件已下载。';
+          } else {
+            console.error('Unexpected response type');
+            // 设置错误消息
+            this.errorMessage = '意外的响应类型';
+          }
+        }).catch((error) => {
+          console.error(error);
+          if (error.response) {
+            if (error.response.headers['content-type'] === 'application/json') {
+              // 如果服务器返回了一个JSON错误消息
+              const reader = new FileReader();
+              reader.readAsText(error.response.data);
+              reader.onloadend = () => {
+                const errorData = JSON.parse(reader.result);
+                this.errorMessage = errorData.message;
+              };
+            } else {
+              // 如果服务器返回了一个非JSON错误消息
+              this.errorMessage = `服务器错误：${error.response.status}`;
+            }
+          } else {
+            // 如果没有从服务器收到响应
+            this.errorMessage = '网络错误，请稍后再试';
+          }
+        });
+      },
+        export_file() {
+          // 实现你的导出逻辑...
+        },
+        savePreset() {
+          // 这个方法可以用来保存当前的参数设置
+          // 这里我们将它们保存到 localStorage
+          const settings = {
+            text: this.text,
+            // 注意，文件类型的参数（如 font 和 backgroundImage）不能保存
+            fontSize: this.fontSize,
+            lineSpacing: this.lineSpacing,
+            fill: this.fill,
+            width: this.width,
+            height: this.height,
+            marginTop: this.marginTop,
+            marginBottom: this.marginBottom,
+            marginLeft: this.marginLeft,
+            marginRight: this.marginRight,
+            backgroundImage: this.backgroundImage,
+            font_path: this.fontPath,
+            // ...其他你希望保存的参数...
+          };
+          localStorage.setItem('handwriting-settings', JSON.stringify(settings));
+        },
+        loadPreset() {
+          // 这个方法可以用来载入之前保存的参数设置
+          const settingsJson = localStorage.getItem('handwriting-settings');
+          if (settingsJson) {
+            const settings = JSON.parse(settingsJson);
+            this.text = settings.text;
+            this.fontSize = settings.fontSize;
+            this.lineSpacing = settings.lineSpacing;
+            this.fill = settings.fill;
+            this.width = settings.width;
+            this.height = settings.height;
+            this.marginTop = settings.marginTop;
+            this.marginBottom = settings.marginBottom;
+            this.marginLeft = settings.marginLeft;
+            this.marginRight = settings.marginRight;
+            this.backgroundImage = settings.backgroundImage;
+            this.font_path = settings.font_path;
+            // ...其他你希望载入的参数...
+          } else {
+            alert('没有找到保存的预设');
+          }
+        },
+        onBackgroundImageChange(event) {
+          this.backgroundImage = event.target.files[0];
+        },
+        onFontChange(event) {
+          this.fontPath = event.target.files[0];
+        },
+      },
 
-        } else {
-          console.error('Unexpected response type');
-          // 设置错误消息
-          this.errorMessage = '意外的响应类型';
-        }
-
-        if (response.data.status === 'success') {
-          // 处理成功的逻辑...
-          this.errorMessage = '';  // 清除错误消息
-        } else {
-          // 设置错误消息
-          this.errorMessage = response.data.message;
-        }
-
-      } catch (error) {
-        // 设置错误消息
-        this.errorMessage = '网络错误，请稍后再试';
-        console.error(error);
-      }
-
-    },
-    export_file() {
-      // 实现你的导出逻辑...
-    },
-    savePreset() {
-      // 这个方法可以用来保存当前的参数设置
-      // 这里我们将它们保存到 localStorage
-      const settings = {
-        text: this.text,
-        // 注意，文件类型的参数（如 font 和 backgroundImage）不能保存
-        fontSize: this.fontSize,
-        lineSpacing: this.lineSpacing,
-        fill: this.fill,
-        width: this.width,
-        height: this.height,
-        marginTop: this.marginTop,
-        marginBottom: this.marginBottom,
-        marginLeft: this.marginLeft,
-        marginRight: this.marginRight,
-        backgroundImage: this.backgroundImage,
-        font_path: this.fontPath,
-        // ...其他你希望保存的参数...
-      };
-      localStorage.setItem('handwriting-settings', JSON.stringify(settings));
-    },
-    loadPreset() {
-      // 这个方法可以用来载入之前保存的参数设置
-      const settingsJson = localStorage.getItem('handwriting-settings');
-      if (settingsJson) {
-        const settings = JSON.parse(settingsJson);
-        this.text = settings.text;
-        this.fontSize = settings.fontSize;
-        this.lineSpacing = settings.lineSpacing;
-        this.fill = settings.fill;
-        this.width = settings.width;
-        this.height = settings.height;
-        this.marginTop = settings.marginTop;
-        this.marginBottom = settings.marginBottom;
-        this.marginLeft = settings.marginLeft;
-        this.marginRight = settings.marginRight;
-        this.backgroundImage = settings.backgroundImage;
-        this.font_path = settings.font_path;
-        // ...其他你希望载入的参数...
-      } else {
-        alert('没有找到保存的预设');
-      }
-    },
-    onBackgroundImageChange(event) {
-      this.backgroundImage = event.target.files[0];
-    },
-    onFontChange(event) {
-      this.fontPath = event.target.files[0];
-    },
-  },
-
-};
+    };
 </script>
 
 

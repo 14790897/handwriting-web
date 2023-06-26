@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify, send_file, session
-from PIL import Image, ImageFont
+from flask import Flask, request, jsonify, send_file, session, current_app
 from handright import Template, handwrite
+from PIL import Image, ImageFont
 from threading import Thread
 from PIL import Image, ImageFont, ImageQt
 from dotenv import load_dotenv
@@ -122,7 +122,7 @@ def generate_handwriting():
         )
         images = handwrite(text_to_generate, template)
         logger.info("images generated successfully")
-        cursor = g.cnx.cursor()
+        cursor = current_app.cnx.cursor()
 
         # 创建一个BytesIO对象，用于保存.zip文件的内容
         zip_io = io.BytesIO()
@@ -141,16 +141,26 @@ def generate_handwriting():
                 # 保存图片到数据库
                 username = session["username"]
                 sql = f"INSERT INTO user_images (username, image) VALUES (%s, %s)"
-                image_data = img_io.getvalue()
-                params = (username, image_data)
+                # 先检查用户是否已存在
+                cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
+                result = cursor.fetchone()
+
+                # 根据查询结果来判断应该插入新纪录还是更新旧纪录
+                if result is None:
+                    # 如果用户不存在，插入新纪录
+                    sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
+                else:
+                    # 如果用户已存在，更新旧纪录
+                    sql = "UPDATE user_images SET image=%s WHERE username=%s"
+                    params = (image_data, username)
                 try:
                     # 执行 SQL 语句
                     cursor.execute(sql, params)
                     # 提交到数据库执行
-                    g.cnx.commit()
+                    current_app.cnx.commit()
                 except:
                     # 发生错误时回滚
-                    g.cnx.rollback()
+                    current_app.cnx.rollback()
                     logger.info(f"An error occurred: {e}")
                 if data["preview"]:
                     return send_file(io.BytesIO(image_data), mimetype="image/png")
@@ -176,7 +186,7 @@ def login():
     password = data.get("password")
     logger.info(f"Received username: {username}")  # 打印接收到的用户名
     logger.info(f"Received password: {password}")  # 打印接收到的密码
-    cursor = g.cnx.cursor()
+    cursor = current_app.cnx.cursor()
     cursor.execute(f"SELECT password FROM user_images WHERE username=%s", (username,))
     result = cursor.fetchone()
 
@@ -198,7 +208,7 @@ def register():
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
-    cursor = g.cnx.cursor()
+    cursor = current_app.cnx.cursor()
     cursor.execute(f"SELECT * FROM user_images WHERE username=%s", (username,))
     result = cursor.fetchone()
 
@@ -209,7 +219,7 @@ def register():
                 f"INSERT INTO user_images (username, password) VALUES (%s, %s)",
                 (username, password),
             )
-            g.cnx.commit()
+            current_app.cnx.commit()
             session["username"] = username
             logger.info(f"User: {username} registered successfully.")
             return jsonify(
@@ -244,11 +254,11 @@ def register():
 
 @app.before_request
 def before_request():
-    g.cnx = mysql.connector.connect(
+    current_app.cnx = mysql.connector.connect(
         host="localhost", user="myuser", password="mypassword", database="your_database"
     )
 
-    # g.cnx  = mysql.connector.connect(
+    # current_app.cnx  = mysql.connector.connect(
     #     user='root',
     #     password=os.getenv('MYSQL_ROOT_PASSWORD'),
     #     host='127.0.0.1',
@@ -257,7 +267,7 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    g.cnx.close()
+    current_app.cnx.close()
     return response
 
 
