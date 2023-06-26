@@ -63,7 +63,8 @@ export default {
                 message: this.$t('message.registersuccess'),
                 type: 'success',
                 };
-                this.$router.push({name: 'Home'});
+                // this.$router.push({name: 'Home'});
+                this.$emit('update', false);
             } else {
                 this.notification = {
                 show: true,

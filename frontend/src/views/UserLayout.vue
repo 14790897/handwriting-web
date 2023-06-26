@@ -18,7 +18,7 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
               aria-haspopup="true" aria-expanded="false">
-              <i class="fa fa-user"></i> {{ getUsername }}
+              <!-- <i class="fa fa-user"></i> {{ getUsername }} -->
             </a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
               <a class="dropdown-item" href="#">Profile</a>
@@ -54,7 +54,8 @@
                     @click.prevent="changeView('UserLogin')">Login</a>
                 </li>
               </ul>
-              <component v-bind:is="currentView" class="h-100" @close="isModalOpen = false"></component>
+              <!-- component代表组件 -->
+              <component v-bind:is="currentView" class="h-100" @update="changeModalOpen"></component>
             </div>
           </div>
         </div>
@@ -69,7 +70,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+// import { mapGetters } from 'vuex';
 import UserRegister from './UserRegister.vue';
 import UserLogin from "./UserLogin.vue";
 
@@ -88,11 +89,11 @@ export default {
       isModalOpen: false,
     };
   },
-  computed: {
-    ...mapGetters([
-      'getUsername'
-    ]),
-  },
+  // computed: {
+  //   ...mapGetters([
+  //     'getUsername'
+  //   ]),
+  // },
   watch: {
     selectedLanguage(newLang) {
       // 当用户选择一个新的语言时，你可以在这里改变你的语言设置
@@ -108,6 +109,9 @@ export default {
     changeView(view) {
       this.currentView = view;
     },
+    changeModalOpen(newvalue){
+      this.isModalOpen= newvalue;
+    }
   },
 };
 </script>

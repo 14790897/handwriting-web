@@ -1,6 +1,13 @@
 <template>
   <div class="container">
-    
+    <!-- 错误消息 -->
+    <div v-if="errorMessage" class="alert alert-danger" role="alert">
+      {{ errorMessage }}
+    </div>
+    <div v-if="message" class="alert alert-info" role="alert">
+      {{ message }}
+    </div>
+
     <div id="form">
       <div>
         <label>Text:
@@ -53,7 +60,7 @@
 
         <!-- More inputs for other parameters... -->
       </div>
-    </div> 
+    </div>
     <div class="buttons">
       <button @click="preview">预览</button>
       <button @click="export_file">导出</button>
@@ -64,7 +71,7 @@
     <!-- 预览区 -->
     <div class="preview">
       <h2>预览：</h2>
-      <img :src="previewImage" alt="预览图像" style="width: 600px;"/>
+      <img :src="previewImage" alt="预览图像" style="width: 600px;" />
     </div>
   </div>
 </template>
@@ -99,7 +106,8 @@ export default {
       perturbYSigma: 0, // 默认值，可以根据实际需要更改
       perturbThetaSigma: 0, // 默认值，可以根据实际需要更改
       wordSpacing: 0, // 默认值，可以根据实际需要更改
-      
+      errorMessage: '',  // 错误消息
+      message: '',  // 提示消息
     };
   },
   methods: {
@@ -127,7 +135,7 @@ export default {
         formData.append("perturb_theta_sigma", this.perturbThetaSigma);
         formData.append("word_spacing", this.wordSpacing);
         formData.append("preview", this.preview);
-        
+
         for (let pair of formData.entries()) {
           console.log(pair[0] + ', ' + pair[1]);
         }
@@ -147,6 +155,8 @@ export default {
           const blobUrl = URL.createObjectURL(response.data);
           // 将预览图像的 URL 保存到数据属性中
           this.previewImage = blobUrl;
+          // 设置提示信息
+          this.message = '预览图像已加载。';
 
         } else if (response.headers['content-type'] === 'application/zip') {
           // 处理.zip文件
@@ -156,14 +166,29 @@ export default {
           link.setAttribute('download', 'images.zip'); // 或任何其他文件名
           document.body.appendChild(link);
           link.click();
+          // 设置提示信息
+          this.message = '文件已下载。';
+
         } else {
           console.error('Unexpected response type');
+          // 设置错误消息
+          this.errorMessage = '意外的响应类型';
+        }
+
+        if (response.data.status === 'success') {
+          // 处理成功的逻辑...
+          this.errorMessage = '';  // 清除错误消息
+        } else {
+          // 设置错误消息
+          this.errorMessage = response.data.message;
         }
 
       } catch (error) {
+        // 设置错误消息
+        this.errorMessage = '网络错误，请稍后再试';
         console.error(error);
-        // 处理出错情况，可能是显示一个错误消息给用户
       }
+
     },
     export_file() {
       // 实现你的导出逻辑...
@@ -187,7 +212,7 @@ export default {
         font_path: this.fontPath,
         // ...其他你希望保存的参数...
       };
-       localStorage.setItem('handwriting-settings', JSON.stringify(settings));
+      localStorage.setItem('handwriting-settings', JSON.stringify(settings));
     },
     loadPreset() {
       // 这个方法可以用来载入之前保存的参数设置
@@ -218,7 +243,7 @@ export default {
       this.fontPath = event.target.files[0];
     },
   },
-  
+
 };
 </script>
 
@@ -228,14 +253,14 @@ export default {
   /* display: flex; */
   /* flex-wrap: wrap; */
   display: grid;
-  grid-template-areas: 
+  grid-template-areas:
     "form image"
     "button image";
   grid-template-columns: 1fr 2fr;
 }
 
 #form {
-    grid-area: form;
+  grid-area: form;
   flex: 1 0 300px;
   max-width: 800px;
   column-count: auto;
@@ -263,7 +288,7 @@ export default {
 }
 
 .buttons button {
-    grid-area: button;
+  grid-area: button;
   padding: 10px 20px;
   border-radius: 5px;
   border: none;
@@ -292,7 +317,7 @@ export default {
 @media (max-width: 800px) {
   .container {
     /* flex-direction: column; */
-    grid-template-areas: 
+    grid-template-areas:
       "form"
       "button"
       "image";
@@ -304,5 +329,4 @@ export default {
     flex: 1 0 100%;
   }
 }
-
 </style>

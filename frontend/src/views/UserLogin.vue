@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { mapMutations } from 'vuex';
+// import { mapMutations } from 'vuex';
 
 export default {
   data() {
@@ -28,7 +28,7 @@ export default {
       }
   },
   methods: {
-      ...mapMutations(['setUsername']),
+      // ...mapMutations(['setUsername']),
       async submitForm() {
           let response = await this.$http.post('/api/login', {
               username: this.username,
@@ -36,8 +36,9 @@ export default {
           });
           if (response.data.status === 'success') {
               // 使用 mutation 设置全局的 username
-              this.setUsername(this.username);
-              this.$router.push({name: 'Home'});
+              // this.setUsername(this.username);
+              // this.$router.push({name: 'Home'});
+              this.$emit('update', false);
           } else {
               alert(this.$t('message.loginFailed'));
           }
