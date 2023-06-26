@@ -38,7 +38,11 @@ export default {
               // 使用 mutation 设置全局的 username
               // this.setUsername(this.username);
               // this.$router.push({name: 'Home'});
+
+              //使得模态框消失
               this.$emit('update', false);
+              //使得未登录消息消失
+              this.$emit('login_delete', true)
           } else {
               alert(this.$t('message.loginFailed'));
           }

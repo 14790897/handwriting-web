@@ -136,7 +136,7 @@ def generate_handwriting():
                 im.save(img_io, "PNG")
                 img_io.seek(0)
                 if data["preview"]:
-                    mysql_operation(img_io)
+                    # mysql_operation(img_io)
                     return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
                 else:
                     # 将图片BytesIO对象添加到.zip文件中
@@ -145,7 +145,7 @@ def generate_handwriting():
         zip_io.seek(0)
         if not data["preview"]:
             # 返回.zip文件
-            mysql_operation(zip_io)
+            # mysql_operation(zip_io)
             return send_file(
                 zip_io,
                 attachment_filename="images.zip",
@@ -175,8 +175,8 @@ def mysql_operation(image_data):
         pass
         # 执行 SQL 语句
         # 提交到数据库执行
-        # cursor.execute(sql, params)
-        # current_app.cnx.commit()
+        cursor.execute(sql, params)
+        current_app.cnx.commit()
     except Exception as e:
         # 发生错误时回滚
         current_app.cnx.rollback()

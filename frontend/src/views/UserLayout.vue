@@ -55,7 +55,7 @@
                 </li>
               </ul>
               <!-- component代表组件 -->
-              <component v-bind:is="currentView" class="h-100" @update="changeModalOpen"></component>
+              <component v-bind:is="currentView" class="h-100" @update="changeModalOpen" @login_delete="change_login_message" :login_delete_message="login_delete"></component>
             </div>
           </div>
         </div>
@@ -87,6 +87,7 @@ export default {
       ],
       currentView: 'UserLogin',  // 默认显示登录组件
       isModalOpen: false,
+      login_delete: false,
     };
   },
   // computed: {
@@ -109,8 +110,11 @@ export default {
     changeView(view) {
       this.currentView = view;
     },
-    changeModalOpen(newvalue){
-      this.isModalOpen= newvalue;
+    changeModalOpen(newValue){
+      this.isModalOpen= newValue;
+    },
+    change_login_message(newValue){
+      this.login_delete = newValue;
     }
   },
 };

@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <!-- 错误消息 -->
-    <div v-if="errorMessage && isModal" class="alert alert-danger" role="alert">
+    <div v-if="errorMessage && !login_delete_message" class="alert alert-danger" role="alert">
       {{ errorMessage }}
     </div>
     <div v-if="message" class="alert alert-info" role="alert">
@@ -108,6 +108,7 @@ export default {
       wordSpacing: 0, // 默认值，可以根据实际需要更改
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
+      login_delete_message: ['login_delete_message'],
     };
   },
   methods: {
