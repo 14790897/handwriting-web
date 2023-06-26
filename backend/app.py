@@ -129,8 +129,8 @@ def generate_handwriting():
             # 遍历生成的所有图片
             for i, im in enumerate(images):
                 # 使用os模块来连接路径和文件名
-                image_path = os.path.join(output_path, f"{i}.png")
-                im.save(image_path)
+                # image_path = os.path.join(output_path, f"{i}.png")
+                # im.save(image_path)
                 # 将每张图片保存为一个BytesIO对象
                 img_io = io.BytesIO()
                 im.save(img_io, "PNG")
