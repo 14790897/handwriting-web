@@ -122,14 +122,15 @@ def generate_handwriting():
         )
         images = handwrite(text_to_generate, template)
         logger.info("images generated successfully")
-        cursor = current_app.cnx.cursor()
 
         # 创建一个BytesIO对象，用于保存.zip文件的内容
         zip_io = io.BytesIO()
         with zipfile.ZipFile(zip_io, "w") as zipf:
             # 遍历生成的所有图片
             for i, im in enumerate(images):
-                im.save("./output/{}.png".format(i))
+                # 使用os模块来连接路径和文件名
+                image_path = os.path.join(output_path, f"{i}.png")
+                im.save(image_path)
                 # 将每张图片保存为一个BytesIO对象
                 img_io = io.BytesIO()
                 im.save(img_io, "PNG")
@@ -138,37 +139,15 @@ def generate_handwriting():
                     # 将图片BytesIO对象添加到.zip文件中
                     zipf.writestr(f"{i}.png", img_io.getvalue())
 
-                # 保存图片到数据库
-                username = session["username"]
-                sql = f"INSERT INTO user_images (username, image) VALUES (%s, %s)"
-                # 先检查用户是否已存在
-                cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
-                result = cursor.fetchone()
-
-                # 根据查询结果来判断应该插入新纪录还是更新旧纪录
-                if result is None:
-                    # 如果用户不存在，插入新纪录
-                    sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
-                else:
-                    # 如果用户已存在，更新旧纪录
-                    sql = "UPDATE user_images SET image=%s WHERE username=%s"
-                    params = (image_data, username)
-                try:
-                    # 执行 SQL 语句
-                    cursor.execute(sql, params)
-                    # 提交到数据库执行
-                    current_app.cnx.commit()
-                except:
-                    # 发生错误时回滚
-                    current_app.cnx.rollback()
-                    logger.info(f"An error occurred: {e}")
                 if data["preview"]:
-                    return send_file(io.BytesIO(image_data), mimetype="image/png")
+                    mysql_operation(img_io)
+                    return send_file(io.BytesIO(img_io), mimetype="image/png")
 
         # 将BytesIO对象的位置重置到开始
         zip_io.seek(0)
         if not data["preview"]:
             # 返回.zip文件
+            mysql_operation(zip_io)
             return send_file(
                 zip_io,
                 attachment_filename="images.zip",
@@ -178,7 +157,32 @@ def generate_handwriting():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+def mysql_operation(image_data):
+    cursor = current_app.cnx.cursor()
+    username = session["username"]
+    # 先检查用户是否已存在
+    cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
+    result = cursor.fetchone()
 
+    # 根据查询结果来判断应该插入新纪录还是更新旧纪录
+    if result is None:
+        # 如果用户不存在，插入新纪录
+        sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
+        params = (username, image_data)
+    else:
+        # 如果用户已存在，更新旧纪录
+        sql = "UPDATE user_images SET image=%s WHERE username=%s"
+        params = (image_data, username)
+    try:
+        # 执行 SQL 语句
+        cursor.execute(sql, params)
+        # 提交到数据库执行
+        current_app.cnx.commit()
+    except Exception as e:
+        # 发生错误时回滚
+        current_app.cnx.rollback()
+        logger.info(f"An error occurred: {e}")
+            
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -272,6 +276,13 @@ def after_request(response):
 
 
 if __name__ == "__main__":
+     # 获取当前路径
+    current_path = os.getcwd()
+    # 创建一个子文件夹用于存储输出的图片
+    output_path = os.path.join(current_path, 'output')
+    # 如果子文件夹不存在，就创建它
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
     app.run(debug=True, host="0.0.0.0")
     # good luck 6/16/2023
 '''    
