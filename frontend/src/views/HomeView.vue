@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <!-- 错误消息 -->
-    <div v-if="errorMessage" class="alert alert-danger" role="alert">
+    <div v-if="errorMessage && isModal" class="alert alert-danger" role="alert">
       {{ errorMessage }}
     </div>
     <div v-if="message" class="alert alert-info" role="alert">
