@@ -153,6 +153,7 @@ def generate_handwriting():
                 as_attachment=True,
             )
     except Exception as e:
+        logger.info("An error occurred during the request:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def mysql_operation(image_data):
@@ -194,8 +195,8 @@ def login():
     result = cursor.fetchone()
 
     if result and result[0] == password:
-        session.permanent = True
         session["username"] = username
+        session.permanent = True
         logger.info("Login success for user: {username}")
         return {"status": "success"}, 200
     else:
@@ -282,7 +283,7 @@ if __name__ == "__main__":
     # 如果子文件夹不存在，就创建它
     if not os.path.exists(output_path):
         os.mkdir(output_path)
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=5000)
     # good luck 6/16/2023
 '''    
 数据库初始化操作
