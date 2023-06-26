@@ -22,25 +22,33 @@ from datetime import timedelta
 logger = logging.getLogger(__name__)
 
 # 设置日志级别
-logger.setLevel(logging.DEBUG)  # 这会设置日志级别为DEBUG
+logger.setLevel(logging.DEBUG)
 
-# 创建 console handler，并设置级别为 ERROR
+# 创建 console handler，并设置级别为 DEBUG
 ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
+ch.setLevel(logging.DEBUG)
+
+# 创建 file handler，并设置级别为 DEBUG
+fh = logging.FileHandler('app.log')
+fh.setLevel(logging.DEBUG)
 
 # 创建 formatter
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# 把 formatter 添加到 ch
+# 把 formatter 添加到 ch 和 fh
 ch.setFormatter(formatter)
+fh.setFormatter(formatter)
 
-# 把 ch 添加到 logger
+# 把 ch 和 fh 添加到 logger
 logger.addHandler(ch)
+logger.addHandler(fh)
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
+# 设置Flask app的logger级别
 app.logger.setLevel(logging.DEBUG)
+
 
 SECRET_KEY = "437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88"
 app.config["SECRET_KEY"] = SECRET_KEY
