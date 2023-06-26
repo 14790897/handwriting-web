@@ -172,10 +172,11 @@ def mysql_operation(image_data):
         sql = "UPDATE user_images SET image=%s WHERE username=%s"
         params = (image_data, username)
     try:
+        pass
         # 执行 SQL 语句
-        cursor.execute(sql, params)
         # 提交到数据库执行
-        current_app.cnx.commit()
+        # cursor.execute(sql, params)
+        # current_app.cnx.commit()
     except Exception as e:
         # 发生错误时回滚
         current_app.cnx.rollback()
