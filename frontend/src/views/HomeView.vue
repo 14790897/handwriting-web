@@ -174,11 +174,17 @@ export default {
           // 设置错误消息
           this.errorMessage = '意外的响应类型';
         }
-      }).catch((error) => {
+      }).catch(error => {
         console.error(error);
         if (error.response) {
           if (error.response.headers['content-type'] === 'application/json') {
             // 如果服务器返回了一个JSON错误消息
+            let reader = new FileReader();
+            reader.onload = function (e) {
+              let errorData = JSON.parse(e.target.result);
+              this.errorMessage = errorData.message;
+            };
+            console.log(error.response.data);
             this.errorMessage = error.response.data.message;
           } else {
             // 如果服务器返回了一个非JSON错误消息
