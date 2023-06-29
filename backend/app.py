@@ -65,8 +65,8 @@ def generate_handwriting():
     if "username" not in session:
         return jsonify({"status": "error", "message": "You haven't login." }), 500
     try:
-        data = request.form
         logger.info('已经进入try')
+        data = request.form
         logger.info("request.form:", data)
         required_fields = [
             "text",
