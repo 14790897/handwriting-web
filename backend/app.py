@@ -62,8 +62,8 @@ app.permanent_session_lifetime = timedelta(minutes=5000000)
 @app.route("/api/generate_handwriting", methods=["POST"])
 def generate_handwriting():
     logger.info('已经进入generate_handwriting')
-    # if "username" not in session:
-        # return jsonify({"status": "error", "message": "You haven't login." }), 500
+    if "username" not in session:
+        return jsonify({"status": "error", "message": "You haven't login." }), 500
     try:
         logger.info('已经进入try')
         data = request.form
