@@ -114,7 +114,8 @@ def generate_handwriting():
             background=background_image,
             font=font,
             line_spacing=int(data["line_spacing"]) + int(data["font_size"]),
-            fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
+            # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
+            fill=(0),
             left_margin=int(data["left_margin"]),
             top_margin=int(data["top_margin"]),
             right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
