@@ -111,26 +111,26 @@ def generate_handwriting():
         font = request.files["font_path"].read()
         font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
 
-        # template = Template(
-        #     background=background_image,
-        #     font=font,
-        #     line_spacing=int(data["line_spacing"]) + int(data["font_size"]),
-        #     # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
-        #     fill=(0),
-        #     left_margin=int(data["left_margin"]),
-        #     top_margin=int(data["top_margin"]),
-        #     right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
-        #     bottom_margin=int(data["bottom_margin"]),
-        #     word_spacing=int(data["word_spacing"]),
-        #     line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
-        #     font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
-        #     word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
-        #     end_chars="，。",  # 防止特定字符因排版算法的自动换行而出现在行首
-        #     perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
-        #     perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
-        #     perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
-        # )
-        images = handwrite(text_to_generate, template)
+        template = Template(
+            background=background_image,
+            font=font,
+            line_spacing=int(data["line_spacing"]) + int(data["font_size"]),
+            # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
+            fill=(0),
+            left_margin=int(data["left_margin"]),
+            top_margin=int(data["top_margin"]),
+            right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
+            bottom_margin=int(data["bottom_margin"]),
+            word_spacing=int(data["word_spacing"]),
+            line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
+            font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
+            word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
+            end_chars="，。",  # 防止特定字符因排版算法的自动换行而出现在行首
+            perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
+            perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
+            perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
+        )
+        # images = handwrite(text_to_generate, template)
         logger.info("images generated successfully")
 
         # 创建一个BytesIO对象，用于保存.zip文件的内容
