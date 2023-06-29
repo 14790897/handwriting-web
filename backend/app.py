@@ -66,6 +66,8 @@ def generate_handwriting():
         return jsonify({"status": "error", "message": "You haven't login." }), 500
     try:
         data = request.form
+        logger.info('已经进入try')
+        logger.info("request.form:", data)
         required_fields = [
             "text",
             "font_size",
@@ -86,6 +88,7 @@ def generate_handwriting():
             "background_image",
             "font_path",
         ]
+        logger.info('已经进入required_fields验证')
         for field in required_fields:
             if field not in data:
                 return (
@@ -97,10 +100,6 @@ def generate_handwriting():
                     ),
                     400,
                 )
-        logger.info("request.form:", data)
-        data = request.form
-        print("request.form", data)
-        print("request.files", request.files)
         text_to_generate = data["text"]
         if data["preview"] == "true":
             # 截短字符，只生成一面
