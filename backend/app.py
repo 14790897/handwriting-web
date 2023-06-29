@@ -97,7 +97,7 @@ def generate_handwriting():
                     ),
                     400,
                 )
-
+        logger.info("request.form:", data)
         data = request.form
         print("request.form", data)
         print("request.files", request.files)
@@ -130,7 +130,7 @@ def generate_handwriting():
             perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
             perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
         )
-        # images = handwrite(text_to_generate, template)
+        images = handwrite(text_to_generate, template)
         logger.info("images generated successfully")
 
         # 创建一个BytesIO对象，用于保存.zip文件的内容
