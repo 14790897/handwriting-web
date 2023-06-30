@@ -125,6 +125,7 @@ export default {
     login_delete_message(newVal) {
       if (newVal) {
         this.errorMessage = '';
+        console.log('已进入watch');
       }
     }
   },
@@ -201,7 +202,7 @@ export default {
             let errorData = JSON.parse(e.target.result);
             this.errorMessage = errorData.message;
             console.log('错误信息：',errorData.message);
-          };
+          };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
           reader.readAsText(error.response.data); // 修改这里
           console.log(error.response.data);
           this.errorMessage = error.response.data.message;
