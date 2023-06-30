@@ -206,10 +206,10 @@ def login():
     if result and result[0] == password:
         session["username"] = username
         session.permanent = True
-        logger.info("Login success for user: {username}")
+        logger.info(f"Login success for user: {username}")
         return {"status": "success"}, 200
     else:
-        logger.error("Login failed for user: {username}")
+        logger.error(f"Login failed for user: {username}")
         return {
             "status": "failed",
             "message": "Login failed. Check your username and password.",

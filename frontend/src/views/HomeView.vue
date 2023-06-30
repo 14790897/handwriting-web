@@ -1,9 +1,12 @@
 <template>
   <div class="container">
     <!-- 错误消息 -->
-    <div v-if="errorMessage && !login_delete_message" class="alert alert-danger" role="alert">
+    <div v-if="errorMessage" class="alert alert-danger" role="alert">
       {{ errorMessage }}
     </div>
+    <!-- <div v-if="login_require_message" class="alert alert-danger" role="alert">
+      {{ login_require_message }}
+    </div> -->
     <div v-if="message" class="alert alert-info" role="alert">
       {{ message }}
     </div>
@@ -81,6 +84,13 @@ import axios from "axios";
 
 
 export default {
+  props: {
+    login_delete_message: {
+      type: Boolean,
+      default: false
+    }
+  },
+
   data() {
     return {
       text: "",
@@ -108,8 +118,15 @@ export default {
       wordSpacing: 0, // 默认值，可以根据实际需要更改
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
-      login_delete_message: ['login_delete_message'],
+
     };
+  },
+  watch: {
+    login_delete_message(newVal) {
+      if (newVal) {
+        this.errorMessage = '';
+      }
+    }
   },
   methods: {
     async generateHandwriting() {
@@ -175,21 +192,20 @@ export default {
           this.errorMessage = '意外的响应类型';
         }
       }).catch(error => {
-        console.error(error);
+        // console.error(error);
         if (error.response) {
-          if (error.response.headers['content-type'] === 'application/json') {
-            // 如果服务器返回了一个JSON错误消息
-            let reader = new FileReader();
-            reader.onload = function (e) {
-              let errorData = JSON.parse(e.target.result);
-              this.errorMessage = errorData.message;
-            };
-            console.log(error.response.data);
-            this.errorMessage = error.response.data.message;
-          } else {
-            // 如果服务器返回了一个非JSON错误消息
-            this.errorMessage = `服务器错误：${error.response.status}`;
-          }
+          // console.log('已进入报错处理程序')
+          // 如果服务器返回了一个JSON错误消息
+          let reader = new FileReader();
+          reader.onload = (e) => {
+            let errorData = JSON.parse(e.target.result);
+            this.errorMessage = errorData.message;
+            console.log('错误信息：',errorData.message);
+          };
+          reader.readAsText(error.response.data); // 修改这里
+          console.log(error.response.data);
+          this.errorMessage = error.response.data.message;
+        
         } else {
           // 如果没有从服务器收到响应
           this.errorMessage = '网络错误，请稍后再试';
