@@ -14,7 +14,7 @@ app.use(store);
 app.use(router);
 app.use(i18n);
 
-app.config.globalProperties.$http = axios;
+// app.config.globalProperties.$http = axios;
 const http = axios.create({
   baseURL: "https://testhand.liuweiqing.top",
 });

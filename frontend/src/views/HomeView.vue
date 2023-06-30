@@ -80,9 +80,6 @@
 </template>
 
 <script>
-import axios from "axios";
-
-
 export default {
   props: {
     login_delete_message: {
@@ -158,8 +155,8 @@ export default {
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
       }
-      axios.post(
-        'https://testhand.liuweiqing.top/api/generate_handwriting',
+      this.$http.post(
+        '/api/generate_handwriting',
         formData,
         {
           headers: {
