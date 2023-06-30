@@ -45,7 +45,7 @@ logger.addHandler(ch)
 logger.addHandler(fh)
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app, origins='*', supports_credentials=True)
 
 # 设置Flask app的logger级别
 app.logger.setLevel(logging.DEBUG)

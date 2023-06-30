@@ -166,6 +166,7 @@ export default {
             "Content-Type": "multipart/form-data",
           },
           responseType: 'blob', // 这里设置为'blob'
+          withCredentials: true, //在跨域的时候，需要添加这句话，才能发送cookie 6.30
         }
       ).then((response) => {
         if (response.headers['content-type'] === 'image/png') {
