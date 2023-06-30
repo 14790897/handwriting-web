@@ -16,6 +16,7 @@ import ast, io
 import logging
 from flask_cors import CORS
 from datetime import timedelta
+from flask_session import Session  # 导入扩展
 
 
 # 创建一个logger
@@ -56,6 +57,8 @@ app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "None"
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 app.permanent_session_lifetime = timedelta(minutes=5000000)
+app.config['SESSION_TYPE'] = 'filesystem'  # 设置session存储方式为文件
+Session(app)  # 初始化扩展，传入应用程序实例
 
 
 
