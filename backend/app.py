@@ -68,10 +68,11 @@ def generate_handwriting():
     if "username" not in session:
         return jsonify({"status": "error", "message": "You haven't login." }), 500
     try:
-        logger.info('已经进入try')
+        # 先获取 form 数据
         data = request.form
         logger.info("request.form:", data)
-        required_fields = [
+
+        required_form_fields = [
             "text",
             "font_size",
             "line_spacing",
@@ -88,11 +89,9 @@ def generate_handwriting():
             "perturb_y_sigma",
             "perturb_theta_sigma",
             "preview",
-            "background_image",
-            "font_path",
         ]
-        logger.info('已经进入required_fields验证')
-        for field in required_fields:
+
+        for field in required_form_fields:
             if field not in data:
                 return (
                     jsonify(
@@ -103,6 +102,25 @@ def generate_handwriting():
                     ),
                     400,
                 )
+
+        # 然后获取文件数据
+        files = request.files
+        logger.info("request.files:", files)
+
+        required_file_fields = ["background_image", "font_path"]
+
+        for field in required_file_fields:
+            if field not in files:
+                return (
+                    jsonify(
+                        {
+                            "status": "fail",
+                            "message": f"Missing required file field: {field}",
+                        }
+                    ),
+                    400,
+                )
+
         text_to_generate = data["text"]
         if data["preview"] == "true":
             # 截短字符，只生成一面
