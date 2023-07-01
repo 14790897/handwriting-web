@@ -69,7 +69,7 @@
       <button @click="export_file">导出</button>
       <button @click="savePreset">保存</button>
       <button @click="loadPreset">载入预设</button>
-      <button @click="generateHandwriting">生成手写图片</button>
+      <button @click="generateHandwriting(preview = false)">生成手写图片</button>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -156,7 +156,7 @@ export default {
       formData.append("perturb_y_sigma", this.perturbYSigma);
       formData.append("perturb_theta_sigma", this.perturbThetaSigma);
       formData.append("word_spacing", this.wordSpacing);
-      formData.append("preview", this.preview);
+      formData.append("preview", this.preview.toString());
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);

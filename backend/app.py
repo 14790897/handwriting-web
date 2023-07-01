@@ -171,7 +171,7 @@ def generate_handwriting():
             img_io = io.BytesIO()
             im.save(img_io, "PNG")
             img_io.seek(0)
-            if data["preview"]:
+            if data["preview"]=='true':
                 # mysql_operation(img_io)
                 logger.info('预览图片已返回')
                 return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
@@ -180,7 +180,7 @@ def generate_handwriting():
                 zipf.writestr(f"{i}.png", img_io.getvalue())
     # 将BytesIO对象的位置重置到开始
     zip_io.seek(0)
-    if not data["preview"]:
+    if not data["preview"]=='true':
         # 返回.zip文件
         # mysql_operation(zip_io)
         logger.info('zip文件已返回')
