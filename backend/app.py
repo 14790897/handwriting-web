@@ -87,6 +87,8 @@ def generate_handwriting():
         "perturb_y_sigma",
         "perturb_theta_sigma",
         "preview",
+        "height",
+        "width",
     ]
 
     for field in required_form_fields:
@@ -105,8 +107,6 @@ def generate_handwriting():
 
     # 然后获取文件数据
     files = request.files
-    logger.info("request.files:", files)
-
     required_file_fields = ["background_image", "font_path"]
 
     for field in required_file_fields:
@@ -151,6 +151,8 @@ def generate_handwriting():
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
+        height=int(data["height"]),
+        width=int(data["width"]),
     )
     images = handwrite(text_to_generate, template)
     logger.info("images generated successfully")
