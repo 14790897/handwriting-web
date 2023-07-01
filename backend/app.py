@@ -62,14 +62,16 @@ Session(app)  # 初始化扩展，传入应用程序实例
 
 
 # 创建一个新的白色图片，并添加间隔的线条作为背景
-def create_notebook_image(width, height, line_spacing):
-    img = Image.new('RGB', (width, height), color = 'white')
-    d = ImageDraw.Draw(img)
-    # 画出间隔的横线
-    for i in range(height // line_spacing):
-        line_height = (i+1) * line_spacing
-        d.line((0, line_height, width, line_height), fill='black')
-    return img
+def create_notebook_image(width, height, line_spacing, top_margin, bottom_margin, left_margin, right_margin):
+    image = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(image)
+    y = top_margin  # 开始的y坐标设为顶部边距
+    while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
+        draw.line((left_margin, y, width - right_margin, y), fill="black")
+        y += line_spacing  # 每次循环，y坐标增加行间距
+    return image
+
+
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 def generate_handwriting():
@@ -137,10 +139,16 @@ def generate_handwriting():
     
      # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if 'width' in data and 'height' in data:
-        line_spacing = int(data.get('line_spacing', 30))  # 线间距，如果没有提供默认为30
+        line_spacing = int(data.get('line_spacing', 30))
+        top_margin = int(data.get('top_margin', 0))
+        bottom_margin = int(data.get('bottom_margin', 0))
+        left_margin = int(data.get('left_margin', 0))
+        right_margin = int(data.get('right_margin', 0))
         width = int(data['width'])
         height = int(data['height'])
-        background_image = create_notebook_image(width, height, line_spacing)
+        background_image = create_notebook_image(width, height, line_spacing, top_margin, bottom_margin, left_margin, right_margin)
+
+
     else:
         # 否则使用用户上传的背景图像
         background_image = request.files.get('background_image')
