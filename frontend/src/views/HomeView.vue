@@ -65,7 +65,7 @@
       </div>
     </div>
     <div class="buttons">
-      <button @click="preview">预览</button>
+      <button @click="generateHandwriting(preview=true)">预览</button>
       <button @click="export_file">导出</button>
       <button @click="savePreset">保存</button>
       <button @click="loadPreset">载入预设</button>
@@ -127,8 +127,8 @@ export default {
     }
   },
   methods: {
-    async generateHandwriting() {
-
+    async generateHandwriting(preview=false) {
+      this.preview = preview;
       const formData = new FormData();
       formData.append("text", this.text);
       formData.append("font_path", this.fontPath);
