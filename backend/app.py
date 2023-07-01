@@ -187,6 +187,7 @@ def generate_handwriting():
         return send_file(
             zip_io,
             # attachment_filename="images.zip",
+            download_name="images.zip",
             mimetype="application/zip",
             as_attachment=True,
         )
