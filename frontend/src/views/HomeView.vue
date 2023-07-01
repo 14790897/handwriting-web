@@ -4,11 +4,11 @@
     <div v-if="errorMessage" class="alert alert-danger" role="alert">
       {{ errorMessage }}
     </div>
-    <!-- <div v-if="login_require_message" class="alert alert-danger" role="alert">
-      {{ login_require_message }}
-    </div> -->
     <div v-if="message" class="alert alert-info" role="alert">
       {{ message }}
+    </div>
+    <div v-if="uploadMessage" class="alert alert-info" role="alert">
+      {{ uploadMessage }}
     </div>
 
     <div id="form">
@@ -65,7 +65,7 @@
       </div>
     </div>
     <div class="buttons">
-      <button @click="generateHandwriting(preview=true)">预览</button>
+      <button @click="generateHandwriting(preview = true)">预览</button>
       <button @click="export_file">导出</button>
       <button @click="savePreset">保存</button>
       <button @click="loadPreset">载入预设</button>
@@ -91,7 +91,7 @@ export default {
   data() {
     return {
       text: "",
-      fontPath: null,
+      fontFile: null,
       backgroundImage: null,
       font: null,
       fontSize: 24,
@@ -115,23 +115,29 @@ export default {
       wordSpacing: 0, // 默认值，可以根据实际需要更改
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
-
+      uploadMessage: '',  // 上传提示消息
     };
   },
   watch: {
     login_delete_message(newVal) {
       if (newVal) {
         this.errorMessage = '';
+        // this.message = '';
+        // this.uploadMessage = '';
         console.log('已进入watch');
       }
     }
   },
   methods: {
-    async generateHandwriting(preview=false) {
+    async generateHandwriting(preview = false) {
       this.preview = preview;
+      // 设置提示信息为“内容正在上传…”
+      this.uploadMessage = '内容正在上传…';//显示上传提示信息时，隐藏其他提示信息
+      this.message = '';
+      this.uploadMessage = '';
       const formData = new FormData();
       formData.append("text", this.text);
-      formData.append("font_path", this.fontPath);
+      formData.append("font_file", this.fontFile);
       formData.append("background_image", this.backgroundImage);
       formData.append("font_size", this.fontSize);
       formData.append("line_spacing", this.lineSpacing);
@@ -165,6 +171,7 @@ export default {
           responseType: 'blob', // 这里设置为'blob'
           withCredentials: true, //在跨域的时候，需要添加这句话，才能发送cookie 6.30
         }
+
       ).then((response) => {
         if (response.headers['content-type'] === 'image/png') {
           // 处理预览图像
@@ -172,7 +179,9 @@ export default {
           // 将预览图像的 URL 保存到数据属性中
           this.previewImage = blobUrl;
           // 设置提示信息
-          this.message = '预览图像已加载。';
+          this.message = '预览图像已加载。';//显示message时，隐藏其他提示信息
+          this.uploadMessage = '';
+          this.errorMessage = '';
 
         } else if (response.headers['content-type'] === 'application/zip') {
           // 处理.zip文件
@@ -184,11 +193,15 @@ export default {
           link.click();
           // 设置提示信息
           this.message = '文件已下载。';
+          this.uploadMessage = '';
+          this.errorMessage = '';
 
         } else {
           console.error('Unexpected response type');
           // 设置错误消息
           this.errorMessage = '意外的响应类型';
+          this.message = '';
+          this.uploadMessage = '';
         }
       }).catch(error => {
         // console.error(error);
@@ -199,15 +212,20 @@ export default {
           reader.onload = (e) => {
             let errorData = JSON.parse(e.target.result);
             this.errorMessage = errorData.message;
-            console.log('错误信息：',errorData.message);
+            this.message = '';
+            this.uploadMessage = '';
+            console.log('错误信息：', errorData.message);
+
           };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
           reader.readAsText(error.response.data); // 修改这里
           console.log(error.response.data);
-          this.errorMessage = error.response.data.message;
-        
+          // this.errorMessage = error.response.data.message;
+
         } else {
           // 如果没有从服务器收到响应
           this.errorMessage = '网络错误，请稍后再试';
+          this.message = '';
+          this.uploadMessage = '';
         }
       });
     },
@@ -230,7 +248,7 @@ export default {
         marginLeft: this.marginLeft,
         marginRight: this.marginRight,
         backgroundImage: this.backgroundImage,
-        font_path: this.fontPath,
+        fontFile: this.fontFile,
         // ...其他你希望保存的参数...
       };
       localStorage.setItem('handwriting-settings', JSON.stringify(settings));
@@ -251,7 +269,7 @@ export default {
         this.marginLeft = settings.marginLeft;
         this.marginRight = settings.marginRight;
         this.backgroundImage = settings.backgroundImage;
-        this.font_path = settings.font_path;
+        this.fontFile = settings.fontFile;
         // ...其他你希望载入的参数...
       } else {
         alert('没有找到保存的预设');
@@ -261,7 +279,7 @@ export default {
       this.backgroundImage = event.target.files[0];
     },
     onFontChange(event) {
-      this.fontPath = event.target.files[0];
+      this.fontFile = event.target.files[0];
     },
   },
 

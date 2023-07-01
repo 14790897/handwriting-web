@@ -110,7 +110,7 @@ def generate_handwriting():
 
     # 然后获取文件数据
     files = request.files
-    required_file_fields = ["background_image", "font_path"]
+    required_file_fields = ["background_image", "font_file"]
 
     for field in required_file_fields:
         if field not in files:
@@ -133,7 +133,7 @@ def generate_handwriting():
         text_to_generate = text_to_generate[:preview_length]
     background_image = request.files["background_image"].read()
     background_image = Image.open(io.BytesIO(background_image))
-    font = request.files["font_path"].read()
+    font = request.files["font_file"].read()
     font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
 
     template = Template(
