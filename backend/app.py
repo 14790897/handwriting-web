@@ -104,6 +104,9 @@ def generate_handwriting():
             )
         else:
             logger.info(f"{field}: {data[field]}")  # 打印具体的 form 字段值
+            #如果存在height和width，就创建一个新的背景图     todo  
+            #height=int(data["height"]),
+            #width=int(data["width"]),
 
     # 然后获取文件数据
     files = request.files
@@ -151,8 +154,7 @@ def generate_handwriting():
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
-        height=int(data["height"]),
-        width=int(data["width"]),
+
     )
     images = handwrite(text_to_generate, template)
     logger.info("images generated successfully")
