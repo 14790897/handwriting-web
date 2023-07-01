@@ -95,7 +95,7 @@ export default {
       backgroundImage: null,
       font: null,
       fontSize: 24,
-      lineSpacing: 100,
+      lineSpacing: 50,
       fill: "(0, 0, 0, 255)",
       width: 600,
       height: 800,
