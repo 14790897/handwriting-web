@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file, session, current_app
 from handright import Template, handwrite
 from PIL import Image, ImageFont
 from threading import Thread
-from PIL import Image, ImageFont, ImageQt
+from PIL import Image, ImageFont, ImageQt, ImageDraw
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -61,6 +61,15 @@ app.config['SESSION_TYPE'] = 'filesystem'  # 设置session存储方式为文件
 Session(app)  # 初始化扩展，传入应用程序实例
 
 
+# 创建一个新的白色图片，并添加间隔的线条作为背景
+def create_notebook_image(width, height, line_spacing):
+    img = Image.new('RGB', (width, height), color = 'white')
+    d = ImageDraw.Draw(img)
+    # 画出间隔的横线
+    for i in range(height // line_spacing):
+        line_height = (i+1) * line_spacing
+        d.line((0, line_height, width, line_height), fill='black')
+    return img
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 def generate_handwriting():
@@ -87,9 +96,8 @@ def generate_handwriting():
         "perturb_y_sigma",
         "perturb_theta_sigma",
         "preview",
-        "height",
-        "width",
     ]
+          #"height","width",
 
     for field in required_form_fields:
         if field not in data:
@@ -110,7 +118,7 @@ def generate_handwriting():
 
     # 然后获取文件数据
     files = request.files
-    required_file_fields = ["background_image", "font_file"]
+    required_file_fields = [ "font_file"]
 
     for field in required_file_fields:
         if field not in files:
@@ -126,13 +134,34 @@ def generate_handwriting():
         else:
             # 文件字段无法直接打印具体值，只能确认其存在
             logger.info(f"{field} exists in the files")
+    
+     # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
+    if 'width' in data and 'height' in data:
+        line_spacing = int(data.get('line_spacing', 30))  # 线间距，如果没有提供默认为30
+        width = int(data['width'])
+        height = int(data['height'])
+        background_image = create_notebook_image(width, height, line_spacing)
+    else:
+        # 否则使用用户上传的背景图像
+        background_image = request.files.get('background_image')
+        if background_image is None:
+            return (
+                jsonify(
+                    {
+                        "status": "fail",
+                        "message": "Missing required field: background_image",
+                    }
+                ),
+                400,
+            )
+        background_image = Image.open(io.BytesIO(background_image.read()))
+        
     text_to_generate = data["text"]
     if data["preview"] == "true":
         # 截短字符，只生成一面
         preview_length = 400  # 可以调整为所需的预览长度
         text_to_generate = text_to_generate[:preview_length]
-    background_image = request.files["background_image"].read()
-    background_image = Image.open(io.BytesIO(background_image))
+
     font = request.files["font_file"].read()
     font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
 
@@ -154,7 +183,6 @@ def generate_handwriting():
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
-
     )
     images = handwrite(text_to_generate, template)
     logger.info("images generated successfully")

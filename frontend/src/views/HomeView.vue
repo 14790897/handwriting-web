@@ -133,8 +133,9 @@ export default {
       this.preview = preview;
       // 设置提示信息为“内容正在上传…”
       this.uploadMessage = '内容正在上传…';//显示上传提示信息时，隐藏其他提示信息
+      console.log('内容正在上传…');
       this.message = '';
-      this.uploadMessage = '';
+      this.errorMessage = '';
       const formData = new FormData();
       formData.append("text", this.text);
       formData.append("font_file", this.fontFile);
