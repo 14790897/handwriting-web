@@ -14,7 +14,10 @@
     <div id="form">
       <div>
         <label>Text:
-          <textarea v-model="text" placeholder="请输入要转换的文字"></textarea>
+          <textarea id="textArea" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
+        </label>
+        <label>Or upload a .docx file:
+          <input type="file" id="fileInput" accept=".docx" />
         </label>
 
         <label>Font File:
@@ -80,6 +83,7 @@
 </template>
 
 <script>
+import mammoth from 'mammoth';
 export default {
   props: {
     login_delete_message: {
@@ -116,6 +120,7 @@ export default {
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
+      text_handwriting: '',
     };
   },
   watch: {
@@ -229,6 +234,20 @@ export default {
           this.uploadMessage = '';
         }
       });
+    },
+    onFileChange(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          mammoth.extractRawText({ arrayBuffer: e.target.result })
+            .then((output) => {
+              this.text = output.value;
+            })
+            .done();
+        };
+        reader.readAsArrayBuffer(file);
+      }
     },
     export_file() {
       // 实现你的导出逻辑...
