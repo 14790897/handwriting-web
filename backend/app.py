@@ -70,8 +70,6 @@ def generate_handwriting():
     # try:
     # 先获取 form 数据
     data = request.form
-    logger.info("request.form:", data)
-
     required_form_fields = [
         "text",
         "font_size",
@@ -102,6 +100,8 @@ def generate_handwriting():
                 ),
                 400,
             )
+        else:
+            logger.info(f"{field}: {data[field]}")  # 打印具体的 form 字段值
 
     # 然后获取文件数据
     files = request.files
@@ -120,7 +120,9 @@ def generate_handwriting():
                 ),
                 400,
             )
-
+        else:
+            # 文件字段无法直接打印具体值，只能确认其存在
+            logger.info(f"{field} exists in the files")
     text_to_generate = data["text"]
     if data["preview"] == "true":
         # 截短字符，只生成一面
