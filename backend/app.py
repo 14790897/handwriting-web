@@ -183,7 +183,7 @@ def generate_handwriting():
                 as_attachment=True,
             )
     except Exception as e:
-        logger.info("An error occurred during the request:", e)
+        logger.info("An error occurred during the request: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def mysql_operation(image_data):
