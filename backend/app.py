@@ -67,124 +67,124 @@ def generate_handwriting():
     logger.info('已经进入generate_handwriting')
     if "username" not in session:
         return jsonify({"status": "error", "message": "You haven't login." }), 500
-    try:
-        # 先获取 form 数据
-        data = request.form
-        logger.info("request.form:", data)
+    # try:
+    # 先获取 form 数据
+    data = request.form
+    logger.info("request.form:", data)
 
-        required_form_fields = [
-            "text",
-            "font_size",
-            "line_spacing",
-            "fill",
-            "left_margin",
-            "top_margin",
-            "right_margin",
-            "bottom_margin",
-            "word_spacing",
-            "line_spacing_sigma",
-            "font_size_sigma",
-            "word_spacing_sigma",
-            "perturb_x_sigma",
-            "perturb_y_sigma",
-            "perturb_theta_sigma",
-            "preview",
-        ]
+    required_form_fields = [
+        "text",
+        "font_size",
+        "line_spacing",
+        "fill",
+        "left_margin",
+        "top_margin",
+        "right_margin",
+        "bottom_margin",
+        "word_spacing",
+        "line_spacing_sigma",
+        "font_size_sigma",
+        "word_spacing_sigma",
+        "perturb_x_sigma",
+        "perturb_y_sigma",
+        "perturb_theta_sigma",
+        "preview",
+    ]
 
-        for field in required_form_fields:
-            if field not in data:
-                return (
-                    jsonify(
-                        {
-                            "status": "fail",
-                            "message": f"Missing required field: {field}",
-                        }
-                    ),
-                    400,
-                )
-
-        # 然后获取文件数据
-        files = request.files
-        logger.info("request.files:", files)
-
-        required_file_fields = ["background_image", "font_path"]
-
-        for field in required_file_fields:
-            if field not in files:
-                return (
-                    jsonify(
-                        {
-                            "status": "fail",
-                            "message": f"Missing required file field: {field}",
-                        }
-                    ),
-                    400,
-                )
-
-        text_to_generate = data["text"]
-        if data["preview"] == "true":
-            # 截短字符，只生成一面
-            preview_length = 400  # 可以调整为所需的预览长度
-            text_to_generate = text_to_generate[:preview_length]
-        background_image = request.files["background_image"].read()
-        background_image = Image.open(io.BytesIO(background_image))
-        font = request.files["font_path"].read()
-        font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
-
-        template = Template(
-            background=background_image,
-            font=font,
-            line_spacing=int(data["line_spacing"]) + int(data["font_size"]),
-            # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
-            fill=(0),
-            left_margin=int(data["left_margin"]),
-            top_margin=int(data["top_margin"]),
-            right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
-            bottom_margin=int(data["bottom_margin"]),
-            word_spacing=int(data["word_spacing"]),
-            line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
-            font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
-            word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
-            end_chars="，。",  # 防止特定字符因排版算法的自动换行而出现在行首
-            perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
-            perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
-            perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
-        )
-        images = handwrite(text_to_generate, template)
-        logger.info("images generated successfully")
-
-        # 创建一个BytesIO对象，用于保存.zip文件的内容
-        zip_io = io.BytesIO()
-        with zipfile.ZipFile(zip_io, "w") as zipf:
-            # 遍历生成的所有图片
-            for i, im in enumerate(images):
-                # 使用os模块来连接路径和文件名
-                # image_path = os.path.join(output_path, f"{i}.png")
-                # im.save(image_path)
-                # 将每张图片保存为一个BytesIO对象
-                img_io = io.BytesIO()
-                im.save(img_io, "PNG")
-                img_io.seek(0)
-                if data["preview"]:
-                    # mysql_operation(img_io)
-                    return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
-                else:
-                    # 将图片BytesIO对象添加到.zip文件中
-                    zipf.writestr(f"{i}.png", img_io.getvalue())
-        # 将BytesIO对象的位置重置到开始
-        zip_io.seek(0)
-        if not data["preview"]:
-            # 返回.zip文件
-            # mysql_operation(zip_io)
-            return send_file(
-                zip_io,
-                attachment_filename="images.zip",
-                mimetype="application/zip",
-                as_attachment=True,
+    for field in required_form_fields:
+        if field not in data:
+            return (
+                jsonify(
+                    {
+                        "status": "fail",
+                        "message": f"Missing required field: {field}",
+                    }
+                ),
+                400,
             )
-    except Exception as e:
-        logger.info("An error occurred during the request: %s", e)
-        return jsonify({"status": "error", "message": str(e)}), 500
+
+    # 然后获取文件数据
+    files = request.files
+    logger.info("request.files:", files)
+
+    required_file_fields = ["background_image", "font_path"]
+
+    for field in required_file_fields:
+        if field not in files:
+            return (
+                jsonify(
+                    {
+                        "status": "fail",
+                        "message": f"Missing required file field: {field}",
+                    }
+                ),
+                400,
+            )
+
+    text_to_generate = data["text"]
+    if data["preview"] == "true":
+        # 截短字符，只生成一面
+        preview_length = 400  # 可以调整为所需的预览长度
+        text_to_generate = text_to_generate[:preview_length]
+    background_image = request.files["background_image"].read()
+    background_image = Image.open(io.BytesIO(background_image))
+    font = request.files["font_path"].read()
+    font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
+
+    template = Template(
+        background=background_image,
+        font=font,
+        line_spacing=int(data["line_spacing"]) + int(data["font_size"]),
+        # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
+        fill=(0),
+        left_margin=int(data["left_margin"]),
+        top_margin=int(data["top_margin"]),
+        right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
+        bottom_margin=int(data["bottom_margin"]),
+        word_spacing=int(data["word_spacing"]),
+        line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
+        font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
+        word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
+        end_chars="，。",  # 防止特定字符因排版算法的自动换行而出现在行首
+        perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
+        perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
+        perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
+    )
+    images = handwrite(text_to_generate, template)
+    logger.info("images generated successfully")
+
+    # 创建一个BytesIO对象，用于保存.zip文件的内容
+    zip_io = io.BytesIO()
+    with zipfile.ZipFile(zip_io, "w") as zipf:
+        # 遍历生成的所有图片
+        for i, im in enumerate(images):
+            # 使用os模块来连接路径和文件名
+            # image_path = os.path.join(output_path, f"{i}.png")
+            # im.save(image_path)
+            # 将每张图片保存为一个BytesIO对象
+            img_io = io.BytesIO()
+            im.save(img_io, "PNG")
+            img_io.seek(0)
+            if data["preview"]:
+                # mysql_operation(img_io)
+                return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
+            else:
+                # 将图片BytesIO对象添加到.zip文件中
+                zipf.writestr(f"{i}.png", img_io.getvalue())
+    # 将BytesIO对象的位置重置到开始
+    zip_io.seek(0)
+    if not data["preview"]:
+        # 返回.zip文件
+        # mysql_operation(zip_io)
+        return send_file(
+            zip_io,
+            attachment_filename="images.zip",
+            mimetype="application/zip",
+            as_attachment=True,
+        )
+    # except Exception as e:
+    #     logger.info("An error occurred during the request: %s", e)
+    #     return jsonify({"status": "error", "message": str(e)}), 500
 
 def mysql_operation(image_data):
     cursor = current_app.cnx.cursor()
