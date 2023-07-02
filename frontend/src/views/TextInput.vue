@@ -35,7 +35,7 @@ export default {
                 }
             })
                 .then(response => {
-                    this.responseData = JSON.stringify(response.data, null, 2);  // format JSON data
+                    this.text_handwriting = response.data.text;
                     this.isLoading = false;
                 })
                 .catch(error => {
