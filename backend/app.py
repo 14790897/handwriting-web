@@ -250,6 +250,7 @@ def generate_handwriting():
     # except Exception as e:
     #     logger.info("An error occurred during the request: %s", e)
     #     return jsonify({"status": "error", "message": str(e)}), 500
+    
 @app.route("/api/textfileprocess", methods=["POST"])
 def textfileprocess():
     if 'file' not in request.files:
@@ -405,7 +406,10 @@ if __name__ == "__main__":
     output_path = os.path.join(current_path, 'output')
     # 如果子文件夹不存在，就创建它
     if not os.path.exists(output_path):
-        os.mkdir(output_path)
+        os.makedirs(output_path)
+    directory = './textfileprocess'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     app.run(debug=True, host="0.0.0.0", port=5000)
     # good luck 6/16/2023
 '''    
