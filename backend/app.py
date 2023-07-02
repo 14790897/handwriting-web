@@ -17,6 +17,11 @@ import logging
 from flask_cors import CORS
 from datetime import timedelta
 from flask_session import Session  # 导入扩展
+from werkzeug.utils import secure_filename
+#文件模块
+from docx import Document
+import PyPDF2
+
 
 
 # 创建一个logger
@@ -72,6 +77,20 @@ def create_notebook_image(width, height, line_spacing, top_margin, bottom_margin
     return image
 
 
+def read_docx(file_path):
+    document = Document(file_path)
+    text = ' '.join([paragraph.text for paragraph in document.paragraphs])
+    return text
+
+def read_pdf(file_path):
+    pdf_file_obj = open(file_path, 'rb')
+    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
+    text = ''
+    for page_num in range(pdf_reader.numPages):
+        page_obj = pdf_reader.getPage(page_num)
+        text += page_obj.extractText()
+    pdf_file_obj.close()
+    return text
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 def generate_handwriting():
@@ -231,7 +250,35 @@ def generate_handwriting():
     # except Exception as e:
     #     logger.info("An error occurred during the request: %s", e)
     #     return jsonify({"status": "error", "message": str(e)}), 500
+@app.route("/api/textfileprocess", methods=["POST"])
+def textfileprocess():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
 
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    if file and (file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.doc') or file.filename.endswith('.txt') or file.filename.endswith('.rtf')):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join('./textfileprocess', filename)  # 你的临时目录
+        file.save(filepath)
+
+        if file.filename.endswith('.docx'):
+            text = read_docx(filepath)        
+        elif file.filename.endswith('.pdf'):
+            text = read_pdf(filepath)
+        elif file.filename.endswith('.txt') or file.filename.endswith('.rtf'):
+            with open(filepath, 'r') as f:
+                text = f.read()
+
+        # 删除临时文件
+        os.remove(filepath)
+
+        return jsonify({'text': text})
+
+    return jsonify({'error': 'Invalid file type'}), 400
+    
 def mysql_operation(image_data):
     cursor = current_app.cnx.cursor()
     username = session["username"]

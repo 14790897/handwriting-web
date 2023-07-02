@@ -13,14 +13,7 @@
 
     <div id="form">
       <div>
-        <label>Text:
-          <textarea id="textArea" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
-        </label>
-        <label id="'text_file_select'">
-          <input type="file" @change="uploadFile" id="fileInput" accept=".docx" />
-          <div v-if="isLoading" class="loader">Loading...</div>
-        </label>
-        
+        <TextInput />
 
         <label>Font File:
           <input type="file" @change="onFontChange" />
@@ -86,12 +79,16 @@
 
 <script>
 // import mammoth from 'mammoth';
+import TextInput from './TextInput.vue';
 export default {
   props: {
     login_delete_message: {
       type: Boolean,
       default: false
     }
+  },
+  components: {
+    TextInput
   },
 
   data() {
@@ -122,8 +119,7 @@ export default {
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
-      text_handwriting: '',
-      isLoading: false,
+
     };
   },
   watch: {
@@ -238,26 +234,7 @@ export default {
         }
       });
     },
-    uploadFile(e) {
-      let file = e.target.files[0];
-      let formData = new FormData();
-
-      formData.append('file', file);  // 'file' 是你在服务器端获取文件数据时的 key
-      this.isLoading = true;
-      this.$http.post(formData, {  // 替换成你的服务器 URL
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-      .then(response => {
-        this.responseData = JSON.stringify(response.data, null, 2);  // format JSON data
-        this.isLoading = false;
-      })
-      .catch(error => {
-        console.error(error);
-        this.isLoading = false;
-      });
-    },
+    
     export_file() {
       // 实现你的导出逻辑...
     },
@@ -380,19 +357,6 @@ export default {
 .preview img {
   max-width: 100%;
   height: auto;
-}
-.loader {
-  border: 16px solid #f3f3f3; /* Light grey */
-  border-top: 16px solid #3498db; /* Blue */
-  border-radius: 50%;
-  width: 120px;
-  height: 120px;
-  animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 800px) {
