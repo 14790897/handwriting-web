@@ -14,22 +14,24 @@
     </div>
 
     <div id="form">
-      <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
+      <div class="container_file">
+        <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
 
-      <label>Font File:</label>
-      <button @click="triggerFontFileInput">Choose File</button>
-      <span>{{ selectedFontFileName }}</span>
-      <label>
-        <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
-      </label>
+        <label>Font File:</label>
+        <button @click="triggerFontFileInput">Choose File</button>
+        <span>{{ selectedFontFileName }}</span>
+        <label>
+          <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
+        </label>
 
-      <label>Background Image File:</label>
-      <button @click="triggerImageFileInput"  :disabled="isDimensionSpecified"
-          :title="isDimensionSpecified ? 'Width and height are already specified' : ''">Choose File</button>
-      <span>{{ selectedImageFileName }}</span>
-      <label>
-        <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
-      </label>
+        <label>Background Image File:</label>
+        <button @click="triggerImageFileInput"  :disabled="isDimensionSpecified"
+            :title="isDimensionSpecified ? 'Width and height are already specified' : ''">Choose File</button>
+        <span>{{ selectedImageFileName }}</span>
+        <label>
+          <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
+        </label>
+      </div>
 
       <label>Width:
         <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
@@ -500,6 +502,41 @@ input[type="file"]:hover {
   /* 添加阴影效果 */
 }
 
+/* >>> .TextInput{ */
+.container_file {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  margin: auto;
+}
+
+.container_file label {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.container_file button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: white;
+  background-color: #4285f4;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.container_file button:disabled {
+  background-color: grey;
+}
+
+.container_file span {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #444;
+}
+/* } */
 
 @media (max-width: 800px) {
   .container {
