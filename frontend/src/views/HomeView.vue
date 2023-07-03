@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <!-- 错误消息 -->
+    <!-- 错误消息以及提示信息 -->
     <div v-if="errorMessage" class="alert alert-danger" role="alert">
       {{ errorMessage }}
     </div>
@@ -12,61 +12,62 @@
     </div>
 
     <div id="form">
-      <div>
-        <TextInput />
+      <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
 
-        <label>Font File:
-          <input type="file" @change="onFontChange" />
-        </label>
+      <label>Font File:
+        <input type="file" @change="onFontChange" />
+      </label>
 
-        <label>Background Image File:
-          <input type="file" @change="onBackgroundImageChange" />
-        </label>
+      <label>Background Image File:
+        <input type="file" @change="onBackgroundImageChange" :disabled="isDimensionSpecified"
+          :title="isDimensionSpecified ? 'Width and height are already specified' : ''" />
+      </label>
 
-        <label>Font Size:
-          <input type="number" v-model="fontSize" />
-        </label>
+      <label>Width:
+        <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
+          :title="isBackgroundImageSpecified ? 'Background image is already specified' : ''" />
+      </label>
 
-        <label>Line Spacing:
-          <input type="number" v-model="lineSpacing" />
-        </label>
+      <label>Height:
+        <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
+          :title="isBackgroundImageSpecified ? 'Background image is already specified' : ''" />
+      </label>
 
-        <label>Fill Color (RGBA):
-          <input type="text" v-model="fill" />
-        </label>
+      <label>Font Size:
+        <input type="number" v-model="fontSize" />
+      </label>
 
-        <label>Width:
-          <input type="number" v-model="width" />
-        </label>
+      <label>Line Spacing:
+        <input type="number" v-model="lineSpacing" />
+      </label>
 
-        <label>Height:
-          <input type="number" v-model="height" />
-        </label>
+      <label>Fill Color (RGBA):
+        <input type="text" v-model="fill" />
+      </label>
 
-        <label>Top Margin:
-          <input type="number" v-model="marginTop" />
-        </label>
 
-        <label>Bottom Margin:
-          <input type="number" v-model="marginBottom" />
-        </label>
+      <label>Top Margin:
+        <input type="number" v-model="marginTop" />
+      </label>
 
-        <label>Left Margin:
-          <input type="number" v-model="marginLeft" />
-        </label>
+      <label>Bottom Margin:
+        <input type="number" v-model="marginBottom" />
+      </label>
 
-        <label>Right Margin:
-          <input type="number" v-model="marginRight" />
-        </label>
+      <label>Left Margin:
+        <input type="number" v-model="marginLeft" />
+      </label>
 
-        <!-- More inputs for other parameters... -->
-      </div>
+      <label>Right Margin:
+        <input type="number" v-model="marginRight" />
+      </label>
+
     </div>
     <div class="buttons">
       <button @click="generateHandwriting(preview = true)">预览</button>
-      <button @click="export_file">导出</button>
+      <!-- <button @click="export_file">导出</button>
       <button @click="savePreset">保存</button>
-      <button @click="loadPreset">载入预设</button>
+      <button @click="loadPreset">载入预设</button> -->
       <button @click="generateHandwriting(preview = false)">生成手写图片</button>
     </div>
     <!-- 预览区 -->
@@ -96,7 +97,6 @@ export default {
       text: "",
       fontFile: null,
       backgroundImage: null,
-      font: null,
       fontSize: 24,
       lineSpacing: 50,
       fill: "(0, 0, 0, 255)",
@@ -108,19 +108,36 @@ export default {
       marginRight: 50,
       previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
       preview: false,
-      lineSpacingSigma: 0, // 默认值，可以根据实际需要更改
-      fontSizeSigma: 0, // 默认值，可以根据实际需要更改
-      wordSpacingSigma: 0, // 默认值，可以根据实际需要更改
-      endChars: '', // 默认值，可以根据实际需要更改
-      perturbXSigma: 0, // 默认值，可以根据实际需要更改
-      perturbYSigma: 0, // 默认值，可以根据实际需要更改
-      perturbThetaSigma: 0, // 默认值，可以根据实际需要更改
-      wordSpacing: 0, // 默认值，可以根据实际需要更改
+      lineSpacingSigma: 0,  
+      fontSizeSigma: 0,  
+      wordSpacingSigma: 0,  
+      endChars: '',  
+      perturbXSigma: 0,  
+      perturbYSigma: 0,  
+      perturbThetaSigma: 0,  
+      wordSpacing: 0,  
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
 
     };
+  },
+  created() {
+    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+
+    localStorageItems.forEach(item => {
+      this[item] = JSON.parse(localStorage.getItem(item)) || this[item];
+    });
+  },
+  computed: {
+    isDimensionSpecified() {
+      // 当宽度或高度有值时，返回 true，这会禁用背景图片输入框
+      return !!(this.width || this.height);
+    },
+    isBackgroundImageSpecified() {
+      // 当有背景图片时，返回 true，这会禁用宽度和高度输入框
+      return !!this.backgroundImage;
+    },
   },
   watch: {
     login_delete_message(newVal) {
@@ -130,7 +147,79 @@ export default {
         // this.uploadMessage = '';
         console.log('已进入watch');
       }
-    }
+    },
+    text: {
+      handler(newVal) {
+        localStorage.setItem('text', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    fontFile: {
+      handler(newVal) {
+        localStorage.setItem('fontFile', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    backgroundImage: {
+      handler(newVal) {
+        localStorage.setItem('backgroundImage', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    fontSize: {
+      handler(newVal) {
+        localStorage.setItem('fontSize', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    lineSpacing: {
+      handler(newVal) {
+        localStorage.setItem('lineSpacing', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    fill: {
+      handler(newVal) {
+        localStorage.setItem('fill', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    width: {
+      handler(newVal) {
+        localStorage.setItem('width', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    height: {
+      handler(newVal) {
+        localStorage.setItem('height', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    marginTop: {
+      handler(newVal) {
+        localStorage.setItem('marginTop', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    marginBottom: {
+      handler(newVal) {
+        localStorage.setItem('marginBottom', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    marginLeft: {
+      handler(newVal) {
+        localStorage.setItem('marginLeft', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    marginRight: {
+      handler(newVal) {
+        localStorage.setItem('marginRight', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
   methods: {
     async generateHandwriting(preview = false) {
@@ -234,53 +323,7 @@ export default {
         }
       });
     },
-    
-    export_file() {
-      // 实现你的导出逻辑...
-    },
-    savePreset() {
-      // 这个方法可以用来保存当前的参数设置
-      // 这里我们将它们保存到 localStorage
-      const settings = {
-        text: this.text,
-        // 注意，文件类型的参数（如 font 和 backgroundImage）不能保存
-        fontSize: this.fontSize,
-        lineSpacing: this.lineSpacing,
-        fill: this.fill,
-        width: this.width,
-        height: this.height,
-        marginTop: this.marginTop,
-        marginBottom: this.marginBottom,
-        marginLeft: this.marginLeft,
-        marginRight: this.marginRight,
-        backgroundImage: this.backgroundImage,
-        fontFile: this.fontFile,
-        // ...其他你希望保存的参数...
-      };
-      localStorage.setItem('handwriting-settings', JSON.stringify(settings));
-    },
-    loadPreset() {
-      // 这个方法可以用来载入之前保存的参数设置
-      const settingsJson = localStorage.getItem('handwriting-settings');
-      if (settingsJson) {
-        const settings = JSON.parse(settingsJson);
-        this.text = settings.text;
-        this.fontSize = settings.fontSize;
-        this.lineSpacing = settings.lineSpacing;
-        this.fill = settings.fill;
-        this.width = settings.width;
-        this.height = settings.height;
-        this.marginTop = settings.marginTop;
-        this.marginBottom = settings.marginBottom;
-        this.marginLeft = settings.marginLeft;
-        this.marginRight = settings.marginRight;
-        this.backgroundImage = settings.backgroundImage;
-        this.fontFile = settings.fontFile;
-        // ...其他你希望载入的参数...
-      } else {
-        alert('没有找到保存的预设');
-      }
-    },
+
     onBackgroundImageChange(event) {
       this.backgroundImage = event.target.files[0];
     },
@@ -316,6 +359,7 @@ export default {
   margin: 0 auto;
   box-sizing: border-box;
   overflow: auto;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 #form label {
@@ -330,6 +374,8 @@ export default {
   border-radius: 5px;
   border: 1px solid #ddd;
   box-sizing: border-box;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
 }
 
 .buttons button {
@@ -352,12 +398,23 @@ export default {
   padding: 20px;
   box-sizing: border-box;
   grid-area: image;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .preview img {
   max-width: 100%;
   height: auto;
 }
+
+input[type="number"], input[type="text"], input[type="file"] {
+  transition: all 0.3s ease; /* 过渡效果 */
+}
+
+input[type="number"]:hover, input[type="text"]:hover, input[type="file"]:hover {
+  transform: scale(1.05);  /* 放大输入框 */
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);  /* 添加阴影效果 */
+}
+
 
 @media (max-width: 800px) {
   .container {
@@ -373,6 +430,4 @@ export default {
   .preview {
     flex: 1 0 100%;
   }
-}
-
-</style>
+}</style>

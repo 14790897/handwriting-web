@@ -70,7 +70,7 @@ Session(app)  # 初始化扩展，传入应用程序实例
 def create_notebook_image(width, height, line_spacing, top_margin, bottom_margin, left_margin, right_margin, font_size):
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image)
-    y = top_margin + font_size # 开始的y坐标设为顶部边距加字体大小
+    y = top_margin + font_size*2 # 开始的y坐标设为顶部边距加字体大小
     while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
         draw.line((left_margin, y, width - right_margin, y), fill="black")
         y += line_spacing  # 每次循环，y坐标增加行间距

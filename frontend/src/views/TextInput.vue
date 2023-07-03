@@ -36,6 +36,8 @@ export default {
             })
                 .then(response => {
                     this.text_handwriting = response.data.text;
+                    this.$emit('childEvent', this.text_handwriting);
+
                     this.isLoading = false;
                 })
                 .catch(error => {
@@ -65,11 +67,11 @@ export default {
 }
 
 @keyframes spin {
-    0 % {
+    0% {
         transform: rotate(0deg);
     }
 
-    100 % {
+    100% {
         transform: rotate(360deg);
     }
 }
