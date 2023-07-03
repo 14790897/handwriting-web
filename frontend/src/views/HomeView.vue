@@ -1,26 +1,34 @@
 <template>
   <div class="container">
     <!-- 错误消息以及提示信息 -->
-    <div v-if="errorMessage" class="alert alert-danger" role="alert">
-      {{ errorMessage }}
-    </div>
-    <div v-if="message" class="alert alert-info" role="alert">
-      {{ message }}
-    </div>
-    <div v-if="uploadMessage" class="alert alert-info" role="alert">
-      {{ uploadMessage }}
+    <div id="message">
+      <div v-if="errorMessage" class="alert alert-danger" role="alert">
+        {{ errorMessage }}
+      </div>
+      <div v-if="message" class="alert alert-info" role="alert">
+        {{ message }}
+      </div>
+      <div v-if="uploadMessage" class="alert alert-info" role="alert">
+        {{ uploadMessage }}
+      </div>
     </div>
 
     <div id="form">
       <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
 
-      <label>Font File:
-        <input type="file" @change="onFontChange" />
+      <label>Font File:</label>
+      <button @click="triggerFontFileInput">Choose File</button>
+      <span>{{ selectedFontFileName }}</span>
+      <label>
+        <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
       </label>
 
-      <label>Background Image File:
-        <input type="file" @change="onBackgroundImageChange" :disabled="isDimensionSpecified"
-          :title="isDimensionSpecified ? 'Width and height are already specified' : ''" />
+      <label>Background Image File:</label>
+      <button @click="triggerImageFileInput"  :disabled="isDimensionSpecified"
+          :title="isDimensionSpecified ? 'Width and height are already specified' : ''">Choose File</button>
+      <span>{{ selectedImageFileName }}</span>
+      <label>
+        <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
       </label>
 
       <label>Width:
@@ -41,10 +49,9 @@
         <input type="number" v-model="lineSpacing" />
       </label>
 
-      <label>Fill Color (RGBA):
+      <!-- <label>Fill Color (RGBA):
         <input type="text" v-model="fill" />
-      </label>
-
+      </label> -->
 
       <label>Top Margin:
         <input type="number" v-model="marginTop" />
@@ -108,22 +115,24 @@ export default {
       marginRight: 50,
       previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
       preview: false,
-      lineSpacingSigma: 0,  
-      fontSizeSigma: 0,  
-      wordSpacingSigma: 0,  
-      endChars: '',  
-      perturbXSigma: 0,  
-      perturbYSigma: 0,  
-      perturbThetaSigma: 0,  
-      wordSpacing: 0,  
+      lineSpacingSigma: 0,
+      fontSizeSigma: 0,
+      wordSpacingSigma: 0,
+      endChars: '',
+      perturbXSigma: 0,
+      perturbYSigma: 0,
+      perturbThetaSigma: 0,
+      wordSpacing: 0,
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
+      selectedFontFileName: '',
+      selectedImageFileName: '',
 
     };
   },
   created() {
-    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedImageFileName'];
 
     localStorageItems.forEach(item => {
       this[item] = JSON.parse(localStorage.getItem(item)) || this[item];
@@ -220,13 +229,32 @@ export default {
       },
       deep: true
     },
+    selectedFontFileName:{
+      handler(newVal) {
+        localStorage.setItem('selectedFontFileName', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    selectedImageFileName:{
+      handler(newVal) {
+        localStorage.setItem('selectedImageFileName', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
   methods: {
     async generateHandwriting(preview = false) {
+      // 验证输入
+      if (this.height < this.marginTop + this.lineSpacing + this.marginBottom) {
+        this.errorMessage = '上边距、下边距和行间距之和不能大于高度';
+        this.message = '';
+        this.uploadMessage = '';
+        return;
+      }
       this.preview = preview;
       // 设置提示信息为“内容正在上传…”
-      this.uploadMessage = '内容正在上传…';//显示上传提示信息时，隐藏其他提示信息
-      console.log('内容正在上传…');
+      this.uploadMessage = '内容正在上传并处理…';//显示上传提示信息时，隐藏其他提示信息
+      console.log('内容正在上传并处理…');
       this.message = '';
       this.errorMessage = '';
       const formData = new FormData();
@@ -255,6 +283,7 @@ export default {
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
       }
+
       this.$http.post(
         '/api/generate_handwriting',
         formData,
@@ -325,10 +354,21 @@ export default {
     },
 
     onBackgroundImageChange(event) {
+      // 当用户选择了一个新的背景图片文件时，更新 selectedImageFileName，由于这边直接触发函数了，所以localstorage可以在这里修改，
+      //之前因为文字不能触发函数，所以要放在watch里面
+      this.selectedImageFileName = event.target.files[0].name;
       this.backgroundImage = event.target.files[0];
     },
     onFontChange(event) {
+      // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
+      this.selectedFontFileName = event.target.files[0].name;
       this.fontFile = event.target.files[0];
+    },
+    triggerImageFileInput() {
+      this.$refs.imageFileInput.click();
+    },
+    triggerFontFileInput() {
+      this.$refs.fontFileInput.click();
     },
   },
 
@@ -343,8 +383,17 @@ export default {
   display: grid;
   grid-template-areas:
     "form image"
-    "button image";
+    "button image"
+    "message image";
   grid-template-columns: 1fr 2fr;
+}
+
+#message {
+  grid-area: message;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: auto;
+  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
 }
 
 #form {
@@ -375,7 +424,6 @@ export default {
   border: 1px solid #ddd;
   box-sizing: border-box;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-
 }
 
 .buttons button {
@@ -386,12 +434,42 @@ export default {
   background: #007BFF;
   color: white;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s ease-in-out;
+  font-weight: bold;
+  /* 使文本更粗 */
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  /* 添加阴影效果 */
+  outline: none;
+  /* 移除默认的焦点轮廓 */
+  margin-right: 60px;
+  /* 为每个按钮添加右边距 */
+}
+
+.buttons button:last-child {
+  margin-right: 0;
+  /* 为最后一个按钮移除右边距，避免额外空间 */
 }
 
 .buttons button:hover {
   background: #0056b3;
+  transform: scale(1.05);
+  /* 悬停时按钮轻微放大 */
 }
+
+.buttons button:active {
+  background: #003d73;
+  /* 按下按钮时更改背景色 */
+  transform: scale(0.95);
+  /* 按下按钮时按钮轻微缩小 */
+}
+
+.buttons button:disabled {
+  background: #cccccc;
+  /* 禁用按钮时的背景色 */
+  cursor: not-allowed;
+  /* 禁用按钮时的鼠标样式 */
+}
+
 
 .preview {
   /* flex: 1; */
@@ -406,13 +484,20 @@ export default {
   height: auto;
 }
 
-input[type="number"], input[type="text"], input[type="file"] {
-  transition: all 0.3s ease; /* 过渡效果 */
+input[type="number"],
+input[type="text"],
+input[type="file"] {
+  transition: all 0.3s ease;
+  /* 过渡效果 */
 }
 
-input[type="number"]:hover, input[type="text"]:hover, input[type="file"]:hover {
-  transform: scale(1.05);  /* 放大输入框 */
-  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);  /* 添加阴影效果 */
+input[type="number"]:hover,
+input[type="text"]:hover,
+input[type="file"]:hover {
+  transform: scale(1.05);
+  /* 放大输入框 */
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+  /* 添加阴影效果 */
 }
 
 
@@ -420,6 +505,7 @@ input[type="number"]:hover, input[type="text"]:hover, input[type="file"]:hover {
   .container {
     /* flex-direction: column; */
     grid-template-areas:
+      "message"
       "form"
       "button"
       "image";
