@@ -16,7 +16,7 @@
     <div id="form">
       <div class="container_file">
         <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
-        
+
         <div class="font-selection">
           <label>Font File:</label>
           <button @click="triggerFontFileInput">Choose File</button>
@@ -25,7 +25,7 @@
             <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
           </label>
           <!-- 字体下拉选框 7.4 -->
-          <select v-model="selectedOption">
+          <select v-model="selectedOption" class="styled-select">
             <option v-for="option in options" :value="option.value" :key="option.value">
               {{ option.text }}
             </option>
@@ -33,13 +33,22 @@
         </div>
 
         <label>Background Image File:</label>
-        <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
-          :title="isDimensionSpecified ? 'Width and height are already specified' : ''">Choose File</button>
-        <span>{{ selectedImageFileName }}</span>
-        <label>
-          <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
-        </label>
+        <div class="button-container">
+          <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
+            :title="isDimensionSpecified ? 'Width and height are already specified' : ''">
+            Choose File
+            <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
+              <div class="clear-button-line"></div>
+              <div class="clear-button-line"></div>
+            </div>
+          </button>
+          <span>{{ selectedImageFileName }}</span>
+          <label>
+            <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
+          </label>
+        </div>
       </div>
+
 
       <label>Width:
         <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
@@ -139,7 +148,7 @@ export default {
       selectedFontFileName: '',
       selectedImageFileName: '',
       //字体下拉选框
-      selectedOption: '',  // 当前选中的选项
+      selectedOption: '1',  // 当前选中的选项
       options: [           // 选项列表
         { value: '1', text: 'Option 1' },
         { value: '2', text: 'Option 2' },
@@ -376,6 +385,8 @@ export default {
       //之前因为文字不能触发函数，所以要放在watch里面
       this.selectedImageFileName = event.target.files[0].name;
       this.backgroundImage = event.target.files[0];
+
+      this.previewImage = URL.createObjectURL(event.target.files[0]);
     },
     onFontChange(event) {
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
@@ -387,6 +398,14 @@ export default {
     },
     triggerFontFileInput() {
       this.$refs.fontFileInput.click();
+    },
+    //清空图像按钮对应的函数
+    clearImage() {
+      // 清空存储图像信息的变量
+      this.selectedImageFileName = null;
+      this.backgroundImage = null;
+      // 清空文件输入框
+      this.$refs.imageFileInput.value = null;
     },
   },
 
@@ -554,6 +573,60 @@ input[type="file"]:hover {
 }
 
 /* } */
+.styled-select {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background-color: #4285f4;
+  font-size: 1rem;
+  transition: all 0.3s ease-in-out;
+
+
+}
+
+.styled-select:hover {
+  transform: scale(1.05);
+  /* 放大输入框 */
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+}
+
+.styled-select:focus {
+  outline: none;
+}
+
+.button-container {
+  position: static;
+  display: inline-block;
+}
+
+.clear-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+
+.clear-button-line {
+  position: absolute;
+  left: 1px;
+  width: 10px;
+  height: 2px;
+  background-color: #000;
+}
+
+.clear-button-line:first-child {
+  top: 5px;
+  transform: rotate(45deg);
+}
+
+.clear-button-line:last-child {
+  top: 5px;
+  transform: rotate(-45deg);
+}
+
 
 @media (max-width: 800px) {
   .container {
