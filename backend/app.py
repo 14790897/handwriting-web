@@ -285,7 +285,11 @@ def get_filenames_in_dir(directory):
 
 @app.route("/api/fonts_info", methods=["GET"])
 def get_fonts_info():
-    get_filenames_in_dir('./font_assets')
+    filenames  = get_filenames_in_dir('./font_assets')
+    if filenames == []:
+        return jsonify('not found')
+    return jsonify(filenames)
+
     
     
 def mysql_operation(image_data):

@@ -151,12 +151,7 @@ export default {
       selectedImageFileName: '',
       //字体下拉选框
       selectedOption: '1',  // 当前选中的选项
-      options: [           // 选项列表
-        { value: '1', text: 'Option 1' },
-        { value: '2', text: 'Option 2' },
-        { value: '3', text: 'Option 3' },
-        // 更多选项...
-      ],
+      
 
     };
   },
@@ -168,7 +163,9 @@ export default {
     });
 
     this.$http.get('/api/fonts_info').then(response => {
-      this.fonts = response.body;
+      this.options = response.data.map((font, index) => {
+        return { value: String(index + 1), text: font };
+      });
     });
 
 
