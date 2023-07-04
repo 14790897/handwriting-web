@@ -191,7 +191,10 @@ def generate_handwriting():
         text_to_generate = text_to_generate[:preview_length]
 
     font = request.files["font_file"].read()
-    font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
+    if font:
+        font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
+    else:
+        data['font_option']
 
     template = Template(
         background=background_image,

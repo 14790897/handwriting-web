@@ -20,7 +20,7 @@
         <label>Font File:</label>
         <div class="font-selection">
           <button @click="triggerFontFileInput">Choose File</button>
-          <span>{{ selectedFontFileName }}</span>
+          <!-- <span>{{ selectedFontFileName }}</span> -->
           <label>
             <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
           </label>
@@ -151,12 +151,12 @@ export default {
       selectedImageFileName: '',
       //字体下拉选框
       selectedOption: '1',  // 当前选中的选项
-      
-
+      options: '',  // 下拉选项
     };
   },
   created() {
-    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedImageFileName'];
+    //
+    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedImageFileName', 'selectedOption'];
 
     localStorageItems.forEach(item => {
       this[item] = JSON.parse(localStorage.getItem(item)) || this[item];
@@ -167,6 +167,7 @@ export default {
         return { value: String(index + 1), text: font };
       });
     });
+    console.log('options' + this.options)
 
 
   },
@@ -273,6 +274,12 @@ export default {
       },
       deep: true
     },
+    selectedOption: {
+      handler(newVal) {
+        localStorage.setItem('selectedOption', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
   methods: {
     async generateHandwriting(preview = false) {
@@ -311,6 +318,7 @@ export default {
       formData.append("perturb_theta_sigma", this.perturbThetaSigma);
       formData.append("word_spacing", this.wordSpacing);
       formData.append("preview", this.preview.toString());
+      formData.append("font_option", this.options[this.selectedOption].text);
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
