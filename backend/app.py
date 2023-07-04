@@ -190,11 +190,29 @@ def generate_handwriting():
         preview_length = 400  # 可以调整为所需的预览长度
         text_to_generate = text_to_generate[:preview_length]
 
+    # 从表单中获取字体文件并处理 7.4
     font = request.files["font_file"].read()
     if font:
         font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
     else:
-        data['font_option']
+        font_option = data['font_option']
+        if font_option in font_file_names:
+            # 确定字体文件的完整路径
+            font_path = os.path.join('font_assets', font_option)
+            # 打开字体文件并读取其内容为字节
+            with open(font_path, 'rb') as f:
+                font_content = f.read()
+            #通过 io.BytesIO 创建一个 BytesIO 对象，然后使用 ImageFont.truetype 从字节中加载字体
+            font = ImageFont.truetype(io.BytesIO(font_content), size=int(data["font_size"]))
+        else:
+            return (
+                jsonify(
+                    {
+                        "status": "fail",
+                        "message": "Missing required field: font_file",
+                    }
+                )
+            )
 
     template = Template(
         background=background_image,
@@ -425,6 +443,7 @@ if __name__ == "__main__":
     directory = './textfileprocess'
     if not os.path.exists(directory):
         os.makedirs(directory)
+    font_file_names = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
     app.run(debug=True, host="0.0.0.0", port=5000)
     # good luck 6/16/2023
 '''    
