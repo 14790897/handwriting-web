@@ -138,23 +138,23 @@ def generate_handwriting():
             #width=int(data["width"]),
 
     # 然后获取文件数据
-    files = request.files
-    required_file_fields = [ "font_file"]
+    # files = request.files
+    # required_file_fields = [ "font_file"]
 
-    for field in required_file_fields:
-        if field not in files:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": f"Missing required file field: {field}",
-                    }
-                ),
-                400,
-            )
-        else:
-            # 文件字段无法直接打印具体值，只能确认其存在
-            logger.info(f"{field} exists in the files")
+    # for field in required_file_fields:
+    #     if field not in files:
+    #         return (
+    #             jsonify(
+    #                 {
+    #                     "status": "fail",
+    #                     "message": f"Missing required file field: {field}",
+    #                 }
+    #             ),
+    #             400,
+    #         )
+    #     else:
+    #         # 文件字段无法直接打印具体值，只能确认其存在
+    #         logger.info(f"{field} exists in the files")
     
      # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if 'width' in data and 'height' in data:
