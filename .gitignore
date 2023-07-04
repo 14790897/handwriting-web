@@ -5,4 +5,5 @@ hand-write
 .env
 backend/env
 backend/font_assets/*
+!backend/font_assets/.gitkeep
 venv
