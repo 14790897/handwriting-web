@@ -16,17 +16,25 @@
     <div id="form">
       <div class="container_file">
         <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
-
-        <label>Font File:</label>
-        <button @click="triggerFontFileInput">Choose File</button>
-        <span>{{ selectedFontFileName }}</span>
-        <label>
-          <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
-        </label>
+        
+        <div class="font-selection">
+          <label>Font File:</label>
+          <button @click="triggerFontFileInput">Choose File</button>
+          <span>{{ selectedFontFileName }}</span>
+          <label>
+            <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
+          </label>
+          <!-- 字体下拉选框 7.4 -->
+          <select v-model="selectedOption">
+            <option v-for="option in options" :value="option.value" :key="option.value">
+              {{ option.text }}
+            </option>
+          </select>
+        </div>
 
         <label>Background Image File:</label>
-        <button @click="triggerImageFileInput"  :disabled="isDimensionSpecified"
-            :title="isDimensionSpecified ? 'Width and height are already specified' : ''">Choose File</button>
+        <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
+          :title="isDimensionSpecified ? 'Width and height are already specified' : ''">Choose File</button>
         <span>{{ selectedImageFileName }}</span>
         <label>
           <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
@@ -130,6 +138,14 @@ export default {
       uploadMessage: '',  // 上传提示消息
       selectedFontFileName: '',
       selectedImageFileName: '',
+      //字体下拉选框
+      selectedOption: '',  // 当前选中的选项
+      options: [           // 选项列表
+        { value: '1', text: 'Option 1' },
+        { value: '2', text: 'Option 2' },
+        { value: '3', text: 'Option 3' },
+        // 更多选项...
+      ],
 
     };
   },
@@ -231,13 +247,13 @@ export default {
       },
       deep: true
     },
-    selectedFontFileName:{
+    selectedFontFileName: {
       handler(newVal) {
         localStorage.setItem('selectedFontFileName', JSON.stringify(newVal));
       },
       deep: true
     },
-    selectedImageFileName:{
+    selectedImageFileName: {
       handler(newVal) {
         localStorage.setItem('selectedImageFileName', JSON.stringify(newVal));
       },
@@ -536,6 +552,7 @@ input[type="file"]:hover {
   font-size: 0.9rem;
   color: #444;
 }
+
 /* } */
 
 @media (max-width: 800px) {
@@ -553,4 +570,5 @@ input[type="file"]:hover {
   .preview {
     flex: 1 0 100%;
   }
-}</style>
+}
+</style>

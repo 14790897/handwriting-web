@@ -1,7 +1,7 @@
 <template>
     <div id='text_file_select'>
         <label for="textArea">Text:</label>
-        <textarea id="textArea" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
+        <textarea id="textArea" :value="text_handwriting" @input="updateValue" placeholder="请输入要转换的文字"></textarea>
 
         <label for="textFileInput">Or upload a document file:</label>
         <button @click="triggerTextFileInput">Choose File</button>
@@ -18,6 +18,18 @@
 <script>
 export default {
     name: 'TextInput',
+
+    props: ['text_handwriting'],
+    computed: {
+        text_handwriting: {
+            get() {
+                return this.text_handwriting
+            },
+            set(newValue) {
+                this.$emit('update:text_handwriting', newValue)
+            }
+        }
+    },
 
     data() {
         return {
@@ -54,7 +66,7 @@ export default {
             })
                 .then(response => {
                     this.text_handwriting = response.data.text;
-                    //通知HomeView更新text_handwriting 7.3
+                    //通知HomeView更新text_handwriting 7.3, 但是如果直接输入文字，这里不会通知父组件7.4
                     this.$emit('childEvent', this.text_handwriting);
                     localStorage.setItem('text_handwriting', JSON.stringify(this.text_handwriting));
                     this.isLoading = false;
@@ -76,6 +88,40 @@ export default {
 #text_file_select {
     position: relative;
     /* 设置父元素为相对定位 */
+}
+
+#text_file_select {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+    margin: auto;
+}
+
+#text_file_select label {
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+#text_file_select button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    color: white;
+    background-color: #4285f4;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#text_file_select button:disabled {
+    background-color: grey;
+}
+
+#text_file_select span {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: #444;
 }
 
 .loader {
