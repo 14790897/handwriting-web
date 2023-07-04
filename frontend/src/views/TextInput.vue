@@ -3,13 +3,15 @@
         <label for="textArea">Text:</label>
         <textarea id="textArea" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
 
-        <label for="textFileInput">Or upload a document file:</label>
+        <label for="textFileInput">or upload a document file:</label>
+        <div class="file_select_container">
         <button @click="triggerTextFileInput">Choose File</button>
         <span>{{ selectedTextFileName }}</span>
         <label>
             <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
                 accept=".doc,.docx,.pdf,.txt,.rtf" style="display: none;" />
         </label>
+        </div>
 
         <div v-if="isLoading" class="loader">Loading...</div>
     </div>
@@ -82,6 +84,7 @@ export default {
 #text_file_select {
     position: relative;
     /* 设置父元素为相对定位 */
+    
 }
 
 #text_file_select {
@@ -116,6 +119,12 @@ export default {
   margin-top: 5px;
   font-size: 0.9rem;
   color: #444;
+}
+
+.file_select_container {
+  display: flex;
+  /* gap: 10px; */
+  align-items: center;
 }
 
 .loader {

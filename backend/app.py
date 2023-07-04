@@ -279,6 +279,14 @@ def textfileprocess():
         return jsonify({'text': text})
 
     return jsonify({'error': 'Invalid file type'}), 400
+
+def get_filenames_in_dir(directory):
+    return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+
+@app.route("/api/fonts_info", methods=["GET"])
+def get_fonts_info():
+    get_filenames_in_dir('./font_assets')
+    
     
 def mysql_operation(image_data):
     cursor = current_app.cnx.cursor()

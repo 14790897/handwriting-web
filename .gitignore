@@ -4,4 +4,5 @@ env-handwrite
 hand-write
 .env
 backend/env
+backend/font_assets/*
 venv

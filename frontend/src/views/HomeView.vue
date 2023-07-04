@@ -17,35 +17,37 @@
       <div class="container_file">
         <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
 
+        <label>Font File:</label>
         <div class="font-selection">
-          <label>Font File:</label>
           <button @click="triggerFontFileInput">Choose File</button>
           <span>{{ selectedFontFileName }}</span>
           <label>
             <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
           </label>
           <!-- 字体下拉选框 7.4 -->
-          <select v-model="selectedOption" class="styled-select">
-            <option v-for="option in options" :value="option.value" :key="option.value">
-              {{ option.text }}
-            </option>
-          </select>
         </div>
+        <select v-model="selectedOption" class="styled-select">
+          <option v-for="option in options" :value="option.value" :key="option.value">
+            {{ option.text }}
+          </option>
+        </select>
 
-        <label>Background Image File:</label>
-        <div class="button-container">
-          <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
-            :title="isDimensionSpecified ? 'Width and height are already specified' : ''">
-            Choose File
-            <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
-              <div class="clear-button-line"></div>
-              <div class="clear-button-line"></div>
-            </div>
-          </button>
-          <span>{{ selectedImageFileName }}</span>
-          <label>
-            <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
-          </label>
+        <div>
+          <label>Background Image File:</label>
+          <div class="button-container">
+            <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
+              :title="isDimensionSpecified ? 'Width and height are already specified' : ''">
+              Choose File
+              <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
+                <div class="clear-button-line"></div>
+                <div class="clear-button-line"></div>
+              </div>
+            </button>
+            <span>{{ selectedImageFileName }}</span>
+            <label>
+              <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
+            </label>
+          </div>
         </div>
       </div>
 
@@ -94,7 +96,7 @@
       <!-- <button @click="export_file">导出</button>
       <button @click="savePreset">保存</button>
       <button @click="loadPreset">载入预设</button> -->
-      <button @click="generateHandwriting(preview = false)">生成手写图片</button>
+      <button @click="generateHandwriting(preview = false)">生成完整手写图片</button>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -164,6 +166,12 @@ export default {
     localStorageItems.forEach(item => {
       this[item] = JSON.parse(localStorage.getItem(item)) || this[item];
     });
+
+    this.$http.get('/api/fonts_info').then(response => {
+      this.fonts = response.body;
+    });
+
+
   },
   computed: {
     isDimensionSpecified() {
@@ -596,8 +604,8 @@ input[type="file"]:hover {
 }
 
 .button-container {
-  position: static;
-  display: inline-block;
+  display: flex;
+  justify-content: space-around;
 }
 
 .clear-button {
@@ -627,6 +635,10 @@ input[type="file"]:hover {
   transform: rotate(-45deg);
 }
 
+.font-selection {
+  display: flex;
+  justify-content: space-around;
+}
 
 @media (max-width: 800px) {
   .container {
