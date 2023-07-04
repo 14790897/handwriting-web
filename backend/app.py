@@ -209,9 +209,10 @@ def generate_handwriting():
                 jsonify(
                     {
                         "status": "fail",
-                        "message": "Missing required field: font_file",
+                        "message": "Missing  fontfile.",
                     }
-                )
+                ),
+                400,
             )
 
     template = Template(
