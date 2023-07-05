@@ -199,6 +199,7 @@ def generate_handwriting():
         if font_option in font_file_names:
             # 确定字体文件的完整路径
             font_path = os.path.join('font_assets', font_option)
+            logger.info(f"font_path: {font_path}")
             # 打开字体文件并读取其内容为字节
             with open(font_path, 'rb') as f:
                 font_content = f.read()
