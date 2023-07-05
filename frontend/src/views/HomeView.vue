@@ -49,7 +49,7 @@
                   <div class="clear-button-line"></div>
                 </div>
               </button>
-              <span>{{ selectedImageFileName }}</span>
+              <span class="border p-2 fs-6 text-primary" v-if="selectedImageFileName">{{ selectedImageFileName }}</span>
               <label>
                 <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
               </label>
@@ -305,7 +305,10 @@ export default {
       this.errorMessage = '';
       const formData = new FormData();
       formData.append("text", this.text);
-      formData.append("font_file", this.fontFile);
+      // 只有当用户选择的字体文件名与字体下拉选项中的字体文件名相同时，才上传字体文件7.5
+      if (this.options[this.selectedOption - 1] && this.options[this.selectedOption - 1].text == this.selectedFontFileName){
+        formData.append("font_file", this.fontFile);
+      }
       formData.append("background_image", this.backgroundImage);
       formData.append("font_size", this.fontSize);
       formData.append("line_spacing", this.lineSpacing);
