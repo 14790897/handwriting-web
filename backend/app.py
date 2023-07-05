@@ -447,6 +447,7 @@ if __name__ == "__main__":
     directory = './textfileprocess'
     if not os.path.exists(directory):
         os.makedirs(directory)
+    directory = './font_assets'
     font_file_names = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
     app.run(debug=True, host="0.0.0.0", port=5000)
     # good luck 6/16/2023
