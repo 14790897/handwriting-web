@@ -191,8 +191,8 @@ def generate_handwriting():
         text_to_generate = text_to_generate[:preview_length]
 
     # 从表单中获取字体文件并处理 7.4
-    font = request.files["font_file"].read()
-    if font:
+    if 'font_file' in request.files:
+        font = request.files["font_file"].read()
         font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
     else:
         font_option = data['font_option']
