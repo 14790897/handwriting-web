@@ -1,7 +1,7 @@
 <template>
     <div id='text_file_select'>
         <label for="textArea">Text:</label>
-        <textarea id="textArea" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
+        <textarea id="textArea"   class="form-control" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
 
         <label for="textFileInput">or upload a document file:</label>
         <div class="file_select_container">
@@ -143,6 +143,26 @@ export default {
     left: 50%;
     transform: translate(-50%, -50%);
     /* 用 transform 属性将动画元素的中心对准父元素的中心 */
+}
+
+#textarea {
+    width: 100%;
+    height: 200px;
+    padding: 12px 20px;
+    box-sizing: border-box;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    background-color: #f8f8f8;
+    font-size: 16px;
+    transition: all 0.3s ease-in-out;
+}
+
+#textarea:hover{
+    border: 2px solid #4285f4;
+    background-color: #fff;
+    box-shadow: 0 0 5px #4285f4;
+    transform: scale(1.05);
+
 }
 
 @keyframes spin {

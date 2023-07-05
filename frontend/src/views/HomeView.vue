@@ -14,39 +14,46 @@
     </div>
 
     <div id="form">
-      <div class="container_file">
-        <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
+      <div class="container_file row">
 
-        <label>Font File:</label>
-        <div class="font-selection">
-          <button @click="triggerFontFileInput">Choose File</button>
-          <!-- <span>{{ selectedFontFileName }}</span> -->
-          <label>
-            <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
-          </label>
-          <!-- 字体下拉选框 7.4 -->
+        <div class="col">
+          <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
         </div>
-        <select v-model="selectedOption" class="styled-select">
-          <option v-for="option in options" :value="option.value" :key="option.value">
-            {{ option.text }}
-          </option>
-        </select>
+        <div class="col">
+          <label>Font File:</label>
+          <div class="d-flex flex-row justify-content-between">
+            <div class="font-selection">
+              <button @click="triggerFontFileInput">Choose File</button>
+              <!-- <span>{{ selectedFontFileName }}</span> -->
+              <label>
+                <!-- 这是隐藏的input，用于选择字体文件 7.5 -->
+                <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
+              </label>
+            </div>
+            <!-- 字体下拉选框 7.4 -->
+            <select v-model="selectedOption" class="styled-select" style="width: 60%;">
+              <option v-for="option in options" :value="option.value" :key="option.value">
+                {{ option.text }}
+              </option>
+            </select>
+          </div>
 
-        <div>
-          <label>Background Image File:</label>
-          <div class="button-container">
-            <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
-              :title="isDimensionSpecified ? 'Width and height are already specified' : ''">
-              Choose File
-              <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
-                <div class="clear-button-line"></div>
-                <div class="clear-button-line"></div>
-              </div>
-            </button>
-            <span>{{ selectedImageFileName }}</span>
-            <label>
-              <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
-            </label>
+          <div>
+            <label>Background Image File:</label>
+            <div class="button-container">
+              <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
+                :title="isDimensionSpecified ? 'Width and height are already specified' : ''">
+                Choose File
+                <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
+                  <div class="clear-button-line"></div>
+                  <div class="clear-button-line"></div>
+                </div>
+              </button>
+              <span>{{ selectedImageFileName }}</span>
+              <label>
+                <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -318,7 +325,7 @@ export default {
       formData.append("perturb_theta_sigma", this.perturbThetaSigma);
       formData.append("word_spacing", this.wordSpacing);
       formData.append("preview", this.preview.toString());
-      formData.append("font_option", this.options[this.selectedOption].text);
+      formData.append("font_option", this.options[this.selectedOption - 1].text);
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
@@ -405,6 +412,18 @@ export default {
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
       this.selectedFontFileName = event.target.files[0].name;
       this.fontFile = event.target.files[0];
+      // 创建一个新的 option 对象
+      const newOption = {
+        value: String(this.options.length + 1), // 使用 options 数组的长度 + 1 作为新选项的 value
+        text: this.selectedFontFileName // 使用字体文件名作为新选项的 text
+      };
+
+      // 将新选项添加到 options 数组中
+      this.options.push(newOption);
+
+      // 将 selectedOption 设为新选项的 value，这样下拉菜单就会自动更新为新添加的字体
+      this.selectedOption = newOption.value;
+
     },
     triggerImageFileInput() {
       this.$refs.imageFileInput.click();
