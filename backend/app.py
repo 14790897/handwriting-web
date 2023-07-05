@@ -197,6 +197,7 @@ def generate_handwriting():
     else:
         font_option = data['font_option']
         logger.info(f"font_option: {font_option}")
+        logger.info(f"font_file_names: {font_file_names}")
         if font_option in font_file_names:
             # 确定字体文件的完整路径
             font_path = os.path.join('font_assets', font_option)
