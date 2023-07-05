@@ -114,7 +114,6 @@
 </template>
 
 <script>
-// import mammoth from 'mammoth';
 import TextInput from './TextInput.vue';
 export default {
   props: {
@@ -166,7 +165,12 @@ export default {
     const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedImageFileName', 'selectedOption'];
 
     localStorageItems.forEach(item => {
-      this[item] = JSON.parse(localStorage.getItem(item)) || this[item];
+      const value = localStorage.getItem(item);
+      if (value !== null && value !== "undefined") {
+        this[item] = JSON.parse(value);
+      } else {
+        console.log('localstorage缺失item:' + item)
+      }
     });
 
     this.$http.get('/api/fonts_info').then(response => {
@@ -175,8 +179,6 @@ export default {
       });
     });
     console.log('options' + this.options)
-
-
   },
   computed: {
     isDimensionSpecified() {
@@ -306,7 +308,7 @@ export default {
       const formData = new FormData();
       formData.append("text", this.text);
       // 只有当用户选择的字体文件名与字体下拉选项中的字体文件名相同时，才上传字体文件7.5
-      if (this.options[this.selectedOption - 1] && this.options[this.selectedOption - 1].text == this.selectedFontFileName){
+      if (this.options[this.selectedOption - 1].text == this.selectedFontFileName) {
         formData.append("font_file", this.fontFile);
       }
       formData.append("background_image", this.backgroundImage);
@@ -364,6 +366,8 @@ export default {
           link.setAttribute('download', 'images.zip'); // 或任何其他文件名
           document.body.appendChild(link);
           link.click();
+          // 下载完成后，将链接删除，7.5
+          document.body.removeChild(link);
           // 设置提示信息
           this.message = '文件已下载。';
           this.uploadMessage = '';
