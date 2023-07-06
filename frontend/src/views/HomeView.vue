@@ -53,8 +53,8 @@
               <label>
                 <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
               </label>
+              <div v-if="isLoading" class="loader">Loading...</div>
             </div>
-            <div v-if="isLoading" class="loader">Loading...</div>
           </div>
         </div>
       </div>
@@ -116,6 +116,7 @@
 
 <script>
 import TextInput from './TextInput.vue';
+import Swal from 'sweetalert2';
 export default {
   props: {
     login_delete_message: {
@@ -415,34 +416,45 @@ export default {
       this.selectedImageFileName = event.target.files[0].name;
       this.backgroundImage = event.target.files[0];
       this.previewImage = URL.createObjectURL(event.target.files[0]);
-      let formData = new FormData();
-      formData.append('file', this.backgroundImage);  // 'file' 是你在服务器端获取文件数据时的 key
-      this.isLoading = true;
-      this.$http.post(
-        '/api/imagefileprocess',
-        formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      Swal.fire({
+        title: '你希望自动识别页面的四周边距吗？',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          let formData = new FormData();
+          formData.append('file', this.backgroundImage);  // 'file' 是你在服务器端获取文件数据时的 key
+          this.isLoading = true;
+          this.$http.post(
+            '/api/imagefileprocess',
+            formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          })
+            .then(response => {
+              this.marginLeft = response.data.marginLeft;
+              this.marginRight = response.data.marginRight;
+              this.marginTop = response.data.marginTop;
+              this.marginBottom = response.data.marginBottom;
+              this.lineSpacing = response.data.lineSpacing;
+              this.message = '背景图片已加载。';
+              this.errorMessage = '';
+              this.uploadMessage = '';
+              this.isLoading = false;
+            })
+            .catch(error => {
+              console.error(error);
+              this.errorMessage = error.response.data.error;
+              this.message = '';
+              this.uploadMessage = '';
+              this.isLoading = false;
+            });
         }
       })
-        .then(response => {
-          this.marginLeft = response.data.marginLeft;
-          this.marginRight = response.data.marginRight;
-          this.marginTop = response.data.marginTop;
-          this.marginBottom = response.data.marginBottom;
-          this.lineSpacing = response.data.lineSpacing;
-          this.message = '背景图片已加载。';
-          this.errorMessage = '';
-          this.uploadMessage = '';
-          this.isLoading = false;
-        })
-        .catch(error => {
-          console.error(error);
-          this.errorMessage = error.response.data.error;
-          this.message = '';
-          this.uploadMessage = '';
-          this.isLoading = false;
-        });
+
     },
     onFontChange(event) {
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
@@ -666,6 +678,7 @@ input[type="file"]:hover {
 .button-container {
   display: flex;
   justify-content: space-around;
+  position: relative;
 }
 
 .clear-button {
@@ -701,21 +714,31 @@ input[type="file"]:hover {
 }
 
 .loader {
-    border: 16px solid #f3f3f3;
-    /* Light grey */
-    border-top: 16px solid #3498db;
-    /* Blue */
-    border-radius: 50%;
-    width: 120px;
-    height: 120px;
-    animation: spin 2s linear infinite;
-    position: absolute;
-    /* 设置动画为绝对定位 */
-    top: 50%;
-    /* 将动画定位在父元素的中心 */
-    left: 50%;
-    transform: translate(-50%, -50%);
-    /* 用 transform 属性将动画元素的中心对准父元素的中心 */
+  border: 16px solid #f3f3f3;
+  /* Light grey */
+  border-top: 16px solid #3498db;
+  /* Blue */
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+  position: absolute;
+  /* 设置动画为绝对定位 */
+  top: 50%;
+  /* 将动画定位在父元素的中心 */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 用 transform 属性将动画元素的中心对准父元素的中心 */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 800px) {
