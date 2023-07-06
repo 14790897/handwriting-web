@@ -21,6 +21,8 @@ from werkzeug.utils import secure_filename
 #文件模块
 from docx import Document
 import PyPDF2
+#图片处理模块
+from identify import identify_distance
 
 
 
@@ -305,6 +307,26 @@ def textfileprocess():
 
     return jsonify({'error': 'Invalid file type'}), 400
 
+@app.route("/api/imagefileprocess", methods=["POST"])
+def imagefileprocess():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file part in the request'}), 400
+
+    if file and (file.filename.endswith('.jpf') or file.filename.endswith('.png') or file.filename.endswith('.jpg') or file.filename.endswith('.jpeg')):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join('./imagefileprocess', filename)  # 促的一目录
+        file.save(filepath)
+        avg_l_whitespace, avg_r_whitespace, avg_distance = identify_distance(filepath)
+        os.remove(filepath)
+
+        return jsonify({'text': 'success'})
+    
+    
+
 def get_filenames_in_dir(directory):
     return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
@@ -444,9 +466,10 @@ if __name__ == "__main__":
     # 如果子文件夹不存在，就创建它
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-    directory = './textfileprocess'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    directory = ['./textfileprocess', 'imagefileprocess']
+    for directory in directory:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
     directory = './font_assets'
     font_file_names = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
     app.run(debug=True, host="0.0.0.0", port=5000)

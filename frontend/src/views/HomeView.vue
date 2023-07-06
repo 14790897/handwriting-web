@@ -412,8 +412,25 @@ export default {
       //之前因为文字不能触发函数，所以要放在watch里面
       this.selectedImageFileName = event.target.files[0].name;
       this.backgroundImage = event.target.files[0];
-
       this.previewImage = URL.createObjectURL(event.target.files[0]);
+      let formData = new FormData();
+      formData.append('file', this.backgroundImage);  // 'file' 是你在服务器端获取文件数据时的 key
+      this.isLoading = true;
+      this.$http.post(
+        '/api/imagefileprocess',
+        formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+        .then(response => {
+          this.text_handwriting = response.data.text;
+          this.isLoading = false;
+        })
+        .catch(error => {
+          console.error(error);
+          this.isLoading = false;
+        });
     },
     onFontChange(event) {
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName

@@ -2,19 +2,28 @@ import cv2
 import numpy as np
 from sklearn.cluster import DBSCAN
 
+#有bug时，别忘了打断点 7.6
 def get_avg_distance(distances):
     # 将列表转化为 N x 1 的矩阵，因为DBSCAN需要这种格式的输入
     distances_np = np.array(distances).reshape(-1, 1)
 
     # 使用DBSCAN算法
-    clustering = DBSCAN(eps=3, min_samples=2).fit(distances_np)
+    clustering = DBSCAN(eps=5, min_samples=3).fit(distances_np)
 
     # 找出最常见的标签（除了-1，-1代表噪声）
     labels, counts = np.unique(clustering.labels_, return_counts=True)
-    most_common_label = labels[np.argmax(counts[labels != -1])]
-
+    # print('clustering.labels_:', clustering.labels_)
+    # print('labels:', labels)
+    # print('counts:', counts)
+    counts[labels == -1] = 0
+    most_common_label = labels[np.argmax(counts)]
+    #下面这句代码存在问题，false时会把这个数据删除，而没有进行占位 7.6
+    # most_common_label = labels[np.argmax(counts[labels != -1])]
+    # print(counts[labels != -1])
+    # print('most_common_label:', most_common_label)
     # 选择最常见的聚类中的间距，并计算这些间距的平均值
     selected_distances = distances_np[clustering.labels_ == most_common_label]
+    # print('selected_distances:', selected_distances)
     avg_distance = np.mean(selected_distances)
     return avg_distance
 
@@ -89,19 +98,48 @@ def identify_distance(filename):
         for x1, y1, x2, y2 in line:
             # 提取每行像素
             row = binary_rotated[y1]
-            # 找到左边第一个非空白像素
+            # 找到左边第一个非空白像素，第一个零是为了去掉外面的元组
             left = np.where(row == 255)[0][0] if np.where(row == 255)[0].size != 0 else 0
             # 找到右边第一个非空白像素
             right = np.where(row == 255)[0][-1] if np.where(row == 255)[0].size != 0 else len(row)
             # 计算空白长度
-            whitespace_left = x1 - left
-            whitespace_right = right - x2
-            l_whitespaces.append(whitespace_left)
-            r_whitespaces.append(whitespace_right)
+            if x1 != 0 and x2 != len(row):
+                whitespace_left = x1 #x1 - left
+                whitespace_right = len(row) - x2 #right - x2
+                l_whitespaces.append(whitespace_left)
+                r_whitespaces.append(whitespace_right)
             # print('左空白：', whitespace_left,'右空白：',whitespace_right)
 
     avg_l_whitespace = get_avg_distance(l_whitespaces)
     avg_r_whitespace = get_avg_distance(r_whitespaces)
+    
+    # 初始化空列表来存储每列的空白长度
+    t_whitespaces = []
+    b_whitespaces = []
+
+    # 转置图像，使得列变成行
+    binary_rotated_T = binary_rotated.T
+
+    for column in binary_rotated_T:
+        # 找到上方第一个非空白像素
+        top = np.where(column == 255)[0][0] if np.where(column == 255)[0].size != 0 else 0
+        # 找到下方第一个非空白像素
+        bottom = np.where(column == 255)[0][-1] if np.where(column == 255)[0].size != 0 else len(column)
+        # 计算空白长度
+        if top != 0 and bottom != len(column):
+            whitespace_top = top
+            whitespace_bottom = len(column) - bottom
+            t_whitespaces.append(whitespace_top)
+            b_whitespaces.append(whitespace_bottom)
+
+    print('上边空白长度：', t_whitespaces)
+    avg_t_whitespace = get_avg_distance(t_whitespaces)
+    avg_b_whitespace = get_avg_distance(b_whitespaces)
+
+    # 输出空白长度
+    print('上边空白长度：', avg_t_whitespace)
+    print('下边空白长度：', avg_b_whitespace)
+
 
     distances = []
 
@@ -116,7 +154,7 @@ def identify_distance(filename):
     print('右边平均空白长度：', avg_r_whitespace)
     print('平均行间距：', avg_distance)
     
-    return avg_l_whitespace, avg_r_whitespace, avg_distance
+    return avg_l_whitespace, avg_r_whitespace, avg_t_whitespace, avg_b_whitespace, avg_distance
 
 if __name__ == '__main__':
     identify_distance('notebook.jpg')
