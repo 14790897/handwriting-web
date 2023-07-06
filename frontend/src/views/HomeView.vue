@@ -432,10 +432,15 @@ export default {
           this.marginBottom = response.data.marginBottom;
           this.lineSpacing = response.data.lineSpacing;
           this.message = '背景图片已加载。';
+          this.errorMessage = '';
+          this.uploadMessage = '';
           this.isLoading = false;
         })
         .catch(error => {
           console.error(error);
+          this.errorMessage = error.response.data.error;
+          this.message = '';
+          this.uploadMessage = '';
           this.isLoading = false;
         });
     },
