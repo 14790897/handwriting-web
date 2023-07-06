@@ -54,6 +54,7 @@
                 <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
               </label>
             </div>
+            <div v-if="isLoading" class="loader">Loading...</div>
           </div>
         </div>
       </div>
@@ -158,6 +159,7 @@ export default {
       //字体下拉选框
       selectedOption: '1',  // 当前选中的选项
       options: '',  // 下拉选项
+      isLoading: false, //7.6
     };
   },
   created() {
@@ -424,7 +426,12 @@ export default {
         }
       })
         .then(response => {
-          this.text_handwriting = response.data.text;
+          this.marginLeft = response.data.marginLeft;
+          this.marginRight = response.data.marginRight;
+          this.marginTop = response.data.marginTop;
+          this.marginBottom = response.data.marginBottom;
+          this.lineSpacing = response.data.lineSpacing;
+          this.message = '背景图片已加载。';
           this.isLoading = false;
         })
         .catch(error => {
@@ -686,6 +693,24 @@ input[type="file"]:hover {
 .font-selection {
   display: flex;
   justify-content: space-around;
+}
+
+.loader {
+    border: 16px solid #f3f3f3;
+    /* Light grey */
+    border-top: 16px solid #3498db;
+    /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+    position: absolute;
+    /* 设置动画为绝对定位 */
+    top: 50%;
+    /* 将动画定位在父元素的中心 */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* 用 transform 属性将动画元素的中心对准父元素的中心 */
 }
 
 @media (max-width: 800px) {

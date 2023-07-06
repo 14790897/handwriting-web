@@ -322,7 +322,7 @@ def imagefileprocess():
         file.save(filepath)
         avg_l_whitespace, avg_r_whitespace, avg_t_whitespace, avg_b_whitespace, avg_distance = identify_distance(filepath)
         os.remove(filepath)
-        return jsonify({'avg_l_whitespace': avg_l_whitespace, 'avg_r_whitespace': avg_r_whitespace, 'avg_t_whitespace': avg_t_whitespace, 'avg_b_whitespace': avg_b_whitespace, 'avg_distance': avg_distance})
+        return jsonify({'marginLeft': avg_l_whitespace, 'marginRight': avg_r_whitespace, 'marginTop': avg_t_whitespace, 'marginBottom': avg_b_whitespace, 'lineSpacing': avg_distance})
     else:
         return jsonify({'error': 'Invalid file type'}), 400
     
