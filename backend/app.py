@@ -320,10 +320,11 @@ def imagefileprocess():
         filename = secure_filename(file.filename)
         filepath = os.path.join('./imagefileprocess', filename)  # 促的一目录
         file.save(filepath)
-        avg_l_whitespace, avg_r_whitespace, avg_distance = identify_distance(filepath)
+        avg_l_whitespace, avg_r_whitespace, avg_t_whitespace, avg_b_whitespace, avg_distance = identify_distance(filepath)
         os.remove(filepath)
-
-        return jsonify({'text': 'success'})
+        return jsonify({'avg_l_whitespace': avg_l_whitespace, 'avg_r_whitespace': avg_r_whitespace, 'avg_t_whitespace': avg_t_whitespace, 'avg_b_whitespace': avg_b_whitespace, 'avg_distance': avg_distance})
+    else:
+        return jsonify({'error': 'Invalid file type'}), 400
     
     
 
