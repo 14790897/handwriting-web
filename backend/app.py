@@ -318,7 +318,7 @@ def imagefileprocess():
 
     if file and (file.filename.endswith('.jpf') or file.filename.endswith('.png') or file.filename.endswith('.jpg') or file.filename.endswith('.jpeg')):
         filename = secure_filename(file.filename)
-        filepath = os.path.join('./imagefileprocess', filename)  # 促的一目录
+        filepath = os.path.join('./imagefileprocess', filename)
         file.save(filepath)
         avg_l_whitespace, avg_r_whitespace, avg_t_whitespace, avg_b_whitespace, avg_distance = identify_distance(filepath)
         os.remove(filepath)

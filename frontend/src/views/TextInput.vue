@@ -6,7 +6,7 @@
         <label for="textFileInput">or upload a document file:</label>
         <div class="file_select_container">
         <button @click="triggerTextFileInput">Choose File</button>
-        <span class="border p-2 fs-6 text-primary" v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
+        <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
         <label>
             <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
                 accept=".doc,.docx,.pdf,.txt,.rtf" style="display: none;" />
