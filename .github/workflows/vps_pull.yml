@@ -17,6 +17,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh -o StrictHostKeyChecking=no ubuntu@54.252.59.8 "
             sudo -i
-            cd handwriting-web
+            cd /root/handwriting-web
             git pull
           "
