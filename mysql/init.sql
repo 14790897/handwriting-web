@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS mydb;
+USE mydb;
+
+CREATE TABLE user_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE, 
+    image BLOB,
+    upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

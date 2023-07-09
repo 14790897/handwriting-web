@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 
 services:
   frontend:
@@ -14,7 +14,7 @@ services:
       - "5000:5000"
 
   db:
-    image: mysql
+    image: 14790897/mysql-handwriting:latest
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:

@@ -1,0 +1,10 @@
+FROM mysql:5.7
+
+# 设置环境变量
+ENV MYSQL_ROOT_PASSWORD rootpass
+ENV MYSQL_DATABASE mydb
+ENV MYSQL_USER myuser
+ENV MYSQL_PASSWORD mypass
+
+# 复制 init.sql 文件到/docker-entrypoint-initdb.d 目录下
+COPY init.sql /docker-entrypoint-initdb.d

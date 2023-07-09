@@ -1,0 +1,21 @@
+name: vps-pull
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  vps-pull:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run command via SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no user@yourserver.com "
+            cd /path/to/your/repo
+            git pull
+          "

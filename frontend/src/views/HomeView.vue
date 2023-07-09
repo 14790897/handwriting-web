@@ -49,7 +49,7 @@
                   <div class="clear-button-line"></div>
                 </div>
               </button>
-              <span class="border p-2 fs-6 text-primary" v-if="selectedImageFileName">{{ selectedImageFileName }}</span>
+              <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName }}</span>
               <label>
                 <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
               </label>
