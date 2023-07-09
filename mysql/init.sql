@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS mydb;
-USE mydb;
+CREATE DATABASE IF NOT EXISTS your_database;
+USE your_database
 
 CREATE TABLE user_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
