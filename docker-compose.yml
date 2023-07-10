@@ -12,7 +12,10 @@ services:
     image: 14790897/backend-handwriting:latest
     ports:
       - "5000:5000"
+    
 
+    depends_on:
+      - localhost
   localhost:
     image: 14790897/mysql-handwriting:latest
     command: --default-authentication-plugin=mysql_native_password
