@@ -76,7 +76,7 @@ app.permanent_session_lifetime = timedelta(minutes=5000000)
 app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
 Session(app)  # 初始化扩展，传入应用程序实例
 limiter = Limiter(
-    app,
+    app=app,
     key_func=get_remote_address,
     default_limits=["300 per 5 minute"]
 )
