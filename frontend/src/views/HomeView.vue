@@ -409,9 +409,6 @@ export default {
         }
       });
     },
-    savePreset(event){
-      localStorage.setItem('preset', JSON.stringify(this.$data));
-    },
 
     onBackgroundImageChange(event) {
       // 当用户选择了一个新的背景图片文件时，更新 selectedImageFileName，由于这边直接触发函数了，所以localstorage可以在这里修改，
