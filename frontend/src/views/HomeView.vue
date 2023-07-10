@@ -103,7 +103,7 @@
       <button @click="generateHandwriting(preview = true)">预览</button>
       <!-- <button @click="export_file">导出</button>
         <button @click="loadPreset">载入预设</button> -->
-      <button @click="savePreset">保存设置</button>
+      <!-- <button @click="savePreset">保存设置</button> -->
       <button @click="generateHandwriting(preview = false)">生成完整手写图片</button>
     </div>
     <!-- 预览区 -->
