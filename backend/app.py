@@ -30,6 +30,10 @@ from identify import identify_distance
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+#限制请求速率 7.9
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 # 创建一个logger
 logger = logging.getLogger(__name__)
@@ -66,12 +70,16 @@ app.logger.setLevel(logging.DEBUG)
 SECRET_KEY = "437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88"
 app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_SECURE"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "None"
+# app.config["SESSION_COOKIE_SAMESITE"] = "None"
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 app.permanent_session_lifetime = timedelta(minutes=5000000)
 app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
 Session(app)  # 初始化扩展，传入应用程序实例
-
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["300 per 5 minute"]
+)
 
 # 创建一个新的白色图片，并添加间隔的线条作为背景
 def create_notebook_image(
@@ -111,6 +119,7 @@ def read_pdf(file_path):
 
 
 @app.route("/api/generate_handwriting", methods=["POST"])
+@limiter.limit("20 per 5 minute")
 def generate_handwriting():
     logger.info("已经进入generate_handwriting")
     if "username" not in session:
@@ -306,6 +315,7 @@ def generate_handwriting():
 
 
 @app.route("/api/textfileprocess", methods=["POST"])
+@limiter.limit("20 per 5 minute")
 def textfileprocess():
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
@@ -342,6 +352,7 @@ def textfileprocess():
 
 
 @app.route("/api/imagefileprocess", methods=["POST"])
+@limiter.limit("20 per 5 minute")
 def imagefileprocess():
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400

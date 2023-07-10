@@ -102,8 +102,8 @@
     <div class="buttons">
       <button @click="generateHandwriting(preview = true)">预览</button>
       <!-- <button @click="export_file">导出</button>
-      <button @click="savePreset">保存</button>
-      <button @click="loadPreset">载入预设</button> -->
+        <button @click="loadPreset">载入预设</button> -->
+      <button @click="savePreset">保存设置</button>
       <button @click="generateHandwriting(preview = false)">生成完整手写图片</button>
     </div>
     <!-- 预览区 -->
@@ -171,7 +171,7 @@ export default {
       const value = localStorage.getItem(item);
       if (value !== null && value !== "undefined") {
         this[item] = JSON.parse(value);
-      } else {
+      } else { 
         console.log('localstorage缺失item:' + item)
       }
     });
@@ -408,6 +408,9 @@ export default {
           this.uploadMessage = '';
         }
       });
+    },
+    savePreset(event){
+      localStorage.setItem('preset', JSON.stringify(this.$data));
     },
 
     onBackgroundImageChange(event) {
