@@ -17,5 +17,5 @@ services:
     image: 14790897/mysql-handwriting:latest
     command: --default-authentication-plugin=mysql_native_password
     restart: always
-    ports:
-      - 3306:3306
+    expose:
+      - "3306"
