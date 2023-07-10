@@ -1,4 +1,4 @@
-name: vps-pull
+name: vps-pull-update
 
 on:
   push:
