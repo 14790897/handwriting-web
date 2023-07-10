@@ -4,8 +4,8 @@ FROM python:3.9-slim-buster
 # Set the working directory in the container to /app
 WORKDIR /app
 
-# Install MySQL development libraries and gcc
-RUN apt-get update && apt-get install -y gcc default-libmysqlclient-dev
+# Install MySQL development libraries, gcc, and libgl1-mesa-glx
+RUN apt-get update && apt-get install -y gcc default-libmysqlclient-dev libgl1-mesa-glx
 
 # Add the current directory contents into the container at /app
 ADD . /app
