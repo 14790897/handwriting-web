@@ -369,7 +369,7 @@ def textfileprocess():
             text = read_pdf(filepath)
         elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
             with open(filepath, "r") as f:
-                text = f.read()
+                text = f.read().decode(errors='ignore')
 
         # 删除临时文件
         os.remove(filepath)
@@ -567,6 +567,7 @@ if __name__ == "__main__":
 CREATE TABLE user_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) UNIQUE, 
+    password VARCHAR(255), 
     image BLOB,
     upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
