@@ -34,6 +34,34 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+#获取环境变量
+mysql_host = os.getenv('MYSQL_HOST', 'db')
+# 获取当前路径
+current_path = os.getcwd()
+# 创建一个子文件夹用于存储输出的图片
+output_path = os.path.join(current_path, "output")
+# 如果子文件夹不存在，就创建它
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+directory = ["./textfileprocess", "imagefileprocess"]
+for directory in directory:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+directory = "./font_assets"
+font_file_names = [
+    f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))
+]
+#sentry部分 7.7
+sentry_sdk.init(
+    dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
+    integrations=[
+        FlaskIntegration(),
+    ],
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+)
 
 # 创建一个logger
 logger = logging.getLogger(__name__)
@@ -525,34 +553,7 @@ def after_request(response):
 
 
 if __name__ == "__main__":
-    #获取环境变量
-    mysql_host = os.getenv('MYSQL_HOST', 'db')
-    # 获取当前路径
-    current_path = os.getcwd()
-    # 创建一个子文件夹用于存储输出的图片
-    output_path = os.path.join(current_path, "output")
-    # 如果子文件夹不存在，就创建它
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    directory = ["./textfileprocess", "imagefileprocess"]
-    for directory in directory:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    directory = "./font_assets"
-    font_file_names = [
-        f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))
-    ]
-    #sentry部分 7.7
-    sentry_sdk.init(
-        dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
-        integrations=[
-            FlaskIntegration(),
-        ],
-        # Set traces_sample_rate to 1.0 to capture 100%
-        # of transactions for performance monitoring.
-        # We recommend adjusting this value in production.
-        traces_sample_rate=1.0,
-    )
+ 
 
 
 
