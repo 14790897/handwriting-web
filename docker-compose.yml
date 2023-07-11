@@ -7,6 +7,8 @@ services:
       - "2345:80"
     depends_on:
       - backend
+    networks:
+      - mynetwork
 
   backend:
     image: 14790897/backend-handwriting:latest
@@ -14,10 +16,17 @@ services:
       - "5000:5000"
     depends_on:
       - db
-      
+    networks:
+      - mynetwork
+
   db:
     image: 14790897/mysql-handwriting:latest
     command: --default-authentication-plugin=mysql_native_password
     restart: always
-    expose:
-      - "3306"
+    ports:
+      - "3306:3306"
+    networks:
+      - mynetwork
+      
+networks:
+  mynetwork:
