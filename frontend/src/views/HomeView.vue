@@ -49,7 +49,8 @@
                   <div class="clear-button-line"></div>
                 </div>
               </button>
-              <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName }}</span>
+              <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName
+              }}</span>
               <label>
                 <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
               </label>
@@ -111,6 +112,18 @@
       <h2>预览：</h2>
       <img :src="previewImage" alt="预览图像" style="width: 600px;" />
     </div>
+
+    <footer class="footer mt-auto py-3 bg-white">
+      <div class="container text-center">
+        <span class="text-black">© 2023 Liuweiqing</span>
+        <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
+        <span class="text-black">项目地址：</span>
+        <a href="https://github.com/14790897/handwriting-web"
+          class="text-info">Github</a>
+      </div>
+    </footer>
+
+
   </div>
 </template>
 
@@ -171,7 +184,7 @@ export default {
       const value = localStorage.getItem(item);
       if (value !== null && value !== "undefined") {
         this[item] = JSON.parse(value);
-      } else { 
+      } else {
         console.log('localstorage缺失item:' + item)
       }
     });
