@@ -119,7 +119,7 @@
         <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
         <span class="text-black">项目地址：</span>
         <a href="https://github.com/14790897/handwriting-web"
-          class="text-info">Github</a>
+          class="text-info">GitHub</a>
       </div>
     </footer>
 
