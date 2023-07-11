@@ -508,7 +508,7 @@ def register():
 @app.before_request
 def before_request():
     current_app.cnx = mysql.connector.connect(
-        host="localhost", user="myuser", password="mypassword", database="your_database"
+        host=mysql_host, user="myuser", password="mypassword", database="your_database"
     )
 
     # current_app.cnx  = mysql.connector.connect(
@@ -525,6 +525,8 @@ def after_request(response):
 
 
 if __name__ == "__main__":
+    #获取环境变量
+    mysql_host = os.getenv('MYSQL_HOST', 'localhost')
     # 获取当前路径
     current_path = os.getcwd()
     # 创建一个子文件夹用于存储输出的图片
