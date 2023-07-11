@@ -526,7 +526,7 @@ def after_request(response):
 
 if __name__ == "__main__":
     #获取环境变量
-    mysql_host = os.getenv('MYSQL_HOST', 'localhost')
+    mysql_host = os.getenv('MYSQL_HOST', 'db')
     # 获取当前路径
     current_path = os.getcwd()
     # 创建一个子文件夹用于存储输出的图片
