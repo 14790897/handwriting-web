@@ -7,3 +7,4 @@ backend/env
 backend/font_assets/*
 !backend/font_assets/.gitkeep
 venv
+青叶手写体.ttf
