@@ -548,7 +548,8 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    current_app.cnx.close()
+    if hasattr(current_app, 'cnx'):
+        current_app.cnx.close()
     return response
 
 
