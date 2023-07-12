@@ -118,8 +118,7 @@
         <span class="text-black">© 2023 Liuweiqing</span>
         <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
         <span class="text-black">项目地址：</span>
-        <a href="https://github.com/14790897/handwriting-web"
-          class="text-info">GitHub</a>
+        <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
       </div>
     </footer>
 
@@ -128,6 +127,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import Swal from 'sweetalert2';
 export default {
@@ -205,6 +205,7 @@ export default {
       // 当有背景图片时，返回 true，这会禁用宽度和高度输入框
       return !!this.backgroundImage;
     },
+    ...mapState(['login_delete_message']),
   },
   watch: {
     login_delete_message(newVal) {

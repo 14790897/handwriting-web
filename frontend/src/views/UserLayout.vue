@@ -55,7 +55,8 @@
                 </li>
               </ul>
               <!-- component代表组件 -->
-              <component v-bind:is="currentView" class="h-100" @update="changeModalOpen" @login_delete="change_login_message" :login_delete_message="login_delete"></component>
+              <component v-bind:is="currentView" class="h-100" @update="changeModalOpen"
+                @login_delete="change_login_message"></component>
             </div>
           </div>
         </div>
@@ -73,9 +74,13 @@
 // import { mapGetters } from 'vuex';
 import UserRegister from './UserRegister.vue';
 import UserLogin from "./UserLogin.vue";
+import { mapState, mapMutations } from 'vuex';
 
 export default {
   name: 'UserLayout',
+  computed: {
+    ...mapState(['login_delete_message']),
+  },
   data() {
     return {
       isNavOpen: false,
@@ -87,7 +92,6 @@ export default {
       ],
       currentView: 'UserLogin',  // 默认显示登录组件
       isModalOpen: false,
-      login_delete: false,
     };
   },
   // computed: {
@@ -107,14 +111,16 @@ export default {
     UserLogin
   },
   methods: {
+    ...mapMutations(['login_delete_message_update']),
     changeView(view) {
       this.currentView = view;
     },
-    changeModalOpen(newValue){
-      this.isModalOpen= newValue;
+    changeModalOpen(newValue) {
+      this.isModalOpen = newValue;
     },
-    change_login_message(newValue){
-      this.login_delete = newValue;
+    change_login_message(newValue) {
+      //触发vuex中的mutations 7.12
+      this.login_delete_message_update(newValue);
     }
   },
 };
@@ -135,5 +141,3 @@ export default {
   /* This will blur the background */
 }
 </style>
-
-
