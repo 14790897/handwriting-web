@@ -53,11 +53,18 @@ export default {
         title: 'Error!',
         text: this.$t('message.loginFailed'),
         icon: 'error',
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-popup-custom'
+        }
       })
     }
   }
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.swal2-popup-custom {
+  z-index: 2000 !important;
+}
+</style>
