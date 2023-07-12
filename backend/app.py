@@ -251,7 +251,7 @@ def generate_handwriting():
     text_to_generate = data["text"]
     if data["preview"] == "true":
         # 截短字符，只生成一面
-        preview_length = 400  # 可以调整为所需的预览长度
+        preview_length = 300  # 可以调整为所需的预览长度
         text_to_generate = text_to_generate[:preview_length]
 
     # 从表单中获取字体文件并处理 7.4
@@ -422,13 +422,16 @@ def imagefileprocess():
 
 def get_filenames_in_dir(directory):
     return [
-        f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))
+        f
+        for f in os.listdir(directory)
+        if os.path.isfile(os.path.join(directory, f)) and f.endswith(".ttf")
     ]
 
 
 @app.route("/api/fonts_info", methods=["GET"])
 def get_fonts_info():
     filenames = get_filenames_in_dir("./font_assets")
+    logger.info("filenames: ", filenames)
     if filenames == []:
         return jsonify({"error": "fontfile not found"}), 400
     return jsonify(filenames)
