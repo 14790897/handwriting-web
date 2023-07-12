@@ -18,6 +18,8 @@ services:
       - db
     networks:
       - mynetwork
+    volumes:
+      - ./app.log:/app.log
 
   db:
     image: 14790897/mysql-handwriting:latest
@@ -27,6 +29,6 @@ services:
       - "3306:3306"
     networks:
       - mynetwork
-      
+
 networks:
   mynetwork:
