@@ -1,21 +1,21 @@
-name: vps-pull-update
+# name: vps-pull-update
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  vps-pull:
-    runs-on: ubuntu-latest
+# jobs:
+#   vps-pull:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Run command via SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no ubuntu@54.252.59.8 "
-            cd handwriting-web
-            git pull
-          "
+#     steps:
+#       - name: Run command via SSH
+#         run: |
+#           mkdir -p ~/.ssh/
+#           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh -o StrictHostKeyChecking=no ubuntu@54.252.59.8 "
+#             cd handwriting-web
+#             git pull
+#           "
