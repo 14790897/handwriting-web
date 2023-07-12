@@ -49,7 +49,9 @@ for directory in directory:
         os.makedirs(directory)
 directory = "./font_assets"
 font_file_names = [
-    f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))
+    f
+    for f in os.listdir(directory)
+    if os.path.isfile(os.path.join(directory, f)) and f.endswith(".ttf")
 ]
 # sentry部分 7.7
 sentry_sdk.init(
@@ -97,7 +99,7 @@ app.logger.setLevel(logging.DEBUG)
 
 SECRET_KEY = "437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88"
 app.config["SECRET_KEY"] = SECRET_KEY
-app.config["SESSION_COOKIE_SECURE"] = True
+# app.config["SESSION_COOKIE_SECURE"] = True
 # app.config["SESSION_COOKIE_SAMESITE"] = "None"
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 app.permanent_session_lifetime = timedelta(minutes=5000000)
