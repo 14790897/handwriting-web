@@ -430,7 +430,7 @@ def get_filenames_in_dir(directory):
 def get_fonts_info():
     filenames = get_filenames_in_dir("./font_assets")
     if filenames == []:
-        return jsonify("not found")
+        return jsonify({"error": "fontfile not found"}), 400
     return jsonify(filenames)
 
 
@@ -533,7 +533,8 @@ def register():
             400,
         )
 
-#捕获所有未捕获的异常，返回给前端7.12
+
+# 捕获所有未捕获的异常，返回给前端7.12
 @app.errorhandler(Exception)
 def handle_exception(e):
     # Pass the error to Flask's default error handling.
@@ -541,10 +542,11 @@ def handle_exception(e):
         "success": False,
         "error": {
             "type": type(e).__name__,  # The type of the exception
-            "message": str(e)  # The message of the exception
-        }
+            "message": str(e),  # The message of the exception
+        },
     }
     return jsonify(response), 500
+
 
 @app.before_request
 def before_request():

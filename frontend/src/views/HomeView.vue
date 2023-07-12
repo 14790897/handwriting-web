@@ -193,6 +193,16 @@ export default {
       this.options = response.data.map((font, index) => {
         return { value: String(index + 1), text: font };
       });
+    }).catch(error => {
+      if (error.response && error.response.data) {
+        this.errorMessage = error.response.data.error;
+        this.message = '';
+        this.uploadMessage = '';
+      } else {
+        this.errorMessage = error;
+        this.message = '';
+        this.uploadMessage = '';
+      }
     });
     console.log('options' + this.options)
   },
