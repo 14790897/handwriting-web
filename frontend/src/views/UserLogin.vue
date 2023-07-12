@@ -1,55 +1,63 @@
 <template>
   <div class="d-flex align-items-center justify-content-center" style="height: 100vh;">
-        <div class="card p-4" style="width: 400px;">
-          <h2 class="mb-3">{{ $t('message.login') }}</h2>
-          <form @submit.prevent="submitForm">
-            <div class="form-group">
-              <label for="username">Username</label>
-              <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
-            </div>
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">{{ $t('message.login') }}</button>
-          </form>
+    <div class="card p-4" style="width: 400px;">
+      <h2 class="mb-3">{{ $t('message.login') }}</h2>
+      <form @submit.prevent="submitForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
         </div>
-      </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">{{ $t('message.login') }}</button>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script>
-// import { mapMutations } from 'vuex';
+import Swal from 'sweetalert2'
 
 export default {
   data() {
-      return {
-          username: '',
-          password: ''
-      }
+    return {
+      username: '',
+      password: ''
+    }
   },
   methods: {
-      // ...mapMutations(['setUsername']),
-      async submitForm() {
-          let response = await this.$http.post('/api/login', {
-              username: this.username,
-              password: this.password
-          });
-          if (response.data.status === 'success') {
-              // 使用 mutation 设置全局的 username
-              // this.setUsername(this.username);
-              // this.$router.push({name: 'Home'});
+    // ...mapMutations(['setUsername']),
+    async submitForm() {
+      let response = await this.$http.post('/api/login', {
+        username: this.username,
+        password: this.password
+      });
+      if (response.data.status === 'success') {
+        // 使用 mutation 设置全局的 username
+        // this.setUsername(this.username);
+        // this.$router.push({name: 'Home'});
 
-              //使得模态框消失
-              this.$emit('update', false);
-              //使得未登录消息消失
-              this.$emit('login_delete', true)
-          } else {
-              alert(this.$t('message.loginFailed'));
-          }
+        //使得模态框消失
+        this.$emit('update', false);
+        //使得未登录消息消失
+        this.$emit('login_delete', true)
+      } else {
+        this.showAlert();
+        // alert(this.$t('message.loginFailed'));
       }
+    },
+    showAlert() {
+      Swal.fire({
+        title: 'Error!',
+        text: this.$t('message.loginFailed'),
+        icon: 'error',
+        confirmButtonText: 'OK'
+      })
+    }
   }
 }
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
