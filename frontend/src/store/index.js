@@ -6,8 +6,8 @@ export default createStore({
     login_delete_message: false,
   },
   mutations: {
-    login_delete_message_update(state) {
-      state.login_delete_message = true;
+    login_delete_message_update(state, value) {
+      state.login_delete_message = value;
     },
   },
   actions: {
