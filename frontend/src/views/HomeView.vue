@@ -608,11 +608,15 @@ export default {
   box-sizing: border-box;
   grid-area: image;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  min-width: 100px;
+  min-height: 200px;
 }
 
 .preview img {
   max-width: 100%;
   height: auto;
+
+  object-fit: cover
 }
 
 input[type="number"],
@@ -755,7 +759,7 @@ input[type="file"]:hover {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
   .container {
     /* flex-direction: column; */
     grid-template-areas:
