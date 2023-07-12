@@ -30,12 +30,12 @@ from identify import identify_distance
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-#限制请求速率 7.9
+# 限制请求速率 7.9
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-#获取环境变量
-mysql_host = os.getenv('MYSQL_HOST', 'db')
+# 获取环境变量
+mysql_host = os.getenv("MYSQL_HOST", "db")
 # 获取当前路径
 current_path = os.getcwd()
 # 创建一个子文件夹用于存储输出的图片
@@ -51,7 +51,7 @@ directory = "./font_assets"
 font_file_names = [
     f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))
 ]
-#sentry部分 7.7
+# sentry部分 7.7
 sentry_sdk.init(
     dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
     integrations=[
@@ -104,10 +104,9 @@ app.permanent_session_lifetime = timedelta(minutes=5000000)
 app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
 Session(app)  # 初始化扩展，传入应用程序实例
 limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["300 per 5 minute"]
+    app=app, key_func=get_remote_address, default_limits=["300 per 5 minute"]
 )
+
 
 # 创建一个新的白色图片，并添加间隔的线条作为背景
 def create_notebook_image(
@@ -368,8 +367,8 @@ def textfileprocess():
         elif file.filename.endswith(".pdf"):
             text = read_pdf(filepath)
         elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
-            with open(filepath, "r") as f:
-                text = f.read().decode(errors='ignore')
+            with open(filepath, "r", errors="ignore") as f:
+                text = f.read()
 
         # 删除临时文件
         os.remove(filepath)
@@ -548,18 +547,14 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    if hasattr(current_app, 'cnx'):
+    if hasattr(current_app, "cnx"):
         current_app.cnx.close()
     return response
 
 
 if __name__ == "__main__":
- 
-
-
-
     app.run(debug=True, host="0.0.0.0", port=5000)
-    
+
     # good luck 6/16/2023
 """    
 数据库初始化操作
