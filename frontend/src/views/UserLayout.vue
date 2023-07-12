@@ -38,7 +38,7 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Modal</h5>
+              <h5 class="modal-title">{{ modalTitle }}</h5>
               <button type="button" class="close" @click="isModalOpen = false">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -80,6 +80,9 @@ export default {
   name: 'UserLayout',
   computed: {
     ...mapState(['login_delete_message']),
+    modalTitle() {
+      return this.currentView === 'UserRegister' ? 'Register' : 'Login';
+    },
   },
   data() {
     return {
