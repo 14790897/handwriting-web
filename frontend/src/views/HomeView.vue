@@ -131,12 +131,12 @@ import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import Swal from 'sweetalert2';
 export default {
-  props: {
-    login_delete_message: {
-      type: Boolean,
-      default: false
-    }
-  },
+  // props: {
+  //   login_delete_message: {
+  //     type: Boolean,
+  //     default: false
+  //   }
+  // },
   components: {
     TextInput
   },
@@ -215,6 +215,7 @@ export default {
       // 当有背景图片时，返回 true，这会禁用宽度和高度输入框
       return !!this.backgroundImage;
     },
+    //vuex中的login_delete_message，下面使用watch监控这个值  7.13
     ...mapState(['login_delete_message']),
   },
   watch: {
@@ -223,7 +224,7 @@ export default {
         this.errorMessage = '';
         // this.message = '';
         // this.uploadMessage = '';
-        console.log('已进入watch');
+        console.log('已进入watch，错误消息已经清空');
       }
     },
     text: {

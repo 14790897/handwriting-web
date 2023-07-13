@@ -2,7 +2,7 @@ FROM mysql:5.7
 
 # 设置环境变量
 ENV MYSQL_ROOT_PASSWORD rootpass
-ENV MYSQL_DATABASE your_database
+ENV MYSQL_DATABASE mydatabase
 ENV MYSQL_USER myuser
 ENV MYSQL_PASSWORD mypassword
 

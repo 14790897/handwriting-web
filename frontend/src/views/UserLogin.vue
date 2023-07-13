@@ -44,6 +44,7 @@ export default {
         //使得未登录消息消失
         this.$emit('login_delete', true)
       } else {
+        console.log('login failed 应该显示sweet的报错信息');
         this.showAlert();
         // alert(this.$t('message.loginFailed'));
       }

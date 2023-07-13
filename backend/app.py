@@ -472,9 +472,15 @@ def login():
     password = data.get("password")
     logger.info(f"Received username: {username}")  # 打印接收到的用户名
     logger.info(f"Received password: {password}")  # 打印接收到的密码
-    cursor = current_app.cnx.cursor()
-    cursor.execute(f"SELECT password FROM user_images WHERE username=%s", (username,))
-    result = cursor.fetchone()
+    try:
+        cursor = current_app.cnx.cursor()
+        cursor.execute(
+            f"SELECT password FROM user_images WHERE username=%s", (username,)
+        )
+        result = cursor.fetchone()
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        return jsonify({"error": "An error occurred"}), 500
 
     if result and result[0] == password:
         session["username"] = username
@@ -494,9 +500,13 @@ def register():
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
-    cursor = current_app.cnx.cursor()
-    cursor.execute(f"SELECT * FROM user_images WHERE username=%s", (username,))
-    result = cursor.fetchone()
+    try:
+        cursor = current_app.cnx.cursor()
+        cursor.execute(f"SELECT * FROM user_images WHERE username=%s", (username,))
+        result = cursor.fetchone()
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        return jsonify({"error": "An error occurred"}), 500
 
     if not result:
         try:
@@ -554,7 +564,7 @@ def handle_exception(e):
 @app.before_request
 def before_request():
     current_app.cnx = mysql.connector.connect(
-        host=mysql_host, user="myuser", password="mypassword", database="your_database"
+        host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
     )
 
     # current_app.cnx  = mysql.connector.connect(
@@ -568,6 +578,10 @@ def before_request():
 def after_request(response):
     if hasattr(current_app, "cnx"):
         current_app.cnx.close()
+
+    # 仅用于调试 7.13
+    session.clear()
+
     return response
 
 
