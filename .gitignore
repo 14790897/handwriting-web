@@ -13,3 +13,4 @@ backend/_pycache__/*
 云烟体.ttf
 原始handwrite.py
 测试.txt
+backend\app.log
