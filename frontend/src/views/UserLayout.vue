@@ -87,10 +87,10 @@ export default {
   data() {
     return {
       isNavOpen: false,
-      selectedLanguage: 'en',
+      selectedLanguage: 'cn',
       languages: [
-        { code: 'en', name: 'English' },
         { code: 'cn', name: 'Chinese' },
+        { code: 'en', name: 'English' },
         // ...
       ],
       currentView: 'UserLogin',  // 默认显示登录组件

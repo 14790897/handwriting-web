@@ -491,7 +491,7 @@ def login():
         logger.error(f"Login failed for user: {username}")
         return {
             "status": "failed",
-            "message": "Login failed. Check your username and password.",
+            "error": "Login failed. Check your username and password.",
         }, 401
 
 
@@ -580,7 +580,7 @@ def after_request(response):
         current_app.cnx.close()
 
     # 仅用于调试 7.13
-    session.clear()
+    # session.clear()
 
     return response
 

@@ -29,30 +29,33 @@ export default {
   },
   methods: {
     // ...mapMutations(['setUsername']),
-    async submitForm() {
-      let response = await this.$http.post('/api/login', {
+    submitForm() {
+      this.$http.post('/api/login', {
         username: this.username,
         password: this.password
-      });
-      if (response.data.status === 'success') {
-        // 使用 mutation 设置全局的 username
-        // this.setUsername(this.username);
-        // this.$router.push({name: 'Home'});
+      })
+        .then(response => {
+          if (response.data.status === 'success') {
+            // 使用 mutation 设置全局的 username
+            // this.setUsername(this.username);
+            // this.$router.push({name: 'Home'});
 
-        //使得模态框消失
-        this.$emit('update', false);
-        //使得未登录消息消失
-        this.$emit('login_delete', true)
-      } else {
-        console.log('login failed 应该显示sweet的报错信息');
-        this.showAlert();
-        // alert(this.$t('message.loginFailed'));
-      }
+            //使得模态框消失
+            this.$emit('update', false);
+            //使得未登录消息消失
+            this.$emit('login_delete', true)
+          }
+        })
+        .catch(error => {
+          console.log('login failed 应该显示sweet的报错信息' + error);
+          console.log(this.$t('message.loginfailed'));
+          this.showAlert();
+        });
     },
     showAlert() {
       Swal.fire({
         title: 'Error!',
-        text: this.$t('message.loginFailed'),
+        text: this.$t('message.loginfailed'),
         icon: 'error',
         confirmButtonText: 'OK',
         customClass: {
@@ -60,6 +63,7 @@ export default {
         }
       })
     }
+
   }
 }
 </script>

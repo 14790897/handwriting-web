@@ -1,11 +1,11 @@
 <template>
     <div id='text_file_select'>
-        <label for="textArea">Text:</label>
-        <textarea id="textArea"   class="form-control" v-model="text_handwriting" placeholder="请输入要转换的文字"></textarea>
+        <label for="textArea">{{ $t('message.text') }}:</label>
+        <textarea id="textArea" class="form-control" v-model="text_handwriting" :placeholder="$t('message.enterText')"></textarea>
 
-        <label for="textFileInput">or upload a document file:</label>
+        <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
         <div class="file_select_container">
-        <button @click="triggerTextFileInput">Choose File</button>
+        <button @click="triggerTextFileInput">{{ $t('message.chooseFile') }}</button>
         <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
         <label>
             <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
@@ -13,9 +13,10 @@
         </label>
         </div>
 
-        <div v-if="isLoading" class="loader">Loading...</div>
+        <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
     </div>
 </template>
+
 
 <script>
 export default {

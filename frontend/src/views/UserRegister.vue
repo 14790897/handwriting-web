@@ -2,7 +2,7 @@
     <div class="d-flex align-items-center justify-content-center" style="height: 100vh;">
         <div class="card p-4" style="width: 400px;">
           <div v-if="notification.show" class="alert" :class="notification.type === 'success' ? 'alert-success' : 'alert-danger'">
-            {{ notification.message }}// todo 修改多语言
+            {{ notification.message }}
           </div>
           <h2 class="mb-3">{{ $t('message.register') }}</h2>
           <form @submit.prevent="submitForm">
@@ -36,43 +36,50 @@ export default {
         }
     },
     methods: {
-        async submitForm() {
-            // Get CSRF token from server
-            // let csrfResponse = await this.$http.get('/api/csrf-token');
-            // if (csrfResponse.status === 200) {
-            //     this.csrfToken = csrfResponse.data.token;
-            //     console.log('CSRF token: ' + this.csrfToken);
-            // } else {
-            //     // Handle error here
-            //     console.error('Failed to get CSRF token');
-            //     return;
-            // }
+      submitForm() {
+  // Get CSRF token from server
+  // this.$http.get('/api/csrf-token')
+  //   .then(csrfResponse => {
+  //     if (csrfResponse.status === 200) {
+  //       this.csrfToken = csrfResponse.data.token;
+  //       console.log('CSRF token: ' + this.csrfToken);
+  //     } else {
+  //       // Handle error here
+  //       console.error('Failed to get CSRF token');
+  //       return;
+  //     }
+  //   });
 
-            let response = await this.$http.post('/api/register', {
-                username: this.username,
-                password: this.password,
-            }, {
-                headers: {
-                    'X-CSRFToken': this.csrfToken,
-                    'Content-Type': 'application/json',
-                }
-            });
-            if (response.data.status === 'success') {
-                this.notification = {
-                show: true,
-                message: this.$t('message.registersuccess'),
-                type: 'success',
-                };
-                // this.$router.push({name: 'Home'});
-                this.$emit('update', false);
-            } else {
-                this.notification = {
-                show: true,
-                message: this.$t('message.registerfailed'),
-                type: 'error',
-                };
-            }
-        }
+  this.$http.post('/api/register', {
+    username: this.username,
+    password: this.password,
+  }, {
+    headers: {
+      'X-CSRFToken': this.csrfToken,
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => {
+    if (response.data.status === 'success') {
+      this.notification = {
+        show: true,
+        message: this.$t('message.registersuccess'),
+        type: 'success',
+      };
+      // this.$router.push({name: 'Home'});
+      this.$emit('update', false);
+    }
+  })
+  .catch(error => {
+    this.notification = {
+      show: true,
+      message: this.$t('message.registerfailed'),
+      type: 'error',
+    };
+    console.error('register failed' + error);
+  });
+}
+
     },
     
 }

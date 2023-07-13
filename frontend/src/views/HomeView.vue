@@ -20,17 +20,12 @@
           <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
         </div>
         <div class="col">
-          <label>Font File:</label>
+          <label>{{ $t('message.fontFile') }}:</label>
           <div class="d-flex flex-row justify-content-between">
             <div class="font-selection">
-              <button @click="triggerFontFileInput">Choose File</button>
-              <!-- <span>{{ selectedFontFileName }}</span> -->
-              <label>
-                <!-- 这是隐藏的input，用于选择字体文件 7.5 -->
-                <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
-              </label>
+              <button @click="triggerFontFileInput">{{ $t('message.chooseFile') }}</button>
+              <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
             </div>
-            <!-- 字体下拉选框 7.4 -->
             <select v-model="selectedOption" class="styled-select" style="width: 60%;">
               <option v-for="option in options" :value="option.value" :key="option.value">
                 {{ option.text }}
@@ -39,11 +34,11 @@
           </div>
 
           <div>
-            <label>Background Image File:</label>
+            <label>{{ $t('message.backgroundImageFile') }}:</label>
             <div class="button-container">
               <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
-                :title="isDimensionSpecified ? 'Width and height are already specified' : ''">
-                Choose File
+                :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
+                {{ $t('message.chooseFile') }}
                 <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
                   <div class="clear-button-line"></div>
                   <div class="clear-button-line"></div>
@@ -51,76 +46,71 @@
               </button>
               <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName
               }}</span>
-              <label>
-                <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
-              </label>
-              <div v-if="isLoading" class="loader">Loading...</div>
+              <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
+              <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
             </div>
           </div>
         </div>
       </div>
 
 
-      <label>Width:
+      <label>{{ $t('message.width') }}:
         <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
-          :title="isBackgroundImageSpecified ? 'Background image is already specified' : ''" />
+          :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
       </label>
 
-      <label>Height:
+      <label>{{ $t('message.height') }}:
         <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
-          :title="isBackgroundImageSpecified ? 'Background image is already specified' : ''" />
+          :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
       </label>
 
-      <label>Font Size:
+      <label>{{ $t('message.fontSize') }}:
         <input type="number" v-model="fontSize" />
       </label>
 
-      <label>Line Spacing:
+      <label>{{ $t('message.lineSpacing') }}:
         <input type="number" v-model="lineSpacing" />
       </label>
 
-      <!-- <label>Fill Color (RGBA):
-        <input type="text" v-model="fill" />
-      </label> -->
-
-      <label>Top Margin:
+      <label>{{ $t('message.topMargin') }}:
         <input type="number" v-model="marginTop" />
       </label>
 
-      <label>Bottom Margin:
+      <label>{{ $t('message.bottomMargin') }}:
         <input type="number" v-model="marginBottom" />
       </label>
 
-      <label>Left Margin:
+      <label>{{ $t('message.leftMargin') }}:
         <input type="number" v-model="marginLeft" />
       </label>
 
-      <label>Right Margin:
+      <label>{{ $t('message.rightMargin') }}:
         <input type="number" v-model="marginRight" />
       </label>
 
     </div>
     <div class="buttons">
-      <button @click="generateHandwriting(preview = true)">预览</button>
-      <!-- <button @click="export_file">导出</button>
-        <button @click="loadPreset">载入预设</button> -->
-      <!-- <button @click="savePreset">保存设置</button> -->
-      <button @click="generateHandwriting(preview = false)">生成完整手写图片</button>
+      <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
+      <!-- <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
+      <button @click="savePreset">{{ $t('message.saveSettings') }}</button> -->
+      <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
     </div>
     <!-- 预览区 -->
     <div class="preview">
-      <h2>预览：</h2>
-      <img :src="previewImage" alt="预览图像" style="width: 600px;" />
+      <h2>{{ $t('message.preview') }}：</h2>
+      <img :src="previewImage" alt="{{ $t('message.previewImage') }}" style="width: 600px;" />
     </div>
 
     <footer class="footer mt-auto py-3 bg-white">
       <div class="container text-center">
         <span class="text-black">© 2023 Liuweiqing</span>
         <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
-        <span class="text-black">项目地址：</span>
+        <span class="text-black">{{ $t('message.projectAddress') }}：</span>
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
       </div>
     </footer>
+
+
 
 
   </div>
