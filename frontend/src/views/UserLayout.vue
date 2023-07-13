@@ -1,17 +1,17 @@
 <template>
   <div>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
-      <router-link class="navbar-brand" to="/">Home</router-link>
+      <router-link class="navbar-brand" to="/">{{ $t('message.home') }}</router-link>
       <button class="navbar-toggler" type="button" @click="isNavOpen = !isNavOpen">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" :class="{ show: isNavOpen }" id="navbarNav">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item">
-            <router-link class="nav-link" to="/Login">Login</router-link>
+            <router-link class="nav-link" to="/Login">{{ $t('message.login') }}</router-link>
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" to="/Register">Register</router-link>
+            <router-link class="nav-link" to="/Register">{{ $t('message.register') }}</router-link>
           </li>
         </ul>
         <ul class="navbar-nav">
@@ -29,7 +29,7 @@
         <select v-model="selectedLanguage" class="custom-select ml-3 mr-3">
           <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
         </select>
-        <button class="btn btn-primary ml-auto" @click="isModalOpen = true">Register/Login</button>
+        <button class="btn btn-primary ml-auto" @click="isModalOpen = true">{{ $t('message.reigisterlogin') }}</button>
       </div>
     </nav>
     <div v-if="isModalOpen" class="d-flex align-items-center justify-content-center vh-100">
@@ -47,11 +47,11 @@
               <ul class="nav nav-tabs">
                 <li class="nav-item">
                   <a :class="{ 'nav-link': true, active: currentView === 'UserRegister' }" href="#"
-                    @click.prevent="changeView('UserRegister')">Register</a>
+                    @click.prevent="changeView('UserRegister')">{{ $t('message.register') }}</a>
                 </li>
                 <li class="nav-item">
                   <a :class="{ 'nav-link': true, active: currentView === 'UserLogin' }" href="#"
-                    @click.prevent="changeView('UserLogin')">Login</a>
+                    @click.prevent="changeView('UserLogin')">{{ $t('message.login') }}</a>
                 </li>
               </ul>
               <!-- component代表组件 -->

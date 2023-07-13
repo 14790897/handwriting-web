@@ -33,15 +33,17 @@
             </select>
           </div>
 
-          <div>
+          <div class="image-container">
             <label>{{ $t('message.backgroundImageFile') }}:</label>
             <div class="button-container">
               <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
                 :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
                 {{ $t('message.chooseFile') }}
-                <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
-                  <div class="clear-button-line"></div>
-                  <div class="clear-button-line"></div>
+                <div>
+                  <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
+                    <div class="clear-button-line"></div>
+                    <div class="clear-button-line"></div>
+                  </div>
                 </div>
               </button>
               <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName
@@ -701,7 +703,7 @@ input[type="file"]:hover {
 }
 
 .clear-button {
-  position: absolute;
+  position: relative;
   top: 5px;
   right: 5px;
   width: 12px;
@@ -758,6 +760,13 @@ input[type="file"]:hover {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
 }
 
 @media (max-width: 1000px) {

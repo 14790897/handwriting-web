@@ -7,11 +7,11 @@
           <h2 class="mb-3">{{ $t('message.register') }}</h2>
           <form @submit.prevent="submitForm">
             <div class="form-group">
-              <label for="username">Username</label>
+              <label for="username">{{ $t('message.username') }}</label>
               <input id="username" v-model="username" type="text" class="form-control" placeholder="Username">
             </div>
             <div class="form-group">
-              <label for="password">Password</label>
+              <label for="password">{{ $t('message.password') }}</label>
               <input id="password" v-model="password" type="password" class="form-control" placeholder="Password">
             </div>
             <button type="submit" class="btn btn-primary btn-block">{{ $t('message.register') }}</button>
