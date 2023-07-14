@@ -157,7 +157,7 @@
           </div>
 
           <div class="label-container">
-            <label>{{ $t('message.word  Spacing') }}:
+            <label>{{ $t('message.wordSpacing') }}:
               <input type="number" v-model="wordSpacing" />
             </label>
           </div>
@@ -432,7 +432,7 @@ export default {
   methods: {
     async generateHandwriting(preview = false) {
       // 验证输入
-      if (this.height < this.marginTop + this.lineSpacing + this.marginBottom) {
+      if (this.height < this.marginTop + this.lineSpacing + this.marginBottom && this.isDimensionSpecified) {
         this.errorMessage = '上边距、下边距和行间距之和不能大于高度';
         this.message = '';
         this.uploadMessage = '';
@@ -531,9 +531,10 @@ export default {
             this.message = '';
             this.uploadMessage = '';
             console.log('错误信息：', errorData.message);
+            console.log(error);
 
           };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
-          reader.readAsText(error.response.data); // 修改这里
+          reader.readAsText(error.response.data); 
           console.log(error.response.data);
           // this.errorMessage = error.response.data.message;
 
@@ -655,7 +656,7 @@ export default {
 #form {
   grid-area: form;
   flex: 1 0 300px;
-  max-width: 600px;
+  max-width: 650px;
   column-count: auto;
   column-width: 200px;
   column-gap: 1em;
