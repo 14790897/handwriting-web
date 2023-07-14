@@ -55,44 +55,62 @@
         </div>
       </div>
 
+      <div class="label-container">
 
-      <label>{{ $t('message.width') }}:
-        <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
-          :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
-      </label>
-      <button type="button" class="close" aria-label="Close" @click="clearDimensions">
-        <span aria-hidden="true">&times;</span>
-      </button>
+        <label>{{ $t('message.width') }}:
+          <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
+            :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
+        </label>
+      </div>
+      
 
+      <div class="label-container">
 
-      <label>{{ $t('message.height') }}:
-        <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
-          :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
-      </label>
+        <label>{{ $t('message.height') }}:
+          <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
+            :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
+        </label>
+        <button type="button" class="close" aria-label="Close" @click="clearDimensions">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
 
-      <label>{{ $t('message.fontSize') }}:
-        <input type="number" v-model="fontSize" />
-      </label>
+      <div class="label-container">
 
-      <label>{{ $t('message.lineSpacing') }}:
-        <input type="number" v-model="lineSpacing" />
-      </label>
+        <label>{{ $t('message.fontSize') }}:
+          <input type="number" v-model="fontSize" />
+        </label>
+      </div>
 
-      <label>{{ $t('message.topMargin') }}:
-        <input type="number" v-model="marginTop" />
-      </label>
+      <div class="label-container">
+        <label>{{ $t('message.lineSpacing') }}:
+          <input type="number" v-model="lineSpacing" />
+        </label>
+      </div>
 
-      <label>{{ $t('message.bottomMargin') }}:
-        <input type="number" v-model="marginBottom" />
-      </label>
+      <div class="label-container">
+        <label>{{ $t('message.topMargin') }}:
+          <input type="number" v-model="marginTop" />
+        </label>
+      </div>
 
-      <label>{{ $t('message.leftMargin') }}:
-        <input type="number" v-model="marginLeft" />
-      </label>
+      <div class="label-container">
+        <label>{{ $t('message.bottomMargin') }}:
+          <input type="number" v-model="marginBottom" />
+        </label>
+      </div>
 
-      <label>{{ $t('message.rightMargin') }}:
-        <input type="number" v-model="marginRight" />
-      </label>
+      <div class="label-container">
+        <label>{{ $t('message.leftMargin') }}:
+          <input type="number" v-model="marginLeft" />
+        </label>
+      </div>
+
+      <div class="label-container">
+        <label>{{ $t('message.rightMargin') }}:
+          <input type="number" v-model="marginRight" />
+        </label>
+      </div>
 
     </div>
     <div class="buttons">
@@ -511,7 +529,7 @@ export default {
     clearDimensions() {
       console.log('清空图像尺寸');
       this.width = null;
-      this.height = null;  
+      this.height = null;
     },
   },
 
@@ -540,7 +558,7 @@ export default {
 #form {
   grid-area: form;
   flex: 1 0 300px;
-  max-width: 800px;
+  max-width: 600px;
   column-count: auto;
   column-width: 200px;
   column-gap: 1em;
@@ -553,18 +571,25 @@ export default {
 }
 
 #form label {
-  display: block;
   margin-bottom: 10px;
 }
 
 #form input,
 #form textarea {
-  width: 100%;
+  width: 50%;
   padding: 10px;
   border-radius: 5px;
   border: 1px solid #ddd;
   box-sizing: border-box;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 想让标签和输入在一行显示，但是没有用 7.14 */
+.label-container {
+  display: flex;
+  /* justify-content: center; */
+  align-items: center;
 }
 
 .buttons button {
@@ -660,7 +685,7 @@ input[type="file"]:hover {
 }
 
 .container_file button {
-  padding: 2px 5px;
+  padding: 10px 10px;
   font-size: 1rem;
   color: white;
   background-color: #4285f4;
@@ -675,7 +700,7 @@ input[type="file"]:hover {
 }
 
 .container_file span {
-  display: block;
+  /* display: block; */
   margin-top: 5px;
   font-size: 0.9rem;
   color: #444;
@@ -771,15 +796,17 @@ input[type="file"]:hover {
 }
 
 .image-container {
-  display: flex;
+  /* display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; */
   position: relative;
+  margin-bottom: 15px;
 }
 
 .close {
   border: none !important;
 }
+
 
 @media (max-width: 1000px) {
   .container {

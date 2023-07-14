@@ -29,11 +29,14 @@
         <select v-model="selectedLanguage" class="custom-select ml-3 mr-3">
           <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
         </select>
-        <button class="btn btn-primary ml-auto" @click="isModalOpen = true">{{ $t('message.reigisterlogin') }}</button>
+        <button class="btn btn-light ml-auto" @click="isModalOpen = true" style="transition: all 0.3s ease;">
+          {{ $t('message.reigisterlogin') }}
+        </button>
+
       </div>
     </nav>
+    <!-- Add the following div as a modal overlay -->
     <div v-if="isModalOpen" class="d-flex align-items-center justify-content-center vh-100">
-      <!-- Add the following div as a modal overlay -->
       <div v-if="isModalOpen" class="modal-overlay" @click.self="isModalOpen = false">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -142,5 +145,10 @@ export default {
   align-items: center;
   backdrop-filter: blur(5px);
   /* This will blur the background */
+}
+
+.btn-light:hover {
+  transform: scale(1.1);
+  background-color: #ddd;
 }
 </style>
