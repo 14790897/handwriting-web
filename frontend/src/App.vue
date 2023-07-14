@@ -1,16 +1,19 @@
 <template>
   <UserLayout>
       <router-view />
+      <!-- <HomeView /> -->
   </UserLayout>
 </template>
 
 <script>
 import UserLayout from './views/UserLayout.vue';
+// import HomeView from './views/HomeView.vue';
 
 export default {
   name: 'App',
   components: {
-    UserLayout
+    UserLayout,
+    // HomeView
   }
 };
 </script>

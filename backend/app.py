@@ -567,21 +567,12 @@ def before_request():
         host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
     )
 
-    # current_app.cnx  = mysql.connector.connect(
-    #     user='root',
-    #     password=os.getenv('MYSQL_ROOT_PASSWORD'),
-    #     host='127.0.0.1',
-    #     database=os.getenv('MYSQL_DATABASE'))
-
-
 @app.after_request
 def after_request(response):
     if hasattr(current_app, "cnx"):
         current_app.cnx.close()
-
     # 仅用于调试 7.13
     # session.clear()
-
     return response
 
 
