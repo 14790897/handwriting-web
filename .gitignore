@@ -18,3 +18,4 @@ backend\app.log
 backend/notebook.jpg
 backend/notebook2.jpg
 backend/app.log
+*.pyc

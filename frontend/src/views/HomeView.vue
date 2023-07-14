@@ -60,6 +60,10 @@
         <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
           :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
       </label>
+      <button type="button" class="close" aria-label="Close" @click="clearDimensions">
+        <span aria-hidden="true">&times;</span>
+      </button>
+
 
       <label>{{ $t('message.height') }}:
         <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
@@ -503,6 +507,11 @@ export default {
       this.backgroundImage = null;
       // 清空文件输入框
       this.$refs.imageFileInput.value = null;
+    },
+    clearDimensions() {
+      console.log('清空图像尺寸');
+      this.width = null;
+      this.height = null;  
     },
   },
 
