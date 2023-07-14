@@ -62,7 +62,7 @@
             :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
         </label>
       </div>
-      
+
 
       <div class="label-container">
 
@@ -111,7 +111,58 @@
           <input type="number" v-model="marginRight" />
         </label>
       </div>
+      <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContent"
+        aria-expanded="false" aria-controls="collapseContent" style="width: 100px;">
+        expand
+      </button>
 
+      <!-- 这是一个内容区域，它的 id 与上面的按钮的 data-target 相对应 -->
+      <div class="collapse" id="collapseContent">
+        <div class="card card-body">
+          <div class="label-container">
+            <label>{{ $t('message.lineSpacingSigma') }}:
+              <input type="number" v-model="lineSpacingSigma" />
+            </label>
+          </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.fontSizeSigma') }}:
+              <input type="number" v-model="fontSizeSigma" />
+            </label>
+          </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.wordSpacingSigma') }}:
+              <input type="number" v-model="wordSpacingSigma" />
+            </label>
+          </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.perturbXSigma') }}:
+              <input type="number" v-model="perturbXSigma" />
+            </label>
+          </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.perturbYSigma') }}:
+              <input type="number" v-model="perturbYSigma" />
+            </label>
+          </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.perturbThetaSigma') }}:
+              <input type="number" v-model="perturbThetaSigma" />
+            </label>
+          </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.word  Spacing') }}:
+              <input type="number" v-model="wordSpacing" />
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="buttons">
       <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
@@ -121,9 +172,12 @@
     </div>
     <!-- 预览区 -->
     <div class="preview">
-      <h2>{{ $t('message.preview') }}：</h2>
+      <h2>{{ $t('message.preview') }}:</h2>
       <img :src="previewImage" alt="{{ $t('message.previewImage') }}" style="width: 600px;" />
     </div>
+
+
+
 
     <footer class="footer mt-auto py-3 bg-white">
       <div class="container text-center">
@@ -144,6 +198,7 @@
 import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import Swal from 'sweetalert2';
+
 export default {
   // props: {
   //   login_delete_message: {
@@ -174,11 +229,11 @@ export default {
       lineSpacingSigma: 0,
       fontSizeSigma: 0,
       wordSpacingSigma: 0,
-      endChars: '',
-      perturbXSigma: 0,
-      perturbYSigma: 0,
+      perturbXSigma: 4,
+      perturbYSigma: 4,
       perturbThetaSigma: 0,
       wordSpacing: 0,
+      endChars: '',
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
@@ -192,7 +247,7 @@ export default {
   },
   created() {
     //
-    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedImageFileName', 'selectedOption'];
+    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedImageFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
 
     localStorageItems.forEach(item => {
       const value = localStorage.getItem(item);
@@ -328,6 +383,48 @@ export default {
     selectedOption: {
       handler(newVal) {
         localStorage.setItem('selectedOption', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    lineSpacingSigma: {
+      handler(newVal) {
+        localStorage.setItem('lineSpacingSigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    fontSizeSigma: {
+      handler(newVal) {
+        localStorage.setItem('fontSizeSigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    wordSpacingSigma: {
+      handler(newVal) {
+        localStorage.setItem('wordSpacingSigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    perturbXSigma: {
+      handler(newVal) {
+        localStorage.setItem('perturbXSigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    perturbYSigma: {
+      handler(newVal) {
+        localStorage.setItem('perturbYSigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    perturbThetaSigma: {
+      handler(newVal) {
+        localStorage.setItem('perturbThetaSigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    wordSpacing: {
+      handler(newVal) {
+        localStorage.setItem('wordSpacing', JSON.stringify(newVal));
       },
       deep: true
     },
