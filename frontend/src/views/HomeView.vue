@@ -521,8 +521,6 @@ export default {
 
 <style scoped>
 .container {
-  /* display: flex; */
-  /* flex-wrap: wrap; */
   display: grid;
   grid-template-areas:
     "form image"
@@ -662,13 +660,14 @@ input[type="file"]:hover {
 }
 
 .container_file button {
-  padding: 10px 20px;
+  padding: 2px 5px;
   font-size: 1rem;
   color: white;
   background-color: #4285f4;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  margin: 0 auto;
 }
 
 .container_file button:disabled {
@@ -776,6 +775,10 @@ input[type="file"]:hover {
   justify-content: center;
   align-items: center;
   position: relative;
+}
+
+.close {
+  border: none !important;
 }
 
 @media (max-width: 1000px) {
