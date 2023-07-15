@@ -433,12 +433,55 @@ export default {
   methods: {
     async generateHandwriting(preview = false) {
       // 验证输入
+      const localStorageItems = ['text', 'backgroundImage', 'fontSize', 'lineSpacing',  'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
+      localStorageItems.forEach(item => {
+        let value = localStorage.getItem(item);
+        if (!value) {
+          console.error(`Missing value for ${item}`);
+          return;
+        }
+        // 对不同的输入进行不同的验证
+        switch (item) {
+          case 'text':
+            // 验证 text 是否是字符串
+            if (typeof value !== 'string') {
+              console.error(`Invalid value for ${item}`);
+            }
+            break;
+          case 'fontSize':
+          case 'lineSpacing':
+          case 'marginTop':
+          case 'marginBottom':
+          case 'marginLeft':
+          case 'marginRight':
+          case 'lineSpacingSigma':
+          case 'fontSizeSigma':
+          case 'wordSpacingSigma':
+          case 'perturbXSigma':
+          case 'perturbYSigma':
+          case 'perturbThetaSigma':
+          case 'wordSpacing':
+            // 验证这些值是否是数字
+            if (isNaN(Number(value))) {
+              console.error(`Invalid value for ${item}`);
+            }
+            break;
+          case 'backgroundImage':
+            // 验证 backgroundImage 是否是有效的 URL 或者文件路径
+            // 这可能需要更复杂的验证
+            break;
+          default:
+            console.error(`Unknown item: ${item}`);
+        }
+      });
+
       if (this.height < this.marginTop + this.lineSpacing + this.marginBottom && this.isDimensionSpecified) {
         this.errorMessage = '上边距、下边距和行间距之和不能大于高度';
         this.message = '';
         this.uploadMessage = '';
         return;
       }
+      
       this.preview = preview;
       // 设置提示信息为“内容正在上传…”
       this.uploadMessage = '内容正在上传并处理…';//显示上传提示信息时，隐藏其他提示信息

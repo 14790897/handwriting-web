@@ -38,7 +38,12 @@ export default {
     created() {
         const localStorageItems = ['selectedTextFileName', 'text_handwriting']
         localStorageItems.forEach(item => {
-            this[item] = JSON.parse(localStorage.getItem(item)) || this[item];
+            const value = localStorage.getItem(item);
+            if (value !== null && value !== "undefined") {
+                this[item] = JSON.parse(value);
+            } else {
+                console.log('localstorage缺失item:' + item)
+            }
         });
     },
     methods: {
