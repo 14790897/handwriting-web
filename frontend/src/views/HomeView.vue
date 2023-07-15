@@ -230,8 +230,8 @@ export default {
       lineSpacingSigma: 0,
       fontSizeSigma: 0,
       wordSpacingSigma: 0,
-      perturbXSigma: 4,
-      perturbYSigma: 4,
+      perturbXSigma: 1,
+      perturbYSigma: 1,
       perturbThetaSigma: 0,
       wordSpacing: 0,
       endChars: '',
@@ -557,6 +557,14 @@ export default {
       //之前因为文字不能触发函数，所以要放在watch里面
       this.selectedImageFileName = event.target.files[0].name;
       this.backgroundImage = event.target.files[0];
+      // 由于文件无法在浏览器存储，所以下面的代码无效 7.15
+      localStorage.setItem('backgroundImage', JSON.stringify(this.backgroundImage));
+      if (localStorage.getItem('backgroundImage')) {
+        console.log('Data successfully saved to localStorage.');
+      } else {
+        console.log('Failed to save to localStorage.');
+      }
+
       this.previewImage = URL.createObjectURL(event.target.files[0]);
       Swal.fire({
         title: '你希望自动识别页面的四周边距吗？',

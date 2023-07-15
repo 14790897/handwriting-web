@@ -34,6 +34,10 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+#装饰器 7.15
+from functools import wraps
+
+
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
 enable_user_auth = os.getenv('ENABLE_USER_AUTH', 'false')
@@ -147,9 +151,19 @@ def read_pdf(file_path):
     pdf_file_obj.close()
     return text
 
+def handle_exceptions(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.info("An error occurred during the request: %s", e)
+            return jsonify({"status": "error", "message": str(e)}), 500
+    return decorated_function
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 @limiter.limit("20 per 5 minute")
+@handle_exceptions#错误捕获的装饰器7.15
 def generate_handwriting():
     # logger.info("已经进入generate_handwriting")
     if enable_user_auth.lower() == 'true':
@@ -344,7 +358,7 @@ def textfileprocess():
         or file.filename.endswith(".rtf")
     ):
         filename = secure_filename(file.filename)
-        filepath = os.path.join("./textfileprocess", filename)  # 你的临时目录
+        filepath = os.path.join("./textfileprocess", filename)  # 临时目录
         file.save(filepath)
 
         if file.filename.endswith(".docx"):
@@ -352,7 +366,7 @@ def textfileprocess():
         elif file.filename.endswith(".pdf"):
             text = read_pdf(filepath)
         elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
-            with open(filepath, "r", errors="ignore") as f:
+            with open(filepath, "r", encoding='utf-8', errors="ignore") as f:
                 text = f.read()
 
         # 删除临时文件
@@ -550,6 +564,8 @@ def before_request():
         current_app.cnx = mysql.connector.connect(
             host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
         )
+    else:
+        pass
 
 @app.after_request
 def after_request(response):
@@ -558,6 +574,9 @@ def after_request(response):
             current_app.cnx.close()
         # 仅用于调试 7.13
         # session.clear()
+        return response
+    else:
+        print(response)
         return response
 
 
