@@ -7,15 +7,13 @@ services:
       - "2345:80"
     depends_on:
       - backend
-    networks:
-      - mynetwork
+
 
   backend:
     image: 14790897/backend-handwriting:latest
     ports:
       - "5000:5000"
-    networks:
-      - mynetwork
+
     volumes:
       - ./app.log:/app.log
 
@@ -28,5 +26,3 @@ services:
   #   networks:
   #     - mynetwork
 
-networks:
-  mynetwork:
