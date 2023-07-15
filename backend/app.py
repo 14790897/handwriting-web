@@ -129,7 +129,7 @@ def create_notebook_image(
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image)
     # todo  这个距离的原理不清楚7.15
-    y = top_margin + font_size * 2  # 开始的y坐标设为顶部边距加字体大小
+    y = top_margin + line_spacing  # 开始的y坐标设为顶部边距加字体大小
     while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
         draw.line((left_margin, y, width - right_margin, y), fill="black")
         y += line_spacing  # 每次循环，y坐标增加行间距
@@ -549,12 +549,12 @@ def register():
 # @app.errorhandler(Exception)
 # def handle_exception(e):
 #     # Pass the error to Flask's default error handling.
+#       tb = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
 #     response = {
-#         "success": False,
-#         "error": {
+#         
 #             "type": type(e).__name__,  # The type of the exception
 #             "message": str(e),  # The message of the exception
-#         },
+#         
 #     }
 #     return jsonify(response), 500
 

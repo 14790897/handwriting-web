@@ -630,7 +630,7 @@ export default {
             .then(response => {
               this.marginLeft = response.data.marginLeft;
               this.marginRight = response.data.marginRight;
-              this.marginTop = response.data.marginTop - this.fontSize*2;
+              this.marginTop = response.data.marginTop - this.lineSpacing;
               this.marginBottom = response.data.marginBottom;
               this.lineSpacing = response.data.lineSpacing;
               this.message = '背景图片已加载。';
