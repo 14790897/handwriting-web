@@ -248,7 +248,7 @@ export default {
   },
   created() {
     //
-    const localStorageItems = ['text', 'fontFile', 'backgroundImage', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'selectedImageFileName'
+    const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
 
     localStorageItems.forEach(item => {
       const value = localStorage.getItem(item);
@@ -309,12 +309,12 @@ export default {
       },
       deep: true
     },
-    backgroundImage: {
-      handler(newVal) {
-        localStorage.setItem('backgroundImage', JSON.stringify(newVal));
-      },
-      deep: true
-    },
+    // backgroundImage: {
+    //   handler(newVal) {
+    //     localStorage.setItem('backgroundImage', JSON.stringify(newVal));
+    //   },
+    //   deep: true
+    // },
     fontSize: {
       handler(newVal) {
         localStorage.setItem('fontSize', JSON.stringify(newVal));
@@ -601,12 +601,12 @@ export default {
       this.selectedImageFileName = event.target.files[0].name;
       this.backgroundImage = event.target.files[0];
       // 由于文件无法在浏览器存储，所以下面的代码无效 7.15
-      localStorage.setItem('backgroundImage', JSON.stringify(this.backgroundImage));
-      if (localStorage.getItem('backgroundImage')) {
-        console.log('Data successfully saved to localStorage.');
-      } else {
-        console.log('Failed to save to localStorage.');
-      }
+      // localStorage.setItem('backgroundImage', JSON.stringify(this.backgroundImage));
+      // if (localStorage.getItem('backgroundImage')) {
+      //   console.log('Data successfully saved to localStorage.');
+      // } else {
+      //   console.log('Failed to save to localStorage.');
+      // }
 
       this.previewImage = URL.createObjectURL(event.target.files[0]);
       Swal.fire({
