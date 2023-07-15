@@ -14,8 +14,8 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./ttf_files:/font_assets
-      - ./app.log:/app.log
+      - ./ttf_files:/app/font_assets
+      - ./app.log:/app/app.log
 
   # db:
   #   image: 14790897/mysql-handwriting:latest
