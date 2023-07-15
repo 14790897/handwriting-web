@@ -454,8 +454,12 @@ export default {
       formData.append("font_size", this.fontSize);
       formData.append("line_spacing", this.lineSpacing);
       formData.append("fill", this.fill);
-      formData.append("width", this.width);
-      formData.append("height", this.height);
+      if(this.width){
+        formData.append("width", this.width);
+      }
+      if(this.height){
+        formData.append("height", this.height);
+      }
       formData.append("top_margin", this.marginTop);
       formData.append("bottom_margin", this.marginBottom);
       formData.append("left_margin", this.marginLeft);
@@ -626,8 +630,8 @@ export default {
     },
     clearDimensions() {
       console.log('清空图像尺寸');
-      this.width = null;
-      this.height = null;
+      this.width = null
+      this.height = null
     },
   },
 

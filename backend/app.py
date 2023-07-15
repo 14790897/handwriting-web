@@ -193,25 +193,6 @@ def generate_handwriting():
             # height=int(data["height"]),
             # width=int(data["width"]),
 
-    # 然后获取文件数据
-    # files = request.files
-    # required_file_fields = [ "font_file"]
-
-    # for field in required_file_fields:
-    #     if field not in files:
-    #         return (
-    #             jsonify(
-    #                 {
-    #                     "status": "fail",
-    #                     "message": f"Missing required file field: {field}",
-    #                 }
-    #             ),
-    #             400,
-    #         )
-    #     else:
-    #         # 文件字段无法直接打印具体值，只能确认其存在
-    #         logger.info(f"{field} exists in the files")
-
     # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if "width" in data and "height" in data:
         line_spacing = int(data.get("line_spacing", 30))
@@ -547,18 +528,18 @@ def register():
         )
 
 
-# 捕获所有未捕获的异常，返回给前端7.12
-@app.errorhandler(Exception)
-def handle_exception(e):
-    # Pass the error to Flask's default error handling.
-    response = {
-        "success": False,
-        "error": {
-            "type": type(e).__name__,  # The type of the exception
-            "message": str(e),  # The message of the exception
-        },
-    }
-    return jsonify(response), 500
+# 捕获所有未捕获的异常，返回给前端，只能用于生产环境7.12
+# @app.errorhandler(Exception)
+# def handle_exception(e):
+#     # Pass the error to Flask's default error handling.
+#     response = {
+#         "success": False,
+#         "error": {
+#             "type": type(e).__name__,  # The type of the exception
+#             "message": str(e),  # The message of the exception
+#         },
+#     }
+#     return jsonify(response), 500
 
 
 @app.before_request
