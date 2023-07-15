@@ -433,13 +433,13 @@ export default {
   methods: {
     async generateHandwriting(preview = false) {
       // 验证输入
-      const localStorageItems = ['text', 'backgroundImage', 'fontSize', 'lineSpacing',  'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
-      localStorageItems.forEach(item => {
-        let value = localStorage.getItem(item);
-        if (!value) {
-          console.error(`Missing value for ${item}`);
-          return;
-        }
+      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing',  'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
+      Items.forEach(item => {
+        let value = this[item];
+        // if (!value) {
+        //   console.error(`Missing value for ${item}`);
+        //   return;
+        // }
         // 对不同的输入进行不同的验证
         switch (item) {
           case 'text':
