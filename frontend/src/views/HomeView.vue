@@ -16,9 +16,10 @@
     <div id="form">
       <div class="container_file row">
 
-        <div class="col">
+        <div class="col d-flex flex-row justify-content-between">
           <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
         </div>
+
         <div class="col">
           <label>{{ $t('message.fontFile') }}:</label>
           <div class="d-flex flex-row justify-content-between">
@@ -114,7 +115,7 @@
       <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
       <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContent"
         aria-expanded="false" aria-controls="collapseContent" style="width: 100px;">
-        expand
+        {{ $t('message.expand') }}
       </button>
 
       <!-- 这是一个内容区域，它的 id 与上面的按钮的 data-target 相对应 -->

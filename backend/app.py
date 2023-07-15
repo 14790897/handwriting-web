@@ -36,6 +36,7 @@ from flask_limiter.util import get_remote_address
 
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
+enable_user_auth = os.getenv('ENABLE_USER_AUTH', 'false')
 # 获取当前路径
 current_path = os.getcwd()
 # 创建一个子文件夹用于存储输出的图片
@@ -150,9 +151,10 @@ def read_pdf(file_path):
 @app.route("/api/generate_handwriting", methods=["POST"])
 @limiter.limit("20 per 5 minute")
 def generate_handwriting():
-    logger.info("已经进入generate_handwriting")
-    if "username" not in session:
-        return jsonify({"status": "error", "message": "You haven't login."}), 500
+    # logger.info("已经进入generate_handwriting")
+    if enable_user_auth.lower() == 'true':
+        if "username" not in session:
+            return jsonify({"status": "error", "message": "You haven't login."}), 500
     # try:
     # 先获取 form 数据
     data = request.form
@@ -544,17 +546,19 @@ def register():
 
 @app.before_request
 def before_request():
-    current_app.cnx = mysql.connector.connect(
-        host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
-    )
+    if enable_user_auth.lower() == 'true':
+        current_app.cnx = mysql.connector.connect(
+            host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
+        )
 
 @app.after_request
 def after_request(response):
-    if hasattr(current_app, "cnx"):
-        current_app.cnx.close()
-    # 仅用于调试 7.13
-    # session.clear()
-    return response
+    if enable_user_auth.lower() == 'true':
+        if hasattr(current_app, "cnx"):
+            current_app.cnx.close()
+        # 仅用于调试 7.13
+        # session.clear()
+        return response
 
 
 if __name__ == "__main__":

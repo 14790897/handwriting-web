@@ -45,6 +45,7 @@ const messages = {
       perturbYSigma: "Perturb Y Sigma",
       perturbThetaSigma: "Perturb Theta Sigma",
       wordSpacing: "Word Spacing",
+      expand: "expand",
     },
   },
   cn: {
@@ -90,6 +91,7 @@ const messages = {
       perturbYSigma: "笔画纵向偏移",
       perturbThetaSigma: "笔画旋转偏移",
       wordSpacing: "字间距",
+      expand: "更多内容",
     },
   },
 };

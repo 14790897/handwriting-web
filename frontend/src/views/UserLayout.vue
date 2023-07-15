@@ -29,9 +29,11 @@
         <select v-model="selectedLanguage" class="custom-select ml-3 mr-3">
           <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
         </select>
-        <button class="btn btn-light ml-auto" @click="isModalOpen = true" style="transition: all 0.3s ease;">
+
+        <!-- 注册登录按钮 7.15 -->
+        <!-- <button class="btn btn-light ml-auto" @click="isModalOpen = true" style="transition: all 0.3s ease;">
           {{ $t('message.reigisterlogin') }}
-        </button>
+        </button> -->
 
       </div>
     </nav>

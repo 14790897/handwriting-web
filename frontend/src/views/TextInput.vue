@@ -1,11 +1,11 @@
 <template>
-    <div id='text_file_select'>
+    <div id='text_file_select' class="d-flex justify-content-between">
         <label for="textArea">{{ $t('message.text') }}:</label>
         <textarea id="textArea" class="form-control" v-model="text_handwriting" :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
         <div class="file_select_container">
-        <button @click="triggerTextFileInput">{{ $t('message.chooseFile') }}</button>
+        <button @click="triggerTextFileInput" >{{ $t('message.chooseFile') }}</button>
         <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
         <label>
             <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
