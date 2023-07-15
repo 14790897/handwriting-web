@@ -13,8 +13,8 @@ services:
     image: 14790897/backend-handwriting:latest
     ports:
       - "5000:5000"
-
     volumes:
+      - ./ttf_files:/font_assets
       - ./app.log:/app.log
 
   # db:
