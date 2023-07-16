@@ -35,4 +35,12 @@ const router = createRouter({
   routes,
 });
 
+router.afterEach(() => {
+  const routerViewElement = document.querySelector("router-view");
+
+  if (routerViewElement) {
+    routerViewElement.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+
 export default router;

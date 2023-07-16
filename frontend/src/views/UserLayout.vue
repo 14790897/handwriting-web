@@ -1,7 +1,12 @@
 <template>
   <div>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 justify-content-center">
+     <transition name="slide-fade">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 justify-content-center" v-if="navbarVisible">
       <router-link class="navbar-brand " to="/">{{ $t('message.home') }}</router-link>
+
+          <button @click="toggleNavbar" class="toggle-button btn btn-primary">
+        {{ navbarVisible ? '隐藏导航栏' : '显示导航栏' }}
+      </button>
       <button class="navbar-toggler" type="button" @click="isNavOpen = !isNavOpen">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -37,6 +42,10 @@
 
       </div>
     </nav>
+    <button v-else @click="toggleNavbar" class="btn btn-outline-info btn-sm" style="opacity: 0.5;">
+      {{ navbarVisible ? '隐藏导航栏' : '显示导航栏' }}
+    </button>
+        </transition>
     <!-- Add the following div as a modal overlay -->
     <div v-if="isModalOpen" class="d-flex align-items-center justify-content-center vh-100">
       <div v-if="isModalOpen" class="modal-overlay" @click.self="isModalOpen = false">
@@ -100,6 +109,8 @@ export default {
       ],
       currentView: 'UserLogin',  // 默认显示登录组件
       isModalOpen: false,
+      navbarVisible: false,
+
     };
   },
   // computed: {
@@ -129,7 +140,10 @@ export default {
     change_login_message(newValue) {
       //触发vuex中的mutations 7.12
       this.login_delete_message_update(newValue);
-    }
+    },
+    toggleNavbar() {
+      this.navbarVisible = !this.navbarVisible;
+    },
   },
 };
 </script>
@@ -153,4 +167,27 @@ export default {
   transform: scale(1.1);
   background-color: #ddd;
 }
+
+/* 下滑效果 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-down-enter,
+.slide-down-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* 上滑效果 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-up-enter,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 </style>

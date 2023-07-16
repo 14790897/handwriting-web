@@ -1,6 +1,6 @@
 <template>
   <UserLayout>
-      <router-view />
+      <router-view ref="myComponentRef"/>
       <!-- <HomeView /> -->
   </UserLayout>
 </template>
@@ -14,7 +14,17 @@ export default {
   components: {
     UserLayout,
     // HomeView
-  }
+  },
+  // mounted() {
+  //   // 请注意，$el 指向的是该组件最外层的 DOM 元素
+  //   const contentElement = this.$refs.myComponentRef.$el;
+
+  //   // 然后，你可以使用原生的 getBoundingClientRect 方法来获取元素的位置：
+  //   if (contentElement) {
+  //     const yPosition = contentElement.getBoundingClientRect().top;
+  //     window.scrollTo(0, yPosition);
+  //   }
+  // },
 };
 </script>
 
