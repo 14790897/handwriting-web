@@ -10,6 +10,9 @@ import axios from "axios";
 
 import * as Sentry from "@sentry/vue";
 
+// import Viewer from "v-viewer";
+// import "viewerjs/dist/viewer.css";
+
 const app = createApp(App);
 
 
@@ -50,5 +53,7 @@ app.config.globalProperties.$http = axios;
 // });
 
 // app.config.globalProperties.$http = http;
+
+// app.use(Viewer);
 
 app.mount("#app");

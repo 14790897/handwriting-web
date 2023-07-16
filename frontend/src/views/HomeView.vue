@@ -175,9 +175,9 @@
     <div class="preview">
       <h2>{{ $t('message.preview') }}:</h2>
 
-
-         <img :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px;" @click="showPreview = true" />
-    <picture-preview v-model:visible="showPreview" :img-list="previewImage" />
+      <!-- <div v-viewer> -->
+        <img :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px;"/>
+      <!-- </div> -->
 
 
     </div>
@@ -185,13 +185,13 @@
 
 
 
-    <footer class="footer mt-auto py-3 bg-white">
-      <div class="container text-center">
-        <span class="text-black">© 2023 Liuweiqing</span>
-        <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
-        <span class="text-black">{{ $t('message.projectAddress') }}：</span>
-        <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
-      </div>
+    <footer class=" footer mt-auto py-3 bg-white">
+        <div class="container text-center">
+          <span class="text-black">© 2023 Liuweiqing</span>
+          <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
+          <span class="text-black">{{ $t('message.projectAddress') }}:</span>
+          <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
+        </div>
     </footer>
 
 
@@ -204,8 +204,7 @@
 import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import Swal from 'sweetalert2';
-import PicturePreview from 'vue3-picture-preview'
-// import 'vue3-picture-preview/dist/index.css'
+
 
 
 export default {
@@ -217,7 +216,7 @@ export default {
   // },
   components: {
     TextInput,
-    PicturePreview,
+
   },
 
   data() {
@@ -254,7 +253,7 @@ export default {
       options: '',  // 下拉选项
       isLoading: false, //7.6
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'],
-      showPreview: false,
+
 
 
     };
