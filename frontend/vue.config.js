@@ -1,9 +1,7 @@
 const { defineConfig } = require("@vue/cli-service");
+
 module.exports = defineConfig({
   transpileDependencies: true,
-});
-// vue.config.js
-module.exports = {
   devServer: {
     proxy: {
       "/api": {
@@ -12,8 +10,6 @@ module.exports = {
       },
     },
   },
-};
-module.exports = {
   pages: {
     index: {
       // entry for the page
@@ -27,4 +23,4 @@ module.exports = {
       title: "handwrite",
     },
   },
-};
+});

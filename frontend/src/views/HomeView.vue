@@ -167,8 +167,8 @@
     </div>
     <div class="buttons">
       <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
-      <!-- <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
-      <button @click="savePreset">{{ $t('message.saveSettings') }}</button> -->
+      <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
+      <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
       <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
     </div>
     <!-- 预览区 -->
@@ -244,13 +244,14 @@ export default {
       selectedOption: '1',  // 当前选中的选项
       options: '',  // 下拉选项
       isLoading: false, //7.6
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'],
     };
   },
   created() {
-    //
-    const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
+  
+    // const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
 
-    localStorageItems.forEach(item => {
+    this.localStorageItems.forEach(item => {
       const value = localStorage.getItem(item);
       if (value !== null && value !== "undefined") {
         this[item] = JSON.parse(value);
@@ -594,7 +595,27 @@ export default {
         }
       });
     },
+    savePreset(){
+      let data = {};
+      this.localStorageItems.forEach(item => {
+          data[item] = this[item];
+      });
+      // 将对象转换为 JSON 格式的字符串
+      let dataString = JSON.stringify(data);
 
+      // 将字符串存储到 localStorage 中
+      localStorage.setItem('myPreset', dataString);
+    },
+    loadPreset(){
+      // 从 localStorage 中获取字符串
+      let dataString = localStorage.getItem('myPreset');
+
+      // 将字符串转换回对象
+      let data = JSON.parse(dataString);
+      Object.keys(data).forEach(item => {
+          this[item] = data[item];
+      });
+    },
     onBackgroundImageChange(event) {
       // 当用户选择了一个新的背景图片文件时，更新 selectedImageFileName，由于这边直接触发函数了，所以localstorage可以在这里修改，
       //之前因为文字不能触发函数，所以要放在watch里面
