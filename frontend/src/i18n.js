@@ -86,7 +86,7 @@ const messages = {
       password: "密码",
       lineSpacingSigma: "行间距扰动",
       fontSizeSigma: "字体大小扰动",
-      wordSpacingSigma: "词间距扰动",
+      wordSpacingSigma: "字间距扰动",
       perturbXSigma: "笔画横向偏移",
       perturbYSigma: "笔画纵向偏移",
       perturbThetaSigma: "笔画旋转偏移",

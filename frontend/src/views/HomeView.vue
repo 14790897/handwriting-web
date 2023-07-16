@@ -166,15 +166,20 @@
       </div>
     </div>
     <div class="buttons">
-      <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
       <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
+      <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
       <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
     </div>
     <!-- 预览区 -->
     <div class="preview">
       <h2>{{ $t('message.preview') }}:</h2>
-      <img :src="previewImage" alt="{{ $t('message.previewImage') }}" style="width: 600px;" />
+
+
+         <img :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px;" @click="showPreview = true" />
+    <picture-preview v-model:visible="showPreview" :img-list="previewImage" />
+
+
     </div>
 
 
@@ -199,6 +204,9 @@
 import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import Swal from 'sweetalert2';
+import PicturePreview from 'vue3-picture-preview'
+// import 'vue3-picture-preview/dist/index.css'
+
 
 export default {
   // props: {
@@ -208,7 +216,8 @@ export default {
   //   }
   // },
   components: {
-    TextInput
+    TextInput,
+    PicturePreview,
   },
 
   data() {
@@ -245,10 +254,13 @@ export default {
       options: '',  // 下拉选项
       isLoading: false, //7.6
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'],
+      showPreview: false,
+
+
     };
   },
   created() {
-  
+
     // const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
 
     this.localStorageItems.forEach(item => {
@@ -434,7 +446,7 @@ export default {
   methods: {
     async generateHandwriting(preview = false) {
       // 验证输入
-      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing',  'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
+      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
       Items.forEach(item => {
         let value = this[item];
         // if (!value) {
@@ -482,7 +494,7 @@ export default {
         this.uploadMessage = '';
         return;
       }
-      
+
       this.preview = preview;
       // 设置提示信息为“内容正在上传…”
       this.uploadMessage = '内容正在上传并处理…';//显示上传提示信息时，隐藏其他提示信息
@@ -499,10 +511,10 @@ export default {
       formData.append("font_size", this.fontSize);
       formData.append("line_spacing", this.lineSpacing);
       formData.append("fill", this.fill);
-      if(this.width){
+      if (this.width) {
         formData.append("width", this.width);
       }
-      if(this.height){
+      if (this.height) {
         formData.append("height", this.height);
       }
       formData.append("top_margin", this.marginTop);
@@ -583,7 +595,7 @@ export default {
             console.log(error);
 
           };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
-          reader.readAsText(error.response.data); 
+          reader.readAsText(error.response.data);
           console.log(error.response.data);
           // this.errorMessage = error.response.data.message;
 
@@ -595,10 +607,10 @@ export default {
         }
       });
     },
-    savePreset(){
+    savePreset() {
       let data = {};
       this.localStorageItems.forEach(item => {
-          data[item] = this[item];
+        data[item] = this[item];
       });
       // 将对象转换为 JSON 格式的字符串
       let dataString = JSON.stringify(data);
@@ -606,14 +618,14 @@ export default {
       // 将字符串存储到 localStorage 中
       localStorage.setItem('myPreset', dataString);
     },
-    loadPreset(){
+    loadPreset() {
       // 从 localStorage 中获取字符串
       let dataString = localStorage.getItem('myPreset');
 
       // 将字符串转换回对象
       let data = JSON.parse(dataString);
       Object.keys(data).forEach(item => {
-          this[item] = data[item];
+        this[item] = data[item];
       });
     },
     onBackgroundImageChange(event) {
