@@ -134,6 +134,7 @@ def create_notebook_image(
     while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
         draw.line((left_margin, y, width - right_margin, y), fill="black")
         y += line_spacing  # 每次循环，y坐标增加行间距
+    # draw.line((left_margin, y, width - right_margin, y), fill="black")
     return image
 
 
