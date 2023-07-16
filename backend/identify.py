@@ -154,6 +154,12 @@ def identify_distance(filename):
     print('右边平均空白长度：', avg_r_whitespace)
     print('平均行间距：', avg_distance)
     
+    avg_l_whitespace = round(avg_l_whitespace)
+    avg_r_whitespace = round(avg_r_whitespace)
+    avg_t_whitespace = round(avg_t_whitespace)
+    avg_b_whitespace = round(avg_b_whitespace)
+    avg_distance = round(avg_distance)
+    
     return avg_l_whitespace, avg_r_whitespace, avg_t_whitespace, avg_b_whitespace, avg_distance
 
 if __name__ == '__main__':
