@@ -236,12 +236,12 @@ export default {
       previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
       preview: false,
       lineSpacingSigma: 0,
-      fontSizeSigma: 0,
-      wordSpacingSigma: 0,
-      perturbXSigma: 0,
-      perturbYSigma: 0,
-      perturbThetaSigma: 0,
-      wordSpacing: 0,
+      fontSizeSigma: 2,
+      wordSpacingSigma: 2,
+      perturbXSigma: 3,
+      perturbYSigma: 3,
+      perturbThetaSigma: 0.05,
+      wordSpacing: 1,
       endChars: '',
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息

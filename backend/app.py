@@ -130,7 +130,7 @@ def create_notebook_image(
     draw = ImageDraw.Draw(image)
     # todo  这个距离的原理不清楚7.15
     y = top_margin + line_spacing  # 开始的y坐标设为顶部边距加字体大小
-    bottom -= line_spacing
+    # bottom_margin -= line_spacing
     while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
         draw.line((left_margin, y, width - right_margin, y), fill="black")
         y += line_spacing  # 每次循环，y坐标增加行间距
