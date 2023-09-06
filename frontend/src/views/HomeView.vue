@@ -79,7 +79,7 @@
       <div class="label-container">
 
         <label>{{ $t('message.fontSize') }}:
-          <input type="number" v-model="fontSize" placeholder="recommend > 100"/>
+          <input type="number" v-model="fontSize" placeholder="recommend > 100" />
         </label>
       </div>
 
@@ -118,7 +118,7 @@
       </button>
 
       <!-- 这是一个内容区域，它的 id 与上面的按钮的 data-target 相对应 -->
-      <div v-if="isExpanded"  id="collapseContent">
+      <div v-if="isExpanded" id="collapseContent">
         <div class="card card-body">
           <div class="label-container">
             <label>{{ $t('message.lineSpacingSigma') }}:
@@ -183,6 +183,12 @@
           <div class='label-container'>
             <label>{{ $t('message.strikethrough_probability') }}:
               <input type="number" v-model="strikethrough_probability" />
+            </label>
+          </div>
+
+          <div class='label-container'>
+            <label>{{ $t('message.strikethrough_width') }}:
+              <input type="number" v-model="strikethrough_width" />
             </label>
           </div>
 
@@ -274,8 +280,9 @@ export default {
       strikethrough_angle_sigma: 2,
       strikethrough_width_sigma: 2,
       strikethrough_probability: 0.08,
-            isExpanded: false,
-      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability'],
+      strikethrough_width: 8,
+      isExpanded: false,
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width'],
     };
   },
   created() {
@@ -485,6 +492,12 @@ export default {
       },
       deep: true
     },
+    strikethrough_width: {
+      handler(newVal) {
+        localStorage.setItem('strikethrough_width', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
 
   methods: {
@@ -493,7 +506,7 @@ export default {
     },
     async generateHandwriting(preview = false) {
       // 验证输入
-      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability'];
+      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width'];
       Items.forEach(item => {
         let value = this[item];
         // if (!value) {
@@ -508,8 +521,8 @@ export default {
               console.error(`Invalid value for ${item}`);
               this.errorMessage = '请输入字符串';
             }
-            return;
-            // break;
+            // return;
+          break;
           case 'fontSize':
           case 'lineSpacing':
           case 'marginTop':
@@ -527,13 +540,14 @@ export default {
           case 'strikethrough_angle_sigma':
           case 'strikethrough_width_sigma':
           case 'strikethrough_probability':
+          case 'strikethrough_width':
             // 验证这些值是否是数字
             if (isNaN(Number(value))) {
               console.error(`Invalid value for ${item}`);
               this.errorMessage = '请输入数字';
             }
-            return
-            // break;
+            // return
+          break;
           case 'backgroundImage':
             // 验证 backgroundImage 是否是有效的 URL 或者文件路径
             // 这可能需要更复杂的验证
@@ -590,6 +604,7 @@ export default {
       formData.append("strikethrough_angle_sigma", this.strikethrough_angle_sigma);
       formData.append("strikethrough_width_sigma", this.strikethrough_width_sigma);
       formData.append("strikethrough_probability", this.strikethrough_probability);
+      formData.append("strikethrough_width", this.strikethrough_width);
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);

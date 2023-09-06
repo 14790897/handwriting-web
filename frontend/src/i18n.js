@@ -53,6 +53,7 @@ const messages = {
         "Standard deviation of the strikethrough width",
       strikethrough_angle_sigma:
         "Standard deviation of the strikethrough angle",
+      strikethrough_width: "Width of strikethrough",
     },
   },
   cn: {
@@ -103,6 +104,7 @@ const messages = {
       strikethrough_length_sigma: "涂改线长度的标准差",
       strikethrough_width_sigma: "涂改线宽度的标准差",
       strikethrough_angle_sigma: "涂改线角度的标准差",
+      strikethrough_width: "涂改线宽度",
     },
   },
 };

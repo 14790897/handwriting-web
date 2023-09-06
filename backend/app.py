@@ -306,7 +306,7 @@ def generate_handwriting():
         strikethrough_length_sigma=float(data["strikethrough_length_sigma"]),  # 删除线长度随机扰动
         strikethrough_width_sigma=float(data["strikethrough_width_sigma"]),  # 删除线宽度随机扰动
         strikethrough_angle_sigma=float(data["strikethrough_angle_sigma"]),  # 删除线角度随机扰动
-        
+        strikethrough_width=float(data["strikethrough_width"]),  # 删除线宽度
     )
     images = handwrite(text_to_generate, template)
     logger.info("images generated successfully")
