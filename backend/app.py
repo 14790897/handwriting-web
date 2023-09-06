@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file, session, current_app
-from handright import Template, handwrite
+from handrightbeta import Template, handwrite
 from PIL import Image, ImageFont
 from threading import Thread
 from PIL import Image, ImageFont, ImageQt, ImageDraw
@@ -302,6 +302,7 @@ def generate_handwriting():
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
+        
     )
     images = handwrite(text_to_generate, template)
     logger.info("images generated successfully")

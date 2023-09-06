@@ -16,6 +16,26 @@ import * as Sentry from "@sentry/vue";
 const app = createApp(App);
 
 
+// 异步加载Google Analytics的JavaScript库
+const script = document.createElement('script')
+script.async = true
+script.src = 'https://www.googletagmanager.com/gtag/js?id=G-GB1XG89B6Z'
+document.head.appendChild(script)
+
+// 当脚本加载完成后进行初始化
+script.onload = () => {
+  // 初始化window.dataLayer数组
+  window.dataLayer = window.dataLayer || []
+
+  // 定义gtag函数
+  function gtag() {
+    window.dataLayer.push(arguments)
+  }
+
+  // 调用gtag函数进行配置
+  gtag('js', new Date())
+  gtag('config', 'G-GB1XG89B6Z')
+}
 
 Sentry.init({
     app,
