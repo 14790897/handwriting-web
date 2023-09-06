@@ -16,7 +16,7 @@
     <div id="form">
       <div class="container_file row">
 
-        <div class="col d-flex flex-row justify-content-between">
+        <div class="col justify-content-between">
           <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
         </div>
 
@@ -79,7 +79,7 @@
       <div class="label-container">
 
         <label>{{ $t('message.fontSize') }}:
-          <input type="number" v-model="fontSize" />
+          <input type="number" v-model="fontSize" placeholder="recommend > 100"/>
         </label>
       </div>
 
@@ -113,13 +113,12 @@
         </label>
       </div>
       <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
-      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContent"
-        aria-expanded="false" aria-controls="collapseContent" style="width: 100px;">
+      <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px;">
         {{ $t('message.expand') }}
       </button>
 
       <!-- 这是一个内容区域，它的 id 与上面的按钮的 data-target 相对应 -->
-      <div class="collapse" id="collapseContent">
+      <div v-if="isExpanded"  id="collapseContent">
         <div class="card card-body">
           <div class="label-container">
             <label>{{ $t('message.lineSpacingSigma') }}:
@@ -162,6 +161,31 @@
               <input type="number" v-model="wordSpacing" />
             </label>
           </div>
+
+          <div class="label-container">
+            <label>{{ $t('message.strikethrough_length_sigma') }}:
+              <input type="text" v-model="strikethrough_length_sigma" />
+            </label>
+          </div>
+
+          <div class='label-container'>
+            <label>{{ $t('message.strikethrough_angle_sigma') }}:
+              <input type="number" v-model="strikethrough_angle_sigma" />
+            </label>
+          </div>
+
+          <div class='label-container'>
+            <label>{{ $t('message.strikethrough_width_sigma') }}:
+              <input type="number" v-model="strikethrough_width_sigma" />
+            </label>
+          </div>
+
+          <div class='label-container'>
+            <label>{{ $t('message.strikethrough_probability') }}:
+              <input type="number" v-model="strikethrough_probability" />
+            </label>
+          </div>
+
         </div>
       </div>
     </div>
@@ -176,22 +200,16 @@
       <h2>{{ $t('message.preview') }}:</h2>
 
       <!-- <div v-viewer> -->
-        <img :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px;"/>
+      <img :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px;" />
       <!-- </div> -->
-
-
     </div>
-
-
-
-
     <footer class=" footer mt-auto py-3 bg-white">
-        <div class="container text-center">
-          <span class="text-black">© 2023 Liuweiqing</span>
-          <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
-          <span class="text-black">{{ $t('message.projectAddress') }}:</span>
-          <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
-        </div>
+      <div class="container text-center">
+        <span class="text-black">© 2023 Liuweiqing</span>
+        <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
+        <span class="text-black">{{ $t('message.projectAddress') }}:</span>
+        <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
+      </div>
     </footer>
 
 
@@ -252,10 +270,12 @@ export default {
       selectedOption: '1',  // 当前选中的选项
       options: '',  // 下拉选项
       isLoading: false, //7.6
-      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'],
-
-
-
+      strikethrough_length_sigma: 2,
+      strikethrough_angle_sigma: 2,
+      strikethrough_width_sigma: 2,
+      strikethrough_probability: 0.08,
+            isExpanded: false,
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability'],
     };
   },
   created() {
@@ -441,11 +461,39 @@ export default {
       },
       deep: true
     },
+    strikethrough_length_sigma: {
+      handler(newVal) {
+        localStorage.setItem('strikethrough_length_sigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    strikethrough_angle_sigma: {
+      handler(newVal) {
+        localStorage.setItem('strikethrough_angle_sigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    strikethrough_width_sigma: {
+      handler(newVal) {
+        localStorage.setItem('strikethrough_width_sigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
+    strikethrough_probability: {
+      handler(newVal) {
+        localStorage.setItem('strikethrough_probability', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
+
   methods: {
+    toggleCollapse() {
+      this.isExpanded = !this.isExpanded;
+    },
     async generateHandwriting(preview = false) {
       // 验证输入
-      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];
+      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability'];
       Items.forEach(item => {
         let value = this[item];
         // if (!value) {
@@ -458,8 +506,10 @@ export default {
             // 验证 text 是否是字符串
             if (typeof value !== 'string') {
               console.error(`Invalid value for ${item}`);
+              this.errorMessage = '请输入字符串';
             }
-            break;
+            return;
+            // break;
           case 'fontSize':
           case 'lineSpacing':
           case 'marginTop':
@@ -473,11 +523,17 @@ export default {
           case 'perturbYSigma':
           case 'perturbThetaSigma':
           case 'wordSpacing':
+          case 'strikethrough_length_sigma':
+          case 'strikethrough_angle_sigma':
+          case 'strikethrough_width_sigma':
+          case 'strikethrough_probability':
             // 验证这些值是否是数字
             if (isNaN(Number(value))) {
               console.error(`Invalid value for ${item}`);
+              this.errorMessage = '请输入数字';
             }
-            break;
+            return
+            // break;
           case 'backgroundImage':
             // 验证 backgroundImage 是否是有效的 URL 或者文件路径
             // 这可能需要更复杂的验证
@@ -530,6 +586,10 @@ export default {
       formData.append("word_spacing", this.wordSpacing);
       formData.append("preview", this.preview.toString());
       formData.append("font_option", this.options[this.selectedOption - 1].text);
+      formData.append("strikethrough_length_sigma", this.strikethrough_length_sigma);
+      formData.append("strikethrough_angle_sigma", this.strikethrough_angle_sigma);
+      formData.append("strikethrough_width_sigma", this.strikethrough_width_sigma);
+      formData.append("strikethrough_probability", this.strikethrough_probability);
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);

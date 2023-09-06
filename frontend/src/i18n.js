@@ -1,4 +1,4 @@
-import { createI18n } from 'vue-i18n'
+import { createI18n } from "vue-i18n";
 
 const messages = {
   en: {
@@ -46,6 +46,13 @@ const messages = {
       perturbThetaSigma: "Perturb Theta Sigma",
       wordSpacing: "Word Spacing",
       expand: "expand",
+      strikethrough_probability: "Probability of a strikethrough occurring",
+      strikethrough_length_sigma:
+        "Standard deviation of the strikethrough length",
+      strikethrough_width_sigma:
+        "Standard deviation of the strikethrough width",
+      strikethrough_angle_sigma:
+        "Standard deviation of the strikethrough angle",
     },
   },
   cn: {
@@ -92,13 +99,17 @@ const messages = {
       perturbThetaSigma: "笔画旋转偏移",
       wordSpacing: "字间距",
       expand: "更多内容",
+      strikethrough_probability: "涂改出现的几率",
+      strikethrough_length_sigma: "涂改线长度的标准差",
+      strikethrough_width_sigma: "涂改线宽度的标准差",
+      strikethrough_angle_sigma: "涂改线角度的标准差",
     },
   },
 };
 
 const i18n = createI18n({
-  locale: 'cn', // 默认显示的语言 
+  locale: "cn", // 默认显示的语言
   messages,
-})
+});
 
-export default i18n
+export default i18n;
