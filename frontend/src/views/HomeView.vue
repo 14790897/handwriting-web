@@ -522,7 +522,7 @@ export default {
               this.errorMessage = '请输入字符串';
             }
             // return;
-          break;
+            break;
           case 'fontSize':
           case 'lineSpacing':
           case 'marginTop':
@@ -547,7 +547,7 @@ export default {
               this.errorMessage = '请输入数字';
             }
             // return
-          break;
+            break;
           case 'backgroundImage':
             // 验证 backgroundImage 是否是有效的 URL 或者文件路径
             // 这可能需要更复杂的验证
@@ -906,13 +906,15 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   min-width: 100px;
   min-height: 200px;
+
 }
 
 .preview img {
   max-width: 100%;
   height: auto;
-
-  object-fit: cover
+  object-fit: cover;
+  position: sticky;
+  top: 0;
 }
 
 input[type="number"],
