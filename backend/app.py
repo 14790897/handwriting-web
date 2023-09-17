@@ -289,7 +289,7 @@ def generate_handwriting():
         font=font,
         line_spacing=int(data["line_spacing"]),  # + int(data["font_size"])
         # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
-        fill=(0),
+        # fill=(0),#如果feel是只有一个颜色的话那么在改变墨水的时候会导致R变化而GB不变化,颜色会变红 9.17
         left_margin=int(data["left_margin"]),
         top_margin=int(data["top_margin"]),
         right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
@@ -307,6 +307,7 @@ def generate_handwriting():
         strikethrough_width_sigma=float(data["strikethrough_width_sigma"]),  # 删除线宽度随机扰动
         strikethrough_angle_sigma=float(data["strikethrough_angle_sigma"]),  # 删除线角度随机扰动
         strikethrough_width=float(data["strikethrough_width"]),  # 删除线宽度
+        ink_depth_sigma=float(data["ink_depth_sigma"]),  # 墨水深度随机扰动
     )
     images = handwrite(text_to_generate, template)
     logger.info("images generated successfully")

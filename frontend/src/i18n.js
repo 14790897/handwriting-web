@@ -54,6 +54,7 @@ const messages = {
       strikethrough_angle_sigma:
         "Standard deviation of the strikethrough angle",
       strikethrough_width: "Width of strikethrough",
+      ink_depth_sigma: "Standard deviation of ink depth",
     },
   },
   cn: {
@@ -105,6 +106,7 @@ const messages = {
       strikethrough_width_sigma: "涂改线宽度的标准差",
       strikethrough_angle_sigma: "涂改线角度的标准差",
       strikethrough_width: "涂改线宽度",
+      ink_depth_sigma: "墨汁深度标准差",
     },
   },
 };

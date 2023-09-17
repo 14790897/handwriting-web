@@ -191,7 +191,12 @@
               <input type="number" v-model="strikethrough_width" />
             </label>
           </div>
-
+          
+          <div class='label-container'>
+            <label>{{ $t('message.ink_depth_sigma') }}:
+              <input type="number" v-model="ink_depth_sigma" />
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -281,8 +286,9 @@ export default {
       strikethrough_width_sigma: 2,
       strikethrough_probability: 0.08,
       strikethrough_width: 8,
+      ink_depth_sigma: 10,
       isExpanded: false,
-      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width'],
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'],
     };
   },
   created() {
@@ -498,6 +504,12 @@ export default {
       },
       deep: true
     },
+    ink_depth_sigma: {
+      handler(newVal) {
+        localStorage.setItem('ink_depth_sigma', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
 
   methods: {
@@ -506,7 +518,7 @@ export default {
     },
     async generateHandwriting(preview = false) {
       // 验证输入
-      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width'];
+      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
       Items.forEach(item => {
         let value = this[item];
         // if (!value) {
@@ -605,6 +617,7 @@ export default {
       formData.append("strikethrough_width_sigma", this.strikethrough_width_sigma);
       formData.append("strikethrough_probability", this.strikethrough_probability);
       formData.append("strikethrough_width", this.strikethrough_width);
+      formData.append("ink_depth_sigma", this.ink_depth_sigma);
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
