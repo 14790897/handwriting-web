@@ -286,7 +286,7 @@ export default {
       strikethrough_width_sigma: 2,
       strikethrough_probability: 0.08,
       strikethrough_width: 8,
-      ink_depth_sigma: 10,
+      ink_depth_sigma: 30,
       isExpanded: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'],
     };
