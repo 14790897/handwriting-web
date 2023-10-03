@@ -113,7 +113,7 @@
         </label>
       </div>
       <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
-      <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px;">
+      <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px; font-size:0.9rem">
         {{ $t('message.expand') }}
       </button>
 
@@ -203,8 +203,9 @@
     <div class="buttons">
       <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
-      <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
-      <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
+      <button @click="generateHandwriting(preview=true)">{{ $t('message.preview') }}</button>
+      <button @click="generateHandwriting(preview=false)">{{ $t('message.generateFullHandwritingImage') }}</button>
+      <button @click="generateHandwriting(preview=false,pdf_save=true)">{{ $t('message.generatePdf') }}</button>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -222,10 +223,6 @@
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
       </div>
     </footer>
-
-
-
-
   </div>
 </template>
 
@@ -264,6 +261,7 @@ export default {
       marginRight: 50,
       previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
       preview: false,
+      pdf_save: false,
       lineSpacingSigma: 0,
       fontSizeSigma: 2,
       wordSpacingSigma: 2,
@@ -516,7 +514,8 @@ export default {
     toggleCollapse() {
       this.isExpanded = !this.isExpanded;
     },
-    async generateHandwriting(preview = false) {
+    async generateHandwriting(preview = false,pdf_save=false) {
+      console.log('pdf_save', pdf_save)
       // 验证输入
       const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
       Items.forEach(item => {
@@ -553,6 +552,7 @@ export default {
           case 'strikethrough_width_sigma':
           case 'strikethrough_probability':
           case 'strikethrough_width':
+          case 'ink_depth_sigma':
             // 验证这些值是否是数字
             if (isNaN(Number(value))) {
               console.error(`Invalid value for ${item}`);
@@ -577,6 +577,7 @@ export default {
       }
 
       this.preview = preview;
+      // this.pdf_save = pdf_save;
       // 设置提示信息为“内容正在上传…”
       this.uploadMessage = '内容正在上传并处理…';//显示上传提示信息时，隐藏其他提示信息
       console.log('内容正在上传并处理…');
@@ -618,6 +619,7 @@ export default {
       formData.append("strikethrough_probability", this.strikethrough_probability);
       formData.append("strikethrough_width", this.strikethrough_width);
       formData.append("ink_depth_sigma", this.ink_depth_sigma);
+      formData.append("pdf_save", pdf_save.toString());
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
@@ -660,7 +662,22 @@ export default {
           this.uploadMessage = '';
           this.errorMessage = '';
 
-        } else {
+        } else if (response.headers['content-type'] === 'application/pdf') {
+          // 处理.pdf文件
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'images.pdf'); // 或任何其他文件名
+          document.body.appendChild(link);
+          link.click();
+          // 下载完成后，将链接删除
+          document.body.removeChild(link);
+          // 设置提示信息
+          this.message = '文件已下载。';
+          this.uploadMessage = '';
+          this.errorMessage = '';
+        }
+        else {
           console.error('Unexpected response type');
           // 设置错误消息
           this.errorMessage = '意外的响应类型';
@@ -868,7 +885,7 @@ export default {
 
 .buttons button {
   grid-area: button;
-  padding: 10px 20px;
+  padding: 10px 10px;
   border-radius: 5px;
   border: none;
   background: #007BFF;
@@ -881,8 +898,9 @@ export default {
   /* 添加阴影效果 */
   outline: none;
   /* 移除默认的焦点轮廓 */
-  margin-right: 60px;
+  margin-right: 10px;
   /* 为每个按钮添加右边距 */
+  margin-top:10px;
 }
 
 .buttons button:last-child {
@@ -961,8 +979,8 @@ input[type="file"]:hover {
 }
 
 .container_file button {
-  padding: 10px 10px;
-  font-size: 1rem;
+  padding: 10px 5px;
+  font-size: 0.9rem;
   color: white;
   background-color: #4285f4;
   border: none;

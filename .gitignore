@@ -22,3 +22,4 @@ backend/app.log
 *.pyc
 backend/A4本子.jpg
 ignore_rm.bat
+*.pdf

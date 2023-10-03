@@ -146,9 +146,9 @@ def read_docx(file_path):
 
 def read_pdf(file_path):
     pdf_file_obj = open(file_path, "rb")
-    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
+    pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
     text = ""
-    for page_num in range(pdf_reader.numPages):
+    for page_num in range(len(pdf_reader.pages)):
         page_obj = pdf_reader.getPage(page_num)
         text += page_obj.extractText()
     pdf_file_obj.close()
@@ -309,39 +309,56 @@ def generate_handwriting():
         strikethrough_width=float(data["strikethrough_width"]),  # 删除线宽度
         ink_depth_sigma=float(data["ink_depth_sigma"]),  # 墨水深度随机扰动
     )
-    images = handwrite(text_to_generate, template)
-    logger.info("images generated successfully")
 
     # 创建一个BytesIO对象，用于保存.zip文件的内容
-    zip_io = io.BytesIO()
-    with zipfile.ZipFile(zip_io, "w") as zipf:
-        # 遍历生成的所有图片
-        for i, im in enumerate(images):
-            # 使用os模块来连接路径和文件名
-            # image_path = os.path.join(output_path, f"{i}.png")
-            # im.save(image_path)
-            # 将每张图片保存为一个BytesIO对象
-            img_io = io.BytesIO()
-            im.save(img_io, "PNG")
-            img_io.seek(0)
-            if data["preview"] == "true":
-                # mysql_operation(img_io)
-                logger.info("预览图片已返回")
-                return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
-            else:
-                # 将图片BytesIO对象添加到.zip文件中
-                zipf.writestr(f"{i}.png", img_io.getvalue())
-    # 将BytesIO对象的位置重置到开始
-    zip_io.seek(0)
-    if not data["preview"] == "true":
-        # 返回.zip文件
-        # mysql_operation(zip_io)
-        logger.info("zip文件已返回")
+    logger.info("data[pdf_save]", data["pdf_save"])
+    if not data["pdf_save"] == "true":
+        images = handwrite(text_to_generate, template)
+        logger.info("images generated successfully")
+        zip_io = io.BytesIO()
+        with zipfile.ZipFile(zip_io, "w") as zipf:
+            # 遍历生成的所有图片
+            for i, im in enumerate(images):
+                # 使用os模块来连接路径和文件名
+                # image_path = os.path.join(output_path, f"{i}.png")
+                # im.save(image_path)
+                # 将每张图片保存为一个BytesIO对象
+                img_io = io.BytesIO()
+                im.save(img_io, "PNG")
+                img_io.seek(0)
+                if data["preview"] == "true":
+                    # mysql_operation(img_io)
+                    logger.info("预览图片已返回")
+                    return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
+                else:
+                    # 将图片BytesIO对象添加到.zip文件中
+                    zipf.writestr(f"{i}.png", img_io.getvalue())
+        # 将BytesIO对象的位置重置到开始
+        zip_io.seek(0)
+        if not data["preview"] == "true":
+            # 返回.zip文件
+            # mysql_operation(zip_io)
+            logger.info("zip文件已返回")
+            return send_file(
+                zip_io,
+                # attachment_filename="images.zip",
+                download_name="images.zip",
+                mimetype="application/zip",
+                as_attachment=True,
+            )
+    else:
+        print("PDF generate")
+        # 如果用户选择了保存为PDF，将所有图片合并为一个PDF文件
+        pdf_bytes = handwrite(text_to_generate, template, save_to_file=False, export_pdf=True)
+        logger.info("pdf generated successfully")
+        # 返回PDF文件
+        # mysql_operation(pdf_io)
+        logger.info("pdf文件已返回")
         return send_file(
-            zip_io,
-            # attachment_filename="images.zip",
-            download_name="images.zip",
-            mimetype="application/zip",
+            pdf_bytes,
+            # attachment_filename="images.pdf",
+            download_name="images.pdf",
+            mimetype="application/pdf",
             as_attachment=True,
         )
     # except Exception as e:

@@ -1,16 +1,17 @@
 <template>
     <div id='text_file_select' class="d-flex justify-content-between">
         <label for="textArea">{{ $t('message.text') }}:</label>
-        <textarea id="textArea" class="form-control" v-model="text_handwriting" :placeholder="$t('message.enterText')"></textarea>
+        <textarea id="textArea" class="form-control" v-model="text_handwriting"
+            :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
         <div class="file_select_container">
-        <button @click="triggerTextFileInput" class="mx-auto" >{{ $t('message.chooseFile') }}</button>
-        <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
-        <label>
-            <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
-                accept=".doc,.docx,.pdf,.txt,.rtf" style="display: none;" />
-        </label>
+            <button @click="triggerTextFileInput" class="mx-auto">{{ $t('message.chooseFile') }}</button>
+            <span class="border p-2 text-primary " v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
+            <label>
+                <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
+                    accept=".doc,.docx,.pdf,.txt,.rtf" style="display: none;" />
+            </label>
         </div>
 
         <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
@@ -90,47 +91,49 @@ export default {
 #text_file_select {
     position: relative;
     /* 设置父元素为相对定位 */
-    
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+    margin: auto;
 }
 
-#text_file_select {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 400px;
-  margin: auto;
-}
 
 #text_file_select label {
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-#text_file_select button {
-  padding: 10px 20px;
-  font-size: 1rem;
-  color: white;
-  background-color: #4285f4;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#text_file_select button:disabled {
-  background-color: grey;
+    font-size: 1.1rem;
+    font-weight: 500;
 }
 
 #text_file_select span {
-  display: block;
-  margin-top: 5px;
-  font-size: 0.9rem;
-  color: #444;
+    display: block;
+    margin-left: 10px;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: #444;
 }
 
 .file_select_container {
-  display: flex;
-  /* gap: 10px; */
-  align-items: center;
+    display: flex;
+    /* gap: 10px; */
+    align-items: center;
+}
+
+.file_select_container button {
+    padding: 10px 10px;
+    font-size: 0.9rem;
+    color: white;
+    background-color: #4285f4;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.file_select_container button:disabled {
+    background-color: grey;
+}
+
+.file_select_container span{
+    font-size: 0.9rem;
 }
 
 .loader {
@@ -163,7 +166,7 @@ export default {
     transition: all 0.3s ease-in-out;
 }
 
-#textarea:hover{
+#textarea:hover {
     border: 2px solid #4285f4;
     background-color: #fff;
     box-shadow: 0 0 5px #4285f4;
