@@ -205,7 +205,7 @@
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
       <button @click="generateHandwriting(preview=true)">{{ $t('message.preview') }}</button>
       <button @click="generateHandwriting(preview=false)">{{ $t('message.generateFullHandwritingImage') }}</button>
-      <button @click="generateHandwriting(preview=false,pdf_save=true)">{{ $t('message.generatePdf') }}</button>
+      <button @click="generateHandwriting(preview=false, pdf_save=true)">{{ $t('message.generatePdf') }}</button>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -261,7 +261,6 @@ export default {
       marginRight: 50,
       previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
       preview: false,
-      pdf_save: false,
       lineSpacingSigma: 0,
       fontSizeSigma: 2,
       wordSpacingSigma: 2,
@@ -515,7 +514,7 @@ export default {
       this.isExpanded = !this.isExpanded;
     },
     async generateHandwriting(preview = false,pdf_save=false) {
-      console.log('pdf_save', pdf_save)
+      // console.log('pdf_save', pdf_save)
       // 验证输入
       const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
       Items.forEach(item => {
