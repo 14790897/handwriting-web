@@ -346,13 +346,12 @@ def generate_handwriting():
                 as_attachment=True,
             )
     else:
-        print("PDF generate")
+        logger.info("PDF generate")
         # 如果用户选择了保存为PDF，将所有图片合并为一个PDF文件
         pdf_bytes = handwrite(text_to_generate, template, save_to_file=False, export_pdf=True)
         logger.info("pdf generated successfully")
         # 返回PDF文件
         # mysql_operation(pdf_io)
-        logger.info("pdf文件已返回")
         return send_file(
             pdf_bytes,
             # attachment_filename="images.pdf",
@@ -383,7 +382,7 @@ def textfileprocess():
         or file.filename.endswith(".rtf")
     ):
         filename = secure_filename(file.filename)
-        filepath = os.path.join("./textfileprocess", filename)  # 临时目录
+        filepath = os.path.join(".", "textfileprocess", filename)  # 临时目录
         file.save(filepath)
 
         if file.filename.endswith(".docx"):
@@ -395,7 +394,12 @@ def textfileprocess():
                 text = f.read()
 
         # 删除临时文件
-        os.remove(filepath)
+        # 检查文件是否存在
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            logger.info(f"{filepath} has been deleted.")
+        else:
+            logger.error(f"{filepath} does not exist.")
 
         return jsonify({"text": text})
 

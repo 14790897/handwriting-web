@@ -111,7 +111,7 @@
         <label>{{ $t('message.rightMargin') }}:
           <input type="number" v-model="marginRight" />
         </label>
-      </div>
+      </div> 
       <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
       <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px; font-size:0.9rem">
         {{ $t('message.expand') }}
