@@ -206,6 +206,7 @@
       <button @click="generateHandwriting(preview=true)">{{ $t('message.preview') }}</button>
       <button @click="generateHandwriting(preview=false)">{{ $t('message.generateFullHandwritingImage') }}</button>
       <button @click="generateHandwriting(preview=false, pdf_save=true)">{{ $t('message.generatePdf') }}</button>
+      <router-link to="/Feedback" class="btn btn-info">{{$t('message.feedback')}}</router-link>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -217,8 +218,8 @@
     </div>
     <footer class=" footer mt-auto py-3 bg-white">
       <div class="container text-center">
-        <router-link to="/Feedback">反馈</router-link>
-        <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
+
+        <!-- <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a> -->
         <span class="text-black">{{ $t('message.projectAddress') }}:</span>
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
       </div>
