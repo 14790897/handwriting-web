@@ -1,0 +1,14 @@
+{
+    "version": 2,
+    "env": {
+      "EMAIL_USER": "@email-user",
+      "EMAIL_PASS": "@email-pass"
+    },
+    "functions": {
+        "api/sendEmail.js": {
+          "memory": 128,
+          "maxDuration": 10
+        }
+      }
+  }
+  
