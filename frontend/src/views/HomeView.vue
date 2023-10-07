@@ -217,7 +217,7 @@
     </div>
     <footer class=" footer mt-auto py-3 bg-white">
       <div class="container text-center">
-        <span class="text-black">© 2023 Liuweiqing</span>
+        <router-link to="/Feedback">反馈</router-link>
         <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a>
         <span class="text-black">{{ $t('message.projectAddress') }}:</span>
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
