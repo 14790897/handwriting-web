@@ -205,7 +205,7 @@
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
       <button @click="generateHandwriting(preview=true)">{{ $t('message.preview') }}</button>
       <button @click="generateHandwriting(preview=false)">{{ $t('message.generateFullHandwritingImage') }}</button>
-      <button @click="generateHandwriting(preview=false, pdf_save=true)">{{ $t('message.generatePdf') }}</button>
+      <button @click="generateHandwriting(preview=false, pdf_save=true)">{{ $t('message.generatePdf') }}</button> 
       <router-link to="/Feedback" class="btn btn-info">{{$t('message.feedback')}}</router-link>
     </div>
     <!-- 预览区 -->
