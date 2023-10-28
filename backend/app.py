@@ -41,6 +41,8 @@ from flask_limiter.util import get_remote_address
 #装饰器 7.15
 from functools import wraps
 
+# 定时清理文件 10.28
+import schedule_clean
 
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
@@ -73,6 +75,9 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     traces_sample_rate=1.0,
 )
+
+# 启动计划任务线程, 定时清理
+schedule_clean.start_schedule_thread()
 
 # 创建一个logger
 logger = logging.getLogger(__name__)
