@@ -25,6 +25,7 @@ from docx import Document
 import PyPDF2
 import tempfile
 import shutil
+from pdf import generate_pdf
 
 # 图片处理模块
 from identify import identify_distance
@@ -316,7 +317,7 @@ def generate_handwriting():
     logger.info(f"data[pdf_save]: {data['pdf_save']}")
     if not data["pdf_save"] == "true":
         images = handwrite(text_to_generate, template)
-        logger.info("images generated successfully")
+        logger.info("handwrite initial images generated successfully")
         # 创建临时目录
         temp_dir = tempfile.mkdtemp()
         try:
@@ -332,37 +333,72 @@ def generate_handwriting():
             if not data["preview"] == "true":
                 # 创建ZIP文件
                 unique_filename = "images_" + str(time.time())
-                shutil.make_archive(unique_filename, 'zip', temp_dir)
+                shutil.make_archive(f'./temp/{unique_filename}', 'zip', temp_dir)
                 # 发送ZIP文件
                 return send_file(
-                    f"{unique_filename}.zip",
+                    f"./temp/{unique_filename}.zip",
                     download_name="images.zip",
                     mimetype="application/zip",
                     as_attachment=True,
                 )
         finally:
-            # 删除临时目录及其内容
-            shutil.rmtree(temp_dir)
-            # os.remove(unique_filename)
+            pass
+            # # 删除临时目录及其内容
+            # shutil.rmtree(temp_dir)
+            # os.remove(f"./temp/{unique_filename}.zip")
     else:
         logger.info("PDF generate")
-        unique_filename = "images_" + str(time.time()) + ".zip"
+        temp_pdf_file_path = None  # 初始化变量
+        images = handwrite(text_to_generate, template)
+        try:
+            temp_pdf_file_path = generate_pdf(images=images)
+              # 将文件路径存储在请求上下文中，以便稍后可以访问它
+            request.temp_file_path = temp_pdf_file_path
+            return send_file(
+                temp_pdf_file_path,
+                download_name="images.pdf",
+                mimetype="application/pdf",
+                as_attachment=True,
+                conditional=True
+            )
+        finally:
+            pass
+        #     if temp_pdf_file_path is not None:  # 检查变量是否已赋值
+        #         for _ in range(5):  # 尝试5次
+        #             try:
+        #                 os.remove(temp_pdf_file_path)  # 尝试删除文件
+        #                 break  # 如果成功删除，跳出循环
+        #             except Exception as e:  # 捕获并处理删除文件时可能出现的异常
+        #                 logger.error(f"Failed to remove temporary PDF file: {e}")
+        #                 time.sleep(1)
+        # unique_filename = "images_" + str(time.time()) + ".zip"
 
-        # 如果用户选择了保存为PDF，将所有图片合并为一个PDF文件
-        pdf_bytes = handwrite(text_to_generate, template, export_pdf=True, file_path=unique_filename)
-        logger.info("pdf generated successfully")
-        # 返回PDF文件
-        # mysql_operation(pdf_io)
-        return send_file(
-            pdf_bytes,
-            # attachment_filename="images.pdf",
-            download_name="images.pdf",
-            mimetype="application/pdf",
-            as_attachment=True,
-        )
-    # except Exception as e:
-    #     logger.info("An error occurred during the request: %s", e)
-    #     return jsonify({"status": "error", "message": str(e)}), 500
+        # # 如果用户选择了保存为PDF，将所有图片合并为一个PDF文件
+        # pdf_bytes = handwrite(text_to_generate, template, export_pdf=True, file_path=unique_filename)
+        # logger.info("pdf generated successfully")
+        # # 返回PDF文件
+        # # mysql_operation(pdf_io)
+        # return send_file(
+        #     pdf_bytes,
+        #     # attachment_filename="images.pdf",
+        #     download_name="images.pdf",
+        #     mimetype="application/pdf",
+        #     as_attachment=True,
+        # )
+
+
+# @app.after_request
+# def cleanup(response):
+#     # 从请求上下文中获取文件路径
+#     temp_file_path = getattr(request, 'temp_file_path', None)
+#     if temp_file_path is not None:
+#         # 尝试删除文件
+#         try:
+#             os.remove(temp_file_path)
+#         except Exception as e:
+#             app.logger.error(f"Failed to remove temporary PDF file: {e}")
+#     # 返回原始响应
+#     return response
 
 
 @app.route("/api/textfileprocess", methods=["POST"])
