@@ -22,6 +22,8 @@ from werkzeug.utils import secure_filename
 # 文件模块
 from docx import Document
 import PyPDF2
+import tempfile
+import shutil
 
 # 图片处理模块
 from identify import identify_distance
@@ -314,37 +316,31 @@ def generate_handwriting():
     if not data["pdf_save"] == "true":
         images = handwrite(text_to_generate, template)
         logger.info("images generated successfully")
-        zip_io = io.BytesIO()
-        with zipfile.ZipFile(zip_io, "w") as zipf:
-            # 遍历生成的所有图片
+        # 创建临时目录
+        temp_dir = tempfile.mkdtemp()
+        try:
             for i, im in enumerate(images):
-                # 使用os模块来连接路径和文件名
-                # image_path = os.path.join(output_path, f"{i}.png")
-                # im.save(image_path)
-                # 将每张图片保存为一个BytesIO对象
-                img_io = io.BytesIO()
-                im.save(img_io, "PNG")
-                img_io.seek(0)
+                # 保存每张图像到临时目录
+                image_path = os.path.join(temp_dir, f"{i}.png")
+                im.save(image_path)
+
                 if data["preview"] == "true":
-                    # mysql_operation(img_io)
-                    logger.info("预览图片已返回")
-                    return send_file(io.BytesIO(img_io.getvalue()), mimetype="image/png")
-                else:
-                    # 将图片BytesIO对象添加到.zip文件中
-                    zipf.writestr(f"{i}.png", img_io.getvalue())
-        # 将BytesIO对象的位置重置到开始
-        zip_io.seek(0)
-        if not data["preview"] == "true":
-            # 返回.zip文件
-            # mysql_operation(zip_io)
-            logger.info("zip文件已返回")
-            return send_file(
-                zip_io,
-                # attachment_filename="images.zip",
-                download_name="images.zip",
-                mimetype="application/zip",
-                as_attachment=True,
-            )
+                    # 如果需要预览图像，直接发送文件
+                    return send_file(image_path, mimetype="image/png")
+
+            if not data["preview"] == "true":
+                # 创建ZIP文件
+                shutil.make_archive("images", 'zip', temp_dir)
+                # 发送ZIP文件
+                return send_file(
+                    "images.zip",
+                    download_name="images.zip",
+                    mimetype="application/zip",
+                    as_attachment=True,
+                )
+        finally:
+            # 删除临时目录及其内容
+            shutil.rmtree(temp_dir)
     else:
         logger.info("PDF generate")
         # 如果用户选择了保存为PDF，将所有图片合并为一个PDF文件
