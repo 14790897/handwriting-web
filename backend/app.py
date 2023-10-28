@@ -1,3 +1,4 @@
+import time
 from flask import Flask, request, jsonify, send_file, session, current_app
 from handright import Template, handwrite
 from PIL import Image, ImageFont
@@ -330,10 +331,11 @@ def generate_handwriting():
 
             if not data["preview"] == "true":
                 # 创建ZIP文件
-                shutil.make_archive("images", 'zip', temp_dir)
+                unique_filename = "images_" + str(time.time()) + ".zip"
+                shutil.make_archive(unique_filename, 'zip', temp_dir)
                 # 发送ZIP文件
                 return send_file(
-                    "images.zip",
+                    unique_filename,
                     download_name="images.zip",
                     mimetype="application/zip",
                     as_attachment=True,
