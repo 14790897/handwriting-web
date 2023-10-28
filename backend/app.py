@@ -313,7 +313,7 @@ def generate_handwriting():
     )
 
     # 创建一个BytesIO对象，用于保存.zip文件的内容
-    logger.info("data[pdf_save]", data["pdf_save"])
+    logger.info(f"data[pdf_save]: {data['pdf_save']}")
     if not data["pdf_save"] == "true":
         images = handwrite(text_to_generate, template)
         logger.info("images generated successfully")
@@ -331,11 +331,11 @@ def generate_handwriting():
 
             if not data["preview"] == "true":
                 # 创建ZIP文件
-                unique_filename = "images_" + str(time.time()) + ".zip"
+                unique_filename = "images_" + str(time.time())
                 shutil.make_archive(unique_filename, 'zip', temp_dir)
                 # 发送ZIP文件
                 return send_file(
-                    unique_filename,
+                    f"{unique_filename}.zip",
                     download_name="images.zip",
                     mimetype="application/zip",
                     as_attachment=True,
@@ -343,10 +343,13 @@ def generate_handwriting():
         finally:
             # 删除临时目录及其内容
             shutil.rmtree(temp_dir)
+            # os.remove(unique_filename)
     else:
         logger.info("PDF generate")
+        unique_filename = "images_" + str(time.time()) + ".zip"
+
         # 如果用户选择了保存为PDF，将所有图片合并为一个PDF文件
-        pdf_bytes = handwrite(text_to_generate, template, save_to_file=False, export_pdf=True)
+        pdf_bytes = handwrite(text_to_generate, template, export_pdf=True, file_path=unique_filename)
         logger.info("pdf generated successfully")
         # 返回PDF文件
         # mysql_operation(pdf_io)
