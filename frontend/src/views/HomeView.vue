@@ -77,6 +77,9 @@
         </button>
       </div>
 
+      <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2"  v-model="isUnderlined">
+      <label for="optionUnderline"  style="margin-right: 0px;">增加下划线</label>
+
       <div class="label-container">
 
         <label>{{ $t('message.fontSize') }}:
@@ -286,8 +289,9 @@ export default {
       strikethrough_probability: 0.08,
       strikethrough_width: 8,
       ink_depth_sigma: 30,
+      isUnderlined: true,
       isExpanded: false,
-      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'],
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined'],
     };
   },
   created() {
@@ -509,6 +513,12 @@ export default {
       },
       deep: true
     },
+    isUnderlined: {
+      handler(newVal) {
+        localStorage.setItem('isUnderlined', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
 
   methods: {
@@ -621,6 +631,7 @@ export default {
       formData.append("strikethrough_width", this.strikethrough_width);
       formData.append("ink_depth_sigma", this.ink_depth_sigma);
       formData.append("pdf_save", pdf_save.toString());
+      formData.append("isUnderlined", this.isUnderlined.toString());
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
@@ -1125,6 +1136,16 @@ input[type="file"]:hover {
   cursor: not-allowed !important;
 }
 
+.optionUnderline {
+  margin: 0;
+  padding: 0;
+  width: 10px;
+  padding: 0 !important; 
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  box-sizing: content-box !important;
+}
 
 
 @media (max-width: 1000px) {

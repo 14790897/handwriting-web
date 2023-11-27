@@ -38,7 +38,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-#装饰器 7.15
+# 装饰器 7.15
 from functools import wraps
 
 # 定时清理文件 10.28
@@ -46,7 +46,7 @@ import schedule_clean
 
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
-enable_user_auth = os.getenv('ENABLE_USER_AUTH', 'false')
+enable_user_auth = os.getenv("ENABLE_USER_AUTH", "false")
 # 获取当前路径
 current_path = os.getcwd()
 # 创建一个子文件夹用于存储输出的图片
@@ -134,16 +134,19 @@ def create_notebook_image(
     left_margin,
     right_margin,
     font_size,
+    isUnderlined,
 ):
     image = Image.new("RGB", (width, height), "white")
-    draw = ImageDraw.Draw(image)
-    # todo  这个距离的原理不清楚7.15
-    y = top_margin + line_spacing  # 开始的y坐标设为顶部边距加字体大小
-    # bottom_margin -= line_spacing
-    while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
-        draw.line((left_margin, y, width - right_margin, y), fill="black")
-        y += line_spacing  # 每次循环，y坐标增加行间距
-    # draw.line((left_margin, y, width - right_margin, y), fill="black")
+
+    if isUnderlined == "true":
+        draw = ImageDraw.Draw(image)
+        # todo  这个距离的原理不清楚7.15
+        y = top_margin + line_spacing  # 开始的y坐标设为顶部边距加字体大小
+        # bottom_margin -= line_spacing
+        while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
+            draw.line((left_margin, y, width - right_margin, y), fill="black")
+            y += line_spacing  # 每次循环，y坐标增加行间距
+        # draw.line((left_margin, y, width - right_margin, y), fill="black")
     return image
 
 
@@ -162,6 +165,7 @@ def read_pdf(file_path):
             text += page_obj.extract_text()
     return text
 
+
 def handle_exceptions(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -170,14 +174,16 @@ def handle_exceptions(f):
         except Exception as e:
             logger.info("An error occurred during the request: %s", e)
             return jsonify({"status": "error", "message": str(e)}), 500
+
     return decorated_function
+
 
 @app.route("/api/generate_handwriting", methods=["POST"])
 @limiter.limit("20 per 5 minute")
-@handle_exceptions#错误捕获的装饰器7.15
+@handle_exceptions  # 错误捕获的装饰器7.15
 def generate_handwriting():
     # logger.info("已经进入generate_handwriting")
-    if enable_user_auth.lower() == 'true':
+    if enable_user_auth.lower() == "true":
         if "username" not in session:
             return jsonify({"status": "error", "message": "You haven't login."}), 500
     # try:
@@ -230,6 +236,7 @@ def generate_handwriting():
         width = int(data["width"])
         height = int(data["height"])
         font_size = int(data.get("font_size", 0))
+        isUnderlined = data.get("isUnderlined", False)
         background_image = create_notebook_image(
             width,
             height,
@@ -239,6 +246,7 @@ def generate_handwriting():
             left_margin,
             right_margin,
             font_size,
+            isUnderlined,
         )
 
     else:
@@ -311,7 +319,9 @@ def generate_handwriting():
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
         strikethrough_probability=float(data["strikethrough_probability"]),  # 删除线概率
-        strikethrough_length_sigma=float(data["strikethrough_length_sigma"]),  # 删除线长度随机扰动
+        strikethrough_length_sigma=float(
+            data["strikethrough_length_sigma"]
+        ),  # 删除线长度随机扰动
         strikethrough_width_sigma=float(data["strikethrough_width_sigma"]),  # 删除线宽度随机扰动
         strikethrough_angle_sigma=float(data["strikethrough_angle_sigma"]),  # 删除线角度随机扰动
         strikethrough_width=float(data["strikethrough_width"]),  # 删除线宽度
@@ -338,7 +348,7 @@ def generate_handwriting():
             if not data["preview"] == "true":
                 # 创建ZIP文件
                 unique_filename = "images_" + str(time.time())
-                shutil.make_archive(f'./temp/{unique_filename}', 'zip', temp_dir)
+                shutil.make_archive(f"./temp/{unique_filename}", "zip", temp_dir)
                 # 发送ZIP文件
                 return send_file(
                     f"./temp/{unique_filename}.zip",
@@ -357,14 +367,14 @@ def generate_handwriting():
         images = handwrite(text_to_generate, template)
         try:
             temp_pdf_file_path = generate_pdf(images=images)
-              # 将文件路径存储在请求上下文中，以便稍后可以访问它
+            # 将文件路径存储在请求上下文中，以便稍后可以访问它
             request.temp_file_path = temp_pdf_file_path
             return send_file(
                 temp_pdf_file_path,
                 download_name="images.pdf",
                 mimetype="application/pdf",
                 as_attachment=True,
-                conditional=True
+                conditional=True,
             )
         finally:
             pass
@@ -432,7 +442,7 @@ def textfileprocess():
         elif file.filename.endswith(".pdf"):
             text = read_pdf(filepath)
         elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
-            with open(filepath, "r", encoding='utf-8', errors="ignore") as f:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 text = f.read()
 
         # 删除临时文件
@@ -621,26 +631,27 @@ def register():
 #     # Pass the error to Flask's default error handling.
 #       tb = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
 #     response = {
-#         
+#
 #             "type": type(e).__name__,  # The type of the exception
 #             "message": str(e),  # The message of the exception
-#         
+#
 #     }
 #     return jsonify(response), 500
 
 
 @app.before_request
 def before_request():
-    if enable_user_auth.lower() == 'true':
+    if enable_user_auth.lower() == "true":
         current_app.cnx = mysql.connector.connect(
             host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
         )
     else:
         pass
 
+
 @app.after_request
 def after_request(response):
-    if enable_user_auth.lower() == 'true':
+    if enable_user_auth.lower() == "true":
         if hasattr(current_app, "cnx"):
             current_app.cnx.close()
         # 仅用于调试 7.13
