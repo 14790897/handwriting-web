@@ -77,8 +77,9 @@
         </button>
       </div>
 
-      <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2"  v-model="isUnderlined">
-      <label for="optionUnderline"  style="margin-right: 0px;">增加下划线</label>
+      <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2"
+        v-model="isUnderlined">
+      <label for="optionUnderline" style="margin-right: 0px;">增加下划线</label>
 
       <div class="label-container">
 
@@ -1140,7 +1141,7 @@ input[type="file"]:hover {
   margin: 0;
   padding: 0;
   width: 10px;
-  padding: 0 !important; 
+  padding: 0 !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
@@ -1152,9 +1153,9 @@ input[type="file"]:hover {
   .container {
     /* flex-direction: column; */
     grid-template-areas:
-      "message"
       "form"
       "button"
+      "message"
       "image";
     grid-template-columns: 1fr;
   }
