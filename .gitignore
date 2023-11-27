@@ -7,10 +7,8 @@ backend/env
 # backend/font_assets/*
 # !backend/font_assets/.gitkeep
 venv
-青叶手写体.ttf
 backend/flask_session/*
 backend/_pycache__/*
-云烟体.ttf
 原始handwrite.py
 测试.txt
 backend\app.log
