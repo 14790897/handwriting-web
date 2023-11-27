@@ -4,8 +4,8 @@ env-handwrite
 hand-write
 .env
 backend/env
-backend/font_assets/*
-!backend/font_assets/.gitkeep
+# backend/font_assets/*
+# !backend/font_assets/.gitkeep
 venv
 青叶手写体.ttf
 backend/flask_session/*
