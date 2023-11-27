@@ -37,7 +37,8 @@
           <div class="image-container">
             <label>{{ $t('message.backgroundImageFile') }}:</label>
             <div class="button-container">
-              <button @click="triggerImageFileInput" :disabled="isDimensionSpecified"
+              <!-- :disabled="isDimensionSpecified" -->
+              <button @click="triggerImageFileInput" :class="{ 'button-disabled': isDimensionSpecified }"
                 :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
                 {{ $t('message.chooseFile') }}
                 <div>
@@ -111,7 +112,7 @@
         <label>{{ $t('message.rightMargin') }}:
           <input type="number" v-model="marginRight" />
         </label>
-      </div> 
+      </div>
       <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
       <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px; font-size:0.9rem">
         {{ $t('message.expand') }}
@@ -191,7 +192,7 @@
               <input type="number" v-model="strikethrough_width" />
             </label>
           </div>
-          
+
           <div class='label-container'>
             <label>{{ $t('message.ink_depth_sigma') }}:
               <input type="number" v-model="ink_depth_sigma" />
@@ -203,10 +204,10 @@
     <div class="buttons">
       <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
-      <button @click="generateHandwriting(preview=true)">{{ $t('message.preview') }}</button>
-      <button @click="generateHandwriting(preview=false)">{{ $t('message.generateFullHandwritingImage') }}</button>
-      <button @click="generateHandwriting(preview=false, pdf_save=true)">{{ $t('message.generatePdf') }}</button> 
-      <router-link to="/Feedback" class="btn btn-info">{{$t('message.feedback')}}</router-link>
+      <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
+      <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
+      <button @click="generateHandwriting(preview = false, pdf_save = true)">{{ $t('message.generatePdf') }}</button>
+      <router-link to="/Feedback" class="btn btn-info">{{ $t('message.feedback') }}</router-link>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -514,7 +515,7 @@ export default {
     toggleCollapse() {
       this.isExpanded = !this.isExpanded;
     },
-    async generateHandwriting(preview = false,pdf_save=false) {
+    async generateHandwriting(preview = false, pdf_save = false) {
       // console.log('pdf_save', pdf_save)
       // 验证输入
       const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
@@ -784,7 +785,6 @@ export default {
             });
         }
       })
-
     },
     onFontChange(event) {
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
@@ -804,7 +804,25 @@ export default {
 
     },
     triggerImageFileInput() {
-      this.$refs.imageFileInput.click();
+      if (!this.isDimensionSpecified) {
+        this.$refs.imageFileInput.click();
+      }
+      else {
+        Swal.fire({
+          title: '需要先清空高度宽度才能选择图片',
+          text: '选择图片后需要点击按钮左下角的X删除图片才能再输入宽度高度',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: '清空宽度高度',
+          cancelButtonText: '取消'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.width = null
+            this.height = null
+            this.$refs.imageFileInput.click();
+          }
+        })
+      }
     },
     triggerFontFileInput() {
       this.$refs.fontFileInput.click();
@@ -900,7 +918,7 @@ export default {
   /* 移除默认的焦点轮廓 */
   margin-right: 10px;
   /* 为每个按钮添加右边距 */
-  margin-top:10px;
+  margin-top: 10px;
 }
 
 .buttons button:last-child {
@@ -1100,6 +1118,13 @@ input[type="file"]:hover {
 .close {
   border: none !important;
 }
+
+.button-disabled {
+  background-color: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+}
+
 
 
 @media (max-width: 1000px) {
