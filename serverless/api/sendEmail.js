@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
   );
   // 对于预检请求，返回正常状态
   if ("OPTIONS" === req.method) {
-    return res.status(200).send("OK")
+    return res.status(200).send("OK");
   } else if (req.method === "POST") {
     // 从POST请求中获取电子邮件和反馈信息
     const { email, feedback } = req.body;
