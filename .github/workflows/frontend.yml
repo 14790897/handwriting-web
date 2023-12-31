@@ -33,3 +33,14 @@ jobs:
           file: ./frontend/dockerfile.frontend
           push: true
           tags: 14790897/frontend-handwriting:latest
+
+  release-please-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: google-github-actions/release-please-action@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          release-type: node
+          package-name: handwriting-frontend
+          path: ./frontend
