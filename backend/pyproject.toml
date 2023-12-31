@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "handwriting-backend"
+version = "1.0.0"
+description = "handwriting-backend"
+authors = ["Liuweiqing liuweiqing147@gmail.com"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

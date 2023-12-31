@@ -23,3 +23,5 @@ ignore_rm.bat
 *.pdf
 backend/textfileprocess/doc
 backend/textfileprocess/docx
+backend/pandoc-3.1.11-windows-x86_64.msi
+backend/pyproject2.toml
