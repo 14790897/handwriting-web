@@ -287,7 +287,7 @@ export default {
       strikethrough_length_sigma: 2,
       strikethrough_angle_sigma: 2,
       strikethrough_width_sigma: 2,
-      strikethrough_probability: 0.08,
+      strikethrough_probability: 0.02,
       strikethrough_width: 8,
       ink_depth_sigma: 30,
       isUnderlined: true,
