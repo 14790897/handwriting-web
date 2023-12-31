@@ -155,6 +155,14 @@ def read_docx(file_path):
     text = " ".join([paragraph.text for paragraph in document.paragraphs])
     return text
 
+import pypandoc
+pypandoc.download_pandoc()
+
+
+def convert_docx_to_text(docx_file_path):
+    # 转换文件为纯文本格式，并返回转换后的文本内容
+    text = pypandoc.convert_file(docx_file_path, 'plain')
+    return text
 
 def read_pdf(file_path):
     text = ""
@@ -438,7 +446,7 @@ def textfileprocess():
         file.save(filepath)
 
         if file.filename.endswith(".docx"):
-            text = read_docx(filepath)
+            text = convert_docx_to_text(filepath)
         elif file.filename.endswith(".pdf"):
             text = read_pdf(filepath)
         elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
@@ -663,6 +671,10 @@ def after_request(response):
 
 
 if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
+
+# poetry
+def main():
     app.run(debug=True, host="0.0.0.0", port=5000)
 
     # good luck 6/16/2023
