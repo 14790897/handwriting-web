@@ -1,0 +1,18 @@
+name: release-please
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: google-github-actions/release-please-action@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          release-type: node
+          package-name: handwriting-web
+permissions:
+  contents: write
+

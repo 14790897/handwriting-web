@@ -1,0 +1,4 @@
+branches:
+  - main
+bumpMinorPreMajor: true
+releaseType: node
