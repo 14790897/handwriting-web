@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import Home from "../views/HomeView.vue";
 import Login from "../views/UserLogin.vue";
 import Register from "../views/UserRegister.vue";
-import UserFeedback from '@/components/UserFeedback'; // 导入Feedback组件
+import UserFeedback from "@/components/UserFeedback"; // 导入Feedback组件
+import IntroduceComponent from "@/components/Introduce"; // 导入Introduce组件
 
 const routes = [
   {
@@ -30,10 +31,15 @@ const routes = [
     component: Register,
   },
   {
-    path: '/Feedback',
-    name: 'Feedback',
-    component: UserFeedback
-  }
+    path: "/Feedback",
+    name: "Feedback",
+    component: UserFeedback,
+  },
+  {
+    path: "/Introduce",
+    name: "Introduce",
+    component: IntroduceComponent,
+  },
 ];
 
 const router = createRouter({

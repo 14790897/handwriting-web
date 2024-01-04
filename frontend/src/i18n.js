@@ -58,6 +58,7 @@ const messages = {
       ink_depth_sigma: "Standard deviation of ink depth",
       email:"Email",
       feedback:"Feedback",
+      introduce:"Introduce",
     },
   },
   cn: {
@@ -113,6 +114,7 @@ const messages = {
       ink_depth_sigma: "墨汁深度标准差",
       email: "邮箱",
       feedback: "反馈",
+      introduce: "介绍",
     },
   },
 };

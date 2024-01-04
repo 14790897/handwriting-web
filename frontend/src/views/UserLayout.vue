@@ -1,17 +1,18 @@
 <template>
   <div>
-     <transition name="slide-fade">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 justify-content-center" v-if="navbarVisible">
-      <router-link class="navbar-brand " to="/">{{ $t('message.home') }}</router-link>
+    <transition name="slide-fade">
+      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 justify-content-center" v-if="navbarVisible">
+        <router-link class="navbar-brand " to="/">{{ $t('message.home') }}</router-link>
+       
 
-          <button @click="toggleNavbar" class="toggle-button btn btn-primary">
-        {{ navbarVisible ? '隐藏导航栏' : '显示导航栏' }}
-      </button>
-      <button class="navbar-toggler" type="button" @click="isNavOpen = !isNavOpen">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse justify-content-center" :class="{ show: isNavOpen }" id="navbarNav">
-        <!-- <ul class="navbar-nav mr-auto">
+        <button @click="toggleNavbar" class="toggle-button btn btn-primary">
+          {{ navbarVisible ? '隐藏导航栏' : '显示导航栏' }}
+        </button>
+        <button class="navbar-toggler" type="button" @click="isNavOpen = !isNavOpen">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-center" :class="{ show: isNavOpen }" id="navbarNav">
+          <!-- <ul class="navbar-nav mr-auto">
           <li class="nav-item">
             <router-link class="nav-link" to="/Login">{{ $t('message.login') }}</router-link>
           </li>
@@ -19,7 +20,7 @@
             <router-link class="nav-link" to="/Register">{{ $t('message.register') }}</router-link>
           </li>
         </ul> -->
-        <!-- <ul class="navbar-nav">
+          <!-- <ul class="navbar-nav">
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
               aria-haspopup="true" aria-expanded="false">
@@ -31,21 +32,22 @@
             </div>
           </li>
         </ul> -->
-        <select v-model="selectedLanguage" class="custom-select ml-3 mr-3">
-          <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
-        </select>
+          <select v-model="selectedLanguage" class="custom-select ml-3 mr-3">
+            <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
+          </select>
 
-        <!-- 注册登录按钮 7.15 -->
-        <!-- <button class="btn btn-light ml-auto" @click="isModalOpen = true" style="transition: all 0.3s ease;">
+          <!-- 注册登录按钮 7.15 -->
+          <!-- <button class="btn btn-light ml-auto" @click="isModalOpen = true" style="transition: all 0.3s ease;">
           {{ $t('message.reigisterlogin') }}
         </button> -->
 
-      </div>
-    </nav>
-    <button v-else @click="toggleNavbar" class="btn btn-outline-info btn-sm" style="opacity: 0.5;">
-      {{ navbarVisible ? '隐藏导航栏' : '显示导航栏' }}
-    </button>
-        </transition>
+        </div>
+        <router-link to="/Introduce" class="text-info">{{ $t('message.introduce') }}</router-link>
+      </nav>
+      <button v-else @click="toggleNavbar" class="btn btn-outline-info btn-sm" style="opacity: 0.5;">
+        {{ navbarVisible ? '隐藏导航栏' : '显示导航栏' }}
+      </button>
+    </transition>
     <!-- Add the following div as a modal overlay -->
     <div v-if="isModalOpen" class="d-flex align-items-center justify-content-center vh-100">
       <div v-if="isModalOpen" class="modal-overlay" @click.self="isModalOpen = false">
@@ -173,6 +175,7 @@ export default {
 .slide-down-leave-active {
   transition: all 0.3s ease;
 }
+
 .slide-down-enter,
 .slide-down-leave-to {
   transform: translateY(-100%);
@@ -184,10 +187,10 @@ export default {
 .slide-up-leave-active {
   transition: all 0.3s ease;
 }
+
 .slide-up-enter,
 .slide-up-leave-to {
   transform: translateY(100%);
   opacity: 0;
 }
-
 </style>
