@@ -453,6 +453,8 @@ def textfileprocess():
             elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
                 with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                     text = f.read()
+            elif file.filename.endswith(".doc"):
+                text = "doc文件暂不支持"
         except Exception as e:
                     return jsonify({"error": f"Error reading file: {str(e)}"}), 500
 
