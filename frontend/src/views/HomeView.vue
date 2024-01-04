@@ -587,11 +587,17 @@ export default {
         this.uploadMessage = '';
         return;
       }
+      if (this.fontSize > this.lineSpacing) {
+        this.errorMessage = '字体大小不能大于行间距';
+        this.message = '';
+        this.uploadMessage = '';
+        return;
+      }
 
       this.preview = preview;
       // this.pdf_save = pdf_save;
       // 设置提示信息为“内容正在上传…”
-      this.uploadMessage = '内容正在上传并处理…';//显示上传提示信息时，隐藏其他提示信息
+      this.uploadMessage = '内容正在上传并处理…（如果长时间没有响应说明服务器崩溃）';//显示上传提示信息时，隐藏其他提示信息
       console.log('内容正在上传并处理…');
       this.message = '';
       this.errorMessage = '';
