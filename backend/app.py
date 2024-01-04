@@ -444,14 +444,17 @@ def textfileprocess():
         filename = secure_filename(file.filename)
         filepath = os.path.join(".", "textfileprocess", filename)  # 临时目录
         file.save(filepath)
-
-        if file.filename.endswith(".docx"):
-            text = convert_docx_to_text(filepath)
-        elif file.filename.endswith(".pdf"):
-            text = read_pdf(filepath)
-        elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-                text = f.read()
+        text = "读取失败"  # Default value for text
+        try:
+            if file.filename.endswith(".docx"):
+                text = convert_docx_to_text(filepath)
+            elif file.filename.endswith(".pdf"):
+                text = read_pdf(filepath)
+            elif file.filename.endswith(".txt") or file.filename.endswith(".rtf"):
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                    text = f.read()
+        except Exception as e:
+                    return jsonify({"error": f"Error reading file: {str(e)}"}), 500
 
         # 删除临时文件
         # 检查文件是否存在
