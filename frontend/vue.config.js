@@ -23,5 +23,5 @@ module.exports = defineConfig({
       title: "handwrite 手写文字生成",
     },
   },
-  filenameHashing: true
+  filenameHashing: process.env.NODE_ENV === 'production'
 });
