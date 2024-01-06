@@ -57,7 +57,7 @@ sentry-sdk = "1.27.1"
 six = "1.16.0"
 threadpoolctl = "3.1.0"
 typing-extensions = "4.7.1"
-urllib3 = "2.0.3"
+urllib3 = "2.0.7"
 werkzeug = "2.3.8"
 wrapt = "1.15.0"
 
