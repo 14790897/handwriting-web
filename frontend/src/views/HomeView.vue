@@ -766,7 +766,7 @@ export default {
 
       this.previewImage = URL.createObjectURL(event.target.files[0]);
       Swal.fire({
-        title: '你希望自动识别页面的四周边距吗？',
+        title: '你希望自动识别页面的四周边距吗？（另外现在有个bug就是不能上传带有alpha通道的图片）',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: '确定',
