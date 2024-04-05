@@ -49,7 +49,7 @@
                 </div>
               </button>
               <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName
-              }}</span>
+                }}</span>
               <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
               <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
             </div>
@@ -766,7 +766,7 @@ export default {
 
       this.previewImage = URL.createObjectURL(event.target.files[0]);
       Swal.fire({
-        title: '你希望自动识别页面的四周边距吗？（另外现在有个bug就是不能上传带有alpha通道的图片）',
+        title: '你希望自动识别页面的四周边距吗？',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: '确定',
