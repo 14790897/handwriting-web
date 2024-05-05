@@ -270,7 +270,19 @@ def generate_handwriting():
                 ),
                 400,
             )
-        background_image = Image.open(io.BytesIO(background_image.read()))
+        image_data = io.BytesIO(background_image.read())
+
+        # 使用 PIL 打开图像
+        try:
+            background_image = Image.open(image_data)
+
+            # 如果图像包含 Alpha 通道（模式为 'RGBA' 或 'LA'），则去除 Alpha 通道
+            if background_image.mode in ("RGBA", "LA"):
+                # 将图像转换为 'RGB' 模式
+                background_image = background_image.convert("RGB")
+
+        except IOError:
+            return jsonify({"status": "error", "message": "Invalid image format"}), 400
 
     text_to_generate = data["text"]
     if data["preview"] == "true":
