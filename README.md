@@ -43,6 +43,24 @@
 
 若要添加字体，字体文件放在项目根目录下的 ttf_files 中
 
+
+
+## 本地运行
+1. 克隆项目到本地
+2. 进入backend文件夹，运行后端程序
+```shell
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+3. 进入frontend文件夹，运行前端程序
+```shell
+cd frontend
+npm install
+npm run serve
+```
+4. 打开浏览器，输入http://localhost:8080，即可访问网站
+
 ## 结语
 
 我希望你喜欢使用我的手写文字生成网站来创建你的个性化手写文字图片！
