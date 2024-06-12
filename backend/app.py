@@ -155,14 +155,15 @@ def read_docx(file_path):
     text = " ".join([paragraph.text for paragraph in document.paragraphs])
     return text
 
-import pypandoc
-pypandoc.download_pandoc()
+# import pypandoc
+# pypandoc.download_pandoc()
 
 
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
-    text = pypandoc.convert_file(docx_file_path, 'plain')
-    return text
+    # text = pypandoc.convert_file(docx_file_path, 'plain')
+    # return text
+    return None
 
 def read_pdf(file_path):
     text = ""
@@ -285,10 +286,10 @@ def generate_handwriting():
             return jsonify({"status": "error", "message": "Invalid image format"}), 400
 
     text_to_generate = data["text"]
-    if data["preview"] == "true":
-        # 截短字符，只生成一面
-        preview_length = 300  # 可以调整为所需的预览长度
-        text_to_generate = text_to_generate[:preview_length]
+    # if data["preview"] == "true":
+    #     # 截短字符，只生成一面
+    #     preview_length = 300  # 可以调整为所需的预览长度
+    #     text_to_generate = text_to_generate[:preview_length]
 
     # 从表单中获取字体文件并处理 7.4
     if "font_file" in request.files:
