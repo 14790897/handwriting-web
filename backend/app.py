@@ -10,7 +10,7 @@ load_dotenv()
 import os
 
 # import MySQLdb
-import mysql.connector
+# import mysql.connector
 from flask import g
 import zipfile
 import ast, io
