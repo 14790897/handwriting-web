@@ -361,6 +361,7 @@ def generate_handwriting():
                 # 保存每张图像到临时目录
                 image_path = os.path.join(temp_dir, f"{i}.png")
                 im.save(image_path)
+                del im  # 释放内存
 
                 if data["preview"] == "true":
                     # 如果需要预览图像，直接发送文件
@@ -369,19 +370,26 @@ def generate_handwriting():
             if not data["preview"] == "true":
                 # 创建ZIP文件
                 unique_filename = "images_" + str(time.time())
-                shutil.make_archive(f"./temp/{unique_filename}", "zip", temp_dir)
-                # 发送ZIP文件
-                return send_file(
-                    f"./temp/{unique_filename}.zip",
-                    download_name="images.zip",
-                    mimetype="application/zip",
-                    as_attachment=True,
-                )
+                zip_path = f"./temp/{unique_filename}.zip"
+                shutil.make_archive(zip_path[:-4], "zip", temp_dir)
+                
+                # 使用上下文管理器发送文件，并在之后删除ZIP文件
+                with open(zip_path, 'rb') as f:
+                    response = send_file(
+                        f,
+                        download_name="images.zip",
+                        mimetype="application/zip",
+                        as_attachment=True,
+                    )
+                os.remove(zip_path)  # 删除ZIP文件
+            return response
         finally:
-            pass
-            # # 删除临时目录及其内容
-            # shutil.rmtree(temp_dir)
-            # os.remove(f"./temp/{unique_filename}.zip")
+            try:
+                # 确保删除临时目录
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+            except Exception as e:
+                logger.error(f"Failed to delete temp directory {temp_dir}: {e}")
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
