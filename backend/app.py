@@ -549,7 +549,7 @@ def get_filenames_in_dir(directory):
 @app.route("/api/fonts_info", methods=["GET"])
 def get_fonts_info():
     filenames = get_filenames_in_dir("./font_assets")
-    logger.info("filenames: ", filenames)
+    logger.info(f"filenames: {filenames}")
     if filenames == []:
         return jsonify({"error": "fontfile not found"}), 400
     return jsonify(filenames)
