@@ -363,6 +363,7 @@ def generate_handwriting():
                 # 保存每张图像到临时目录
                 image_path = os.path.join(temp_dir, f"{i}.png")
                 im.save(image_path)
+                logger.info(f"Image {i} saved successfully")
                 del im  # 释放内存
 
                 if data["preview"] == "true":
