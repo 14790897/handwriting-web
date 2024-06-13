@@ -265,7 +265,7 @@ export default {
       marginBottom: 50,
       marginLeft: 50,
       marginRight: 50,
-      previewImage: "/default.png", // 添加一个新的数据属性来保存预览图片的 URL
+      previewImage: "/default1.png", // 添加一个新的数据属性来保存预览图片的 URL
       preview: false,
       lineSpacingSigma: 0,
       fontSizeSigma: 2,
