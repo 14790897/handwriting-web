@@ -710,13 +710,18 @@ export default {
           // 如果服务器返回了一个JSON错误消息
           let reader = new FileReader();
           reader.onload = (e) => {
-            let errorData = JSON.parse(e.target.result);
-            this.errorMessage = errorData.message;
+            try {
+              let errorData = JSON.parse(e.target.result);
+              this.errorMessage = errorData.message;
+            } catch (parseError) {
+              // 如果解析失败，直接显示原始信息
+              this.errorMessage = e.target.result;
+              console.log('非JSON格式的错误数据：', e.target.result);
+            }
             this.message = '';
             this.uploadMessage = '';
-            console.log('错误信息：', errorData.message);
+            console.log('错误信息：', this.errorMessage);
             console.log(error);
-
           };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
           reader.readAsText(error.response.data);
           console.log(error.response.data);
