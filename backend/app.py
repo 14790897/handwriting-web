@@ -356,6 +356,8 @@ def generate_handwriting():
         logger.info("handwrite initial images generated successfully")
         # 创建临时目录
         temp_dir = tempfile.mkdtemp()
+        unique_filename = "images_" + str(time.time())
+        zip_path = f"./temp/{unique_filename}.zip"
         try:
             for i, im in enumerate(images):
                 # 保存每张图像到临时目录
@@ -369,19 +371,16 @@ def generate_handwriting():
 
             if not data["preview"] == "true":
                 # 创建ZIP文件
-                unique_filename = "images_" + str(time.time())
-                zip_path = f"./temp/{unique_filename}.zip"
+
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
                 
-                # 使用上下文管理器发送文件，并在之后删除ZIP文件
-                with open(zip_path, 'rb') as f:
-                    response = send_file(
-                        f,
-                        download_name="images.zip",
-                        mimetype="application/zip",
-                        as_attachment=True,
-                    )
-                os.remove(zip_path)  # 删除ZIP文件
+                # 发送文件，并在之后删除ZIP文件
+                response = send_file(
+                    f"./temp/{unique_filename}.zip",
+                    download_name="images.zip",
+                    mimetype="application/zip",
+                    as_attachment=True,
+                )
             return response
         finally:
             try:
@@ -390,6 +389,12 @@ def generate_handwriting():
                     shutil.rmtree(temp_dir)
             except Exception as e:
                 logger.error(f"Failed to delete temp directory {temp_dir}: {e}")
+            # 如果存在zip，删除zip文件
+            try:
+                if os.path.exists(zip_path):
+                    os.remove(zip_path)
+            except Exception as e:
+                logger.error(f"Failed to delete zip file {zip_path}: {e}")
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
