@@ -59,7 +59,7 @@ cd frontend
 npm install
 npm run serve
 ```
-4. 打开浏览器，输入http://localhost:8080，即可访问网站
+4. 打开浏览器，输入http://localhost:8080 ，即可访问网站
 
 ## 结语
 
