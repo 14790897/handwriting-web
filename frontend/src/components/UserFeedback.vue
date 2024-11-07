@@ -29,7 +29,7 @@ export default {
     methods: {
         async sendFeedback() {
             try {
-                const res = await axios.post('https://serverless.liuweiqing.top/api/sendEmail', {
+                const res = await axios.post('https://mail.14790897.xyz/api/sendEmail', {
                     email: this.email,
                     feedback: this.feedback
                 });
