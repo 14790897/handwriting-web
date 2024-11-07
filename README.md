@@ -4,7 +4,7 @@
 
 欢迎来到我的手写文字生成网站！这个平台允许你使用现有的字体来创建模拟手写文字的图片。
 
-网址：https://handwrite.paperai.life
+网址：https://handwrite.paperai.life 或者 https://handwrite.14790897.xyz
 ![Alt text](image.png)
 
 ## 功能
@@ -59,7 +59,7 @@ cd frontend
 npm install
 npm run serve
 ```
-4. 打开浏览器，输入http://localhost:8080，即可访问网站
+4. 打开浏览器，输入http://localhost:8080 ，即可访问网站
 
 ## 结语
 
