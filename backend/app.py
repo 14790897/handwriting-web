@@ -650,56 +650,56 @@ def login():
         }, 401
 
 
-@app.route("/api/register", methods=["POST"])
-def register():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
-    try:
-        cursor = current_app.cnx.cursor()
-        cursor.execute(f"SELECT * FROM user_images WHERE username=%s", (username,))
-        result = cursor.fetchone()
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-        return jsonify({"error": "An error occurred"}), 500
+# @app.route("/api/register", methods=["POST"])
+# def register():
+#     data = request.get_json()
+#     username = data.get("username")
+#     password = data.get("password")
+#     try:
+#         cursor = current_app.cnx.cursor()
+#         cursor.execute(f"SELECT * FROM user_images WHERE username=%s", (username,))
+#         result = cursor.fetchone()
+#     except Exception as e:
+#         logger.error(f"An error occurred: {e}")
+#         return jsonify({"error": "An error occurred"}), 500
 
-    if not result:
-        try:
-            cursor.execute(
-                f"INSERT INTO user_images (username, password) VALUES (%s, %s)",
-                (username, password),
-            )
-            current_app.cnx.commit()
-            session["username"] = username
-            logger.info(f"User: {username} registered successfully.")
-            return jsonify(
-                {
-                    "status": "success",
-                    "message": "Account created successfully. You can now log in.",
-                }
-            )
-        except mysql.connector.Error as err:
-            logger.error(f"Failed to insert user: {username} into DB. Error: {err}")
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": "Error occurred during registration.",
-                    }
-                ),
-                500,
-            )
-    else:
-        logger.error(f"Username: {username} already exists.")
-        return (
-            jsonify(
-                {
-                    "status": "fail",
-                    "message": "Username already exists. Choose a different one.",
-                }
-            ),
-            400,
-        )
+#     if not result:
+#         try:
+#             cursor.execute(
+#                 f"INSERT INTO user_images (username, password) VALUES (%s, %s)",
+#                 (username, password),
+#             )
+#             current_app.cnx.commit()
+#             session["username"] = username
+#             logger.info(f"User: {username} registered successfully.")
+#             return jsonify(
+#                 {
+#                     "status": "success",
+#                     "message": "Account created successfully. You can now log in.",
+#                 }
+#             )
+#         except mysql.connector.Error as err:
+#             logger.error(f"Failed to insert user: {username} into DB. Error: {err}")
+#             return (
+#                 jsonify(
+#                     {
+#                         "status": "fail",
+#                         "message": "Error occurred during registration.",
+#                     }
+#                 ),
+#                 500,
+#             )
+#     else:
+#         logger.error(f"Username: {username} already exists.")
+#         return (
+#             jsonify(
+#                 {
+#                     "status": "fail",
+#                     "message": "Username already exists. Choose a different one.",
+#                 }
+#             ),
+#             400,
+#         )
 
 
 # 捕获所有未捕获的异常，返回给前端，只能用于生产环境7.12
@@ -716,14 +716,14 @@ def register():
 #     return jsonify(response), 500
 
 
-@app.before_request
-def before_request():
-    if enable_user_auth.lower() == "true":
-        current_app.cnx = mysql.connector.connect(
-            host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
-        )
-    else:
-        pass
+# @app.before_request
+# def before_request():
+#     if enable_user_auth.lower() == "true":
+#         current_app.cnx = mysql.connector.connect(
+#             host=mysql_host, user="myuser", password="mypassword", database="mydatabase"
+#         )
+#     else:
+#         pass
 
 
 @app.after_request

@@ -24,9 +24,9 @@ document.head.appendChild(script);
 
 // 当脚本加载完成后进行初始化
 script.onload = () => {
+  console.log("Clarity已经加载");
   const projectId = "ounxp8da5s";
   Clarity.init(projectId);
-  console.log("Clarity已经加载");
   // 初始化window.dataLayer数组
   window.dataLayer = window.dataLayer || [];
 
