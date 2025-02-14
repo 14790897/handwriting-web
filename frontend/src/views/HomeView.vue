@@ -57,8 +57,8 @@
         </div>
       </div>
 
-      <div class="label-container">
-
+      <div c lass="label-container">
+ 
         <label>{{ $t('message.width') }}:
           <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
             :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
@@ -208,6 +208,7 @@
     <div class="buttons">
       <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
+      <button @click="resetSettings">{{ $t('message.resetSettings') }}</button>
       <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
       <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
       <button @click="generateHandwriting(preview = false, pdf_save = true)">{{ $t('message.generatePdf') }}</button>
@@ -745,6 +746,41 @@ export default {
 
       // 将字符串存储到 localStorage 中
       localStorage.setItem('myPreset', dataString);
+    },
+    resetSettings() {
+      this.text = '';
+      this.fontFile = null;
+      this.backgroundImage = null;
+      this.fontSize = 124;
+      this.lineSpacing = 200;
+      this.fill = "(0, 0, 0, 255)";
+      this.width = 2481;
+      this.height = 3507;
+      this.marginTop = 50;
+      this.marginBottom = 50;
+      this.marginLeft = 50;
+      this.marginRight = 50;
+      this.lineSpacingSigma = 0;
+      this.fontSizeSigma = 2;
+      this.wordSpacingSigma = 2;
+      this.perturbXSigma = 3;
+      this.perturbYSigma = 3;
+      this.perturbThetaSigma = 0.05;
+      this.wordSpacing = 1;
+      this.strikethrough_length_sigma = 2;
+      this.strikethrough_angle_sigma = 2;
+      this.strikethrough_width_sigma = 2;
+      this.strikethrough_probability = 0.005;
+      this.strikethrough_width = 8;
+      this.ink_depth_sigma = 30;
+      this.isUnderlined = true;
+      this.errorMessage = '';
+      this.message = '';
+      this.uploadMessage = '';
+      this.selectedFontFileName = '';
+      this.selectedImageFileName = '';
+      this.selectedOption = '1';
+      this.previewImage = "/default1.png";
     },
     loadPreset() {
       // 从 localStorage 中获取字符串
