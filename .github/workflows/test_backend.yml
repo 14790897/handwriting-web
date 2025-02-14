@@ -1,0 +1,43 @@
+name: Backend Test Workflow
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: 检出代码仓库
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: 设置 Python 环境
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10" # 指定 Python 版本
+
+      # Step 3: 进入 backend 目录
+      - name: Change to backend directory
+        run: cd backend
+
+      # Step 4: 安装依赖包
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip  # 升级 pip
+          pip install -r requirements.txt
+
+      # Step 5: 运行测试文件
+      - name: Run tests
+        run: |
+          cd backend
+            timeout 60s python app.py || EXIT_CODE=$? && if [ $EXIT_CODE -eq 124 ]; then exit 0; else exit $EXIT_CODE; fi
