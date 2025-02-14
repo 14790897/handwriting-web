@@ -28,6 +28,8 @@ jobs:
           file: ./backend/dockerfile.backend
           push: true
           tags: 14790897/backend-handwriting:latest
+      - name: Display Docker Images
+        run: docker images 14790897/backend-handwriting:latest
 
   # release-please-backend:
   #   runs-on: ubuntu-latest
