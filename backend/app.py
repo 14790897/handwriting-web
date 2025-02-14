@@ -1,9 +1,8 @@
 import time
 from flask import Flask, request, jsonify, send_file, session, current_app
 from handright import Template, handwrite
-from PIL import Image, ImageFont
-from threading import Thread
-from PIL import Image, ImageFont, ImageQt, ImageDraw
+# from threading import Thread
+from PIL import Image, ImageFont, ImageDraw
 from dotenv import load_dotenv
 import psutil
 
@@ -12,9 +11,7 @@ import os
 
 # import MySQLdb
 # import mysql.connector
-from flask import g
-import zipfile
-import ast, io
+import io
 import logging
 from flask_cors import CORS
 from datetime import timedelta
@@ -620,34 +617,34 @@ def mysql_operation(image_data):
         logger.info(f"An error occurred: {e}")
 
 
-@app.route("/api/login", methods=["POST"])
-def login():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
-    logger.info(f"Received username: {username}")  # 打印接收到的用户名
-    logger.info(f"Received password: {password}")  # 打印接收到的密码
-    try:
-        cursor = current_app.cnx.cursor()
-        cursor.execute(
-            f"SELECT password FROM user_images WHERE username=%s", (username,)
-        )
-        result = cursor.fetchone()
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-        return jsonify({"error": "An error occurred"}), 500
+# @app.route("/api/login", methods=["POST"])
+# def login():
+#     data = request.get_json()
+#     username = data.get("username")
+#     password = data.get("password")
+#     logger.info(f"Received username: {username}")  # 打印接收到的用户名
+#     logger.info(f"Received password: {password}")  # 打印接收到的密码
+#     try:
+#         cursor = current_app.cnx.cursor()
+#         cursor.execute(
+#             f"SELECT password FROM user_images WHERE username=%s", (username,)
+#         )
+#         result = cursor.fetchone()
+#     except Exception as e:
+#         logger.error(f"An error occurred: {e}")
+#         return jsonify({"error": "An error occurred"}), 500
 
-    if result and result[0] == password:
-        session["username"] = username
-        session.permanent = True
-        logger.info(f"Login success for user: {username}")
-        return {"status": "success"}, 200
-    else:
-        logger.error(f"Login failed for user: {username}")
-        return {
-            "status": "failed",
-            "error": "Login failed. Check your username and password.",
-        }, 401
+#     if result and result[0] == password:
+#         session["username"] = username
+#         session.permanent = True
+#         logger.info(f"Login success for user: {username}")
+#         return {"status": "success"}, 200
+#     else:
+#         logger.error(f"Login failed for user: {username}")
+#         return {
+#             "status": "failed",
+#             "error": "Login failed. Check your username and password.",
+#         }, 401
 
 
 # @app.route("/api/register", methods=["POST"])
