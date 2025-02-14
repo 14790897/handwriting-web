@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v3 # 设置 Node.js 环境
         with:
           node-version: 21
-      - run: npm install # 安装依赖
+      - run: npm install # 安装依赖 1
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
