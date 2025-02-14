@@ -698,11 +698,14 @@ export default {
           this.errorMessage = '';
         }
         else {
-          console.error('Unexpected response type');
-          // 设置错误消息
-          this.errorMessage = '意外的响应类型';
-          this.message = '';
-          this.uploadMessage = '';
+          response.text().then(text => {
+            // console.log(text);
+            // 设置错误消息
+            this.errorMessage = text;
+            this.message = '';
+            this.uploadMessage = '';
+          });
+          console.error(`Unexpected response type: ${response.headers['content-type']}, ${response.data}`);
         }
       }).catch(error => {
         // console.error(error);

@@ -5,6 +5,7 @@ from PIL import Image, ImageFont
 from threading import Thread
 from PIL import Image, ImageFont, ImageQt, ImageDraw
 from dotenv import load_dotenv
+import psutil
 
 load_dotenv()
 import os
@@ -143,7 +144,9 @@ def create_notebook_image(
         # todo  这个距离的原理不清楚7.15
         y = top_margin + line_spacing  # 开始的y坐标设为顶部边距加字体大小
         # bottom_margin -= line_spacing
-        while y < height - bottom_margin:  # 当y坐标小于（图片高度-底部边距）时，继续画线
+        while (
+            y < height - bottom_margin
+        ):  # 当y坐标小于（图片高度-底部边距）时，继续画线
             draw.line((left_margin, y, width - right_margin, y), fill="black")
             y += line_spacing  # 每次循环，y坐标增加行间距
         # draw.line((left_margin, y, width - right_margin, y), fill="black")
@@ -155,6 +158,7 @@ def read_docx(file_path):
     text = " ".join([paragraph.text for paragraph in document.paragraphs])
     return text
 
+
 # import pypandoc
 # pypandoc.download_pandoc()
 
@@ -164,6 +168,7 @@ def convert_docx_to_text(docx_file_path):
     # text = pypandoc.convert_file(docx_file_path, 'plain')
     # return text
     return None
+
 
 def read_pdf(file_path):
     text = ""
@@ -191,6 +196,18 @@ def handle_exceptions(f):
 @limiter.limit("20 per 5 minute")
 @handle_exceptions  # 错误捕获的装饰器7.15
 def generate_handwriting():
+    cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
+    if cpu_usage > 90:
+        # 如果 CPU 使用率超过 90%，返回提醒
+        return (
+            jsonify(
+                {
+                    "status": "waiting",
+                    "message": f"CPU usage is too high. Please wait and try again. current cpu_usage: {cpu_usage}%",
+                }
+            ),
+            429,
+        )  # HTTP 429: Too Many Requests
     # logger.info("已经进入generate_handwriting")
     if enable_user_auth.lower() == "true":
         if "username" not in session:
@@ -198,6 +215,20 @@ def generate_handwriting():
     # try:
     # 先获取 form 数据
     data = request.form
+    if len(data["text"]) > 10000 and (
+        request.base_url == "https://handwrite.14790897.xyz"
+        or request.base_url == "https://handwrite.paperai.life"
+    ):
+        # 请自己构建应用来运行而不是使用这个网页
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "The text is too long to process. If you want to use this service, please build your own application.",
+                }
+            ),
+            500,
+        )
     required_form_fields = [
         "text",
         "font_size",
@@ -339,12 +370,18 @@ def generate_handwriting():
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
-        strikethrough_probability=float(data["strikethrough_probability"]),  # 删除线概率
+        strikethrough_probability=float(
+            data["strikethrough_probability"]
+        ),  # 删除线概率
         strikethrough_length_sigma=float(
             data["strikethrough_length_sigma"]
         ),  # 删除线长度随机扰动
-        strikethrough_width_sigma=float(data["strikethrough_width_sigma"]),  # 删除线宽度随机扰动
-        strikethrough_angle_sigma=float(data["strikethrough_angle_sigma"]),  # 删除线角度随机扰动
+        strikethrough_width_sigma=float(
+            data["strikethrough_width_sigma"]
+        ),  # 删除线宽度随机扰动
+        strikethrough_angle_sigma=float(
+            data["strikethrough_angle_sigma"]
+        ),  # 删除线角度随机扰动
         strikethrough_width=float(data["strikethrough_width"]),  # 删除线宽度
         ink_depth_sigma=float(data["ink_depth_sigma"]),  # 墨水深度随机扰动
     )
@@ -374,7 +411,7 @@ def generate_handwriting():
                 # 创建ZIP文件
 
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
-                
+
                 # 发送文件，并在之后删除ZIP文件
                 response = send_file(
                     f"./temp/{unique_filename}.zip",
@@ -483,7 +520,7 @@ def textfileprocess():
             elif file.filename.endswith(".doc"):
                 text = "doc文件暂不支持"
         except Exception as e:
-                    return jsonify({"error": f"Error reading file: {str(e)}"}), 500
+            return jsonify({"error": f"Error reading file: {str(e)}"}), 500
 
         # 删除临时文件
         # 检查文件是否存在
@@ -705,11 +742,15 @@ def after_request(response):
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
 
+
 # poetry
 def main():
     app.run(debug=True, host="0.0.0.0", port=5000)
 
     # good luck 6/16/2023
+    # thank you 2/14/2025
+
+
 """    
 数据库初始化操作
 
