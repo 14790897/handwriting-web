@@ -1,0 +1,19 @@
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3 # 检出代码
+      - uses: actions/setup-node@v3 # 设置 Node.js 环境
+        with:
+          node-version: 18
+      - run: npm install # 安装依赖
+      - run: npx semantic-release # 运行发布脚本
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
