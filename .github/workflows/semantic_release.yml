@@ -16,4 +16,4 @@ jobs:
       - run: npm install # 安装依赖
       - run: npx semantic-release # 运行发布脚本
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
