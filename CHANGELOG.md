@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/14790897/handwriting-web/compare/v1.5.0...v1.5.1) (2025-02-15)
+
+
+### Bug Fixes
+
+* 重置时不清空text ([c7aac8b](https://github.com/14790897/handwriting-web/commit/c7aac8bbdd2e9097525aac480a94348c7f40c668))
+
 # [1.5.0](https://github.com/14790897/handwriting-web/compare/v1.4.0...v1.5.0) (2025-02-14)
 
 
