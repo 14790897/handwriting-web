@@ -751,7 +751,7 @@ export default {
       localStorage.setItem('myPreset', dataString);
     },
     resetSettings() {
-      this.text = '';
+      // this.text = '';
       this.fontFile = null;
       this.backgroundImage = null;
       this.fontSize = 124;
