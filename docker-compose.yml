@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   frontend:
     image: 14790897/frontend-handwriting:latest
