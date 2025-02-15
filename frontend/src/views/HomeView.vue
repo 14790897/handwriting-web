@@ -751,7 +751,7 @@ export default {
       localStorage.setItem('myPreset', dataString);
     },
     resetSettings() {
-      // this.text = '';
+      // this.text = '';13213不能删除，会导致文字为空，但是输入框没有清除
       this.fontFile = null;
       this.backgroundImage = null;
       this.fontSize = 124;
