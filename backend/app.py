@@ -118,7 +118,7 @@ app.permanent_session_lifetime = timedelta(minutes=5000000)
 app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
 Session(app)  # 初始化扩展，传入应用程序实例
 limiter = Limiter(
-    app=app, key_func=get_remote_address, default_limits=["300 per 5 minute"]
+    app=app, key_func=get_remote_address, default_limits=["1000 per 5 minute"]
 )
 
 
@@ -190,7 +190,7 @@ def handle_exceptions(f):
 
 
 @app.route("/api/generate_handwriting", methods=["POST"])
-@limiter.limit("20 per 5 minute")
+@limiter.limit("200 per 5 minute")
 @handle_exceptions  # 错误捕获的装饰器7.15
 def generate_handwriting():
     cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
@@ -486,7 +486,7 @@ def generate_handwriting():
 
 
 @app.route("/api/textfileprocess", methods=["POST"])
-@limiter.limit("20 per 5 minute")
+@limiter.limit("200 per 5 minute")
 def textfileprocess():
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
@@ -533,7 +533,7 @@ def textfileprocess():
 
 
 @app.route("/api/imagefileprocess", methods=["POST"])
-@limiter.limit("20 per 5 minute")
+@limiter.limit("200 per 5 minute")
 def imagefileprocess():
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
