@@ -598,7 +598,7 @@ export default {
       this.preview = preview;
       // this.pdf_save = pdf_save;
       // 设置提示信息为“内容正在上传…”
-      this.uploadMessage = '内容正在上传并处理…（如果长时间没有响应说明服务器崩溃）';//显示上传提示信息时，隐藏其他提示信息
+      this.uploadMessage = '内容正在上传并处理…（如果长时间没有响应说明服务器崩溃）单次请求最多处理五分钟，超过这个时间则失败';//显示上传提示信息时，隐藏其他提示信息
       console.log('内容正在上传并处理…');
       this.message = '';
       this.errorMessage = '';
