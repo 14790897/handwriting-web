@@ -57,9 +57,12 @@ const messages = {
         "Standard deviation of the strikethrough angle",
       strikethrough_width: "Width of strikethrough",
       ink_depth_sigma: "Standard deviation of ink depth",
-      email:"Email",
-      feedback:"Feedback",
-      introduce:"Introduce",
+      email: "Email",
+      feedback: "Feedback",
+      introduce: "Introduce",
+      freeprompt: "This website is free. If you are charged, please refund.",
+      suggest:
+        "It is recommended to ask questions in GitHub issue and give error logs.",
     },
   },
   cn: {
@@ -117,6 +120,8 @@ const messages = {
       email: "邮箱",
       feedback: "反馈",
       introduce: "介绍",
+      freeprompt: "本网站是免费网站，如果你是付费访问的请退款",
+      suggest: "推荐在GitHub issue中进行提问，并给出错误日志",
     },
   },
 };

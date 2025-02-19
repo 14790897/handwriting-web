@@ -229,6 +229,8 @@
         <span class="text-black">{{ $t('message.projectAddress') }}:</span>
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
       </div>
+      <!-- 本网站是免费网站如果你是付费访问的请退款 -->
+      <div class ='freeprompt'>{{ $t('message.freeprompt') }}</div>
     </footer>
   </div>
 </template>
@@ -1198,7 +1200,12 @@ input[type="file"]:hover {
   box-sizing: content-box !important;
 }
 
-
+.freeprompt {
+  font-size: 0.8rem;
+  color: #e70808;
+  text-align: center;
+  margin-top: 10px;
+}
 @media (max-width: 1000px) {
   .container {
     /* flex-direction: column; */
