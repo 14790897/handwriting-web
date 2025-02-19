@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/14790897/handwriting-web/compare/v1.5.1...v1.5.2) (2025-02-19)
+
+
+### Bug Fixes
+
+* 防止邮件重复发送，以及提示免费 ([3dad59c](https://github.com/14790897/handwriting-web/commit/3dad59cfb5697610bb26c9f256d4c4eea5f62343))
+
 ## [1.5.1](https://github.com/14790897/handwriting-web/compare/v1.5.0...v1.5.1) (2025-02-15)
 
 
