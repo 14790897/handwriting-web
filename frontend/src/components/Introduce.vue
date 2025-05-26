@@ -4,7 +4,7 @@
 
         <p>欢迎来到我的手写文字生成网站！这个平台允许你使用现有的字体来创建模拟手写文字的图片。</p>
 
-        <p>网址：<a href="https://handwrite.liuweiqing.top/">https://handwrite.liuweiqing.top/</a></p>
+        <p>网址：<a href="https://handwrite.14790897.xyz">https://handwrite.14790897.xyz</a></p>
 
         <h2>功能</h2>
 
