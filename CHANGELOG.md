@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/14790897/handwriting-web/compare/v1.5.2...v1.5.3) (2025-05-27)
+
+
+### Bug Fixes
+
+* pdf图片大小应该为原图格式 ([e28383d](https://github.com/14790897/handwriting-web/commit/e28383d411a254fccfdfd434ed1a1aa7c440e181))
+
 ## [1.5.2](https://github.com/14790897/handwriting-web/compare/v1.5.1...v1.5.2) (2025-02-19)
 
 
