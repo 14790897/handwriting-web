@@ -9,8 +9,6 @@ import psutil
 load_dotenv()
 import os
 
-# import MySQLdb
-# import mysql.connector
 import io
 import logging
 from flask_cors import CORS

@@ -15,6 +15,9 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v3
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -31,6 +34,7 @@ jobs:
           file: ./frontend/dockerfile.frontend
           push: true
           tags: 14790897/frontend-handwriting:latest
+          platforms: linux/amd64,linux/arm64  # <-- 新增多平台支持
 
   # release-please-frontend:
   #   runs-on: ubuntu-latest
