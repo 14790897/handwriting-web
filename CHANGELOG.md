@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/14790897/handwriting-web/compare/v1.5.3...v1.6.0) (2025-05-27)
+
+
+### Features
+
+* 增加arm平台构建 ([5012446](https://github.com/14790897/handwriting-web/commit/50124467831188cb5b116230de1347dabf17fcfe))
+
 ## [1.5.3](https://github.com/14790897/handwriting-web/compare/v1.5.2...v1.5.3) (2025-05-27)
 
 
