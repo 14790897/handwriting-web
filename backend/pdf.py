@@ -9,31 +9,28 @@ def generate_pdf(images):
     print('temp_dir', temp_dir)
     try:
         pdf_document = fitz.open()  # 创建一个新的空白PDF文档
-        
-        # 设置A4纸的尺寸和分辨率
-        a4_width_in_inches = 8.3
-        a4_height_in_inches = 11.7
-        dpi = 300  # dots per inch
-        a4_width_in_pixels = int(a4_width_in_inches * dpi)
-        a4_height_in_pixels = int(a4_height_in_inches * dpi)
+
+        # # 设置A4纸的尺寸和分辨率
+        # a4_width_in_inches = 8.3
+        # a4_height_in_inches = 11.7
+        # dpi = 300  # dots per inch
+        # a4_width_in_pixels = int(a4_width_in_inches * dpi)
+        # a4_height_in_pixels = int(a4_height_in_inches * dpi)
 
         for i, img in enumerate(images):
-            # 调整图像大小以适应A4纸
-            img_resized = img.resize((a4_width_in_pixels, a4_height_in_pixels), Image.LANCZOS)
-            
+            width, height = img.size  # 获取图片原始宽高（单位：像素）
             # 保存每张图像到临时目录
             temp_img_path = os.path.join(temp_dir, f'image{i}.jpg')
-            img_resized.save(temp_img_path, format='JPEG', quality=85)  # quality参数范围是0（最低质量，最小文件大小）到100（最高质量，最大文件大小）
-            
+            img.save(temp_img_path, format="JPEG", quality=95)
+
             # 创建新页面
-            pdf_page = pdf_document.new_page(width=a4_width_in_pixels, height=a4_height_in_pixels)
-            
+            pdf_page = pdf_document.new_page(width=width, height=height)
+
             # 定义插入图像的矩形区域
-            rect = fitz.Rect(0, 0, a4_width_in_pixels, a4_height_in_pixels)
-            
+            rect = fitz.Rect(0, 0, width, height)
             # 插入图像到PDF页面
             pdf_page.insert_image(rect, filename=temp_img_path)
-        
+        os.makedirs("./temp", exist_ok=True)
         # 创建临时PDF文件名
         temp_pdf_file_path = tempfile.mktemp(suffix='.pdf', dir='./temp')
 
