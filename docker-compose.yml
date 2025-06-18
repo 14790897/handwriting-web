@@ -3,6 +3,7 @@ services:
     image: 14790897/frontend-handwriting:latest
     ports:
       - "2345:80"
+    cpus: "0.5"
     depends_on:
       - backend
 
@@ -14,6 +15,7 @@ services:
     volumes:
       - ./ttf_files:/app/font_assets
       - ./app.log:/app/app.log
+    cpus: "0.8"
 
   # db:
   #   image: 14790897/mysql-handwriting:latest
