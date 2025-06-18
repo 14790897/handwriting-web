@@ -5,6 +5,7 @@
 欢迎来到我的手写文字生成网站！这个平台允许你使用现有的字体来创建模拟手写文字的图片。
 
 网址：https://handwrite.14790897.xyz
+视频介绍： https://www.bilibili.com/video/BV1DM4y1W7fp/
 ![Alt text](image-generate.png)
 电报讨论群组：https://t.me/+zFImOziSNullOTE1
 
