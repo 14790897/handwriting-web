@@ -3,20 +3,23 @@ services:
     image: 14790897/frontend-handwriting:latest
     ports:
       - "2345:80"
-    cpus: "0.5"
     depends_on:
       - backend
+    cpu_count: 1
+    cpu_quota: 50000
+    cpu_period: 100000
 
 
   backend:
     image: 14790897/backend-handwriting:latest
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     volumes:
       - ./ttf_files:/app/font_assets
       - ./app.log:/app/app.log
-    cpus: "0.8"
-
+    cpu_count: 1
+    cpu_quota: 80000
+    cpu_period: 100000
   # db:
   #   image: 14790897/mysql-handwriting:latest
   #   command: --default-authentication-plugin=mysql_native_password
