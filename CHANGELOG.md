@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/14790897/handwriting-web/compare/v1.6.0...v1.7.0) (2025-06-19)
+
+
+### Features
+
+* seo ([1018480](https://github.com/14790897/handwriting-web/commit/1018480968dcebbb1461b2f4121473549ea26564))
+
 # [1.6.0](https://github.com/14790897/handwriting-web/compare/v1.5.3...v1.6.0) (2025-05-27)
 
 
