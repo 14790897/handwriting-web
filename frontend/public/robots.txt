@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# 允许搜索引擎访问所有页面
+Disallow: /temp/
+Disallow: /output/
+Disallow: /flask_session/
+Disallow: /.git/
+Disallow: /node_modules/
+
+# 网站地图位置
+Sitemap: https://handwrite.14790897.xyz/sitemap.xml
+
+# 爬取延迟（可选）
+Crawl-delay: 1
