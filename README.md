@@ -45,6 +45,21 @@
 
 若要添加字体，字体文件放在项目根目录下的 ttf_files 中
 
+### CPU 限制配置
+
+默认配置中对容器进行了CPU限制：
+- frontend 容器：使用50%的CPU
+- backend 容器：使用80%的CPU
+
+如果不想限制CPU使用，可以在 `docker-compose.yml` 文件中删除以下配置：
+```yaml
+cpu_count: 1
+cpu_quota: 50000  # 或 80000
+cpu_period: 100000
+```
+
+或者可以调整 `cpu_quota` 的值来设置不同的CPU使用限制。
+
 ## 本地运行
 
 1. 克隆项目到本地
