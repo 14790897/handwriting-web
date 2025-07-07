@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/14790897/handwriting-web/compare/v1.7.0...v1.7.1) (2025-07-07)
+
+
+### Bug Fixes
+
+* 404 not found because nginx rule ([a95d3af](https://github.com/14790897/handwriting-web/commit/a95d3afb9a559c5d23be06abc28dddbd03e25042))
+
 # [1.7.0](https://github.com/14790897/handwriting-web/compare/v1.6.0...v1.7.0) (2025-06-19)
 
 
