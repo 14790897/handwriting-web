@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/14790897/handwriting-web/compare/v1.7.1...v1.7.2) (2025-07-07)
+
+
+### Bug Fixes
+
+* 容器目录挂载 ([7921a79](https://github.com/14790897/handwriting-web/commit/7921a793ff6fed75a1d924f956035a2e6d810bf7))
+
 ## [1.7.1](https://github.com/14790897/handwriting-web/compare/v1.7.0...v1.7.1) (2025-07-07)
 
 
