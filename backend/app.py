@@ -86,7 +86,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # 创建 file handler，并设置级别为 DEBUG
-fh = logging.FileHandler("app.log")
+fh = logging.FileHandler("logs/app.log")
 fh.setLevel(logging.DEBUG)
 
 # 创建 formatter

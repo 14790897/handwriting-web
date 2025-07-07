@@ -16,7 +16,7 @@ services:
       - "127.0.0.1:5000:5000"
     volumes:
       - ./ttf_files:/app/font_assets
-      - ./app.log:/app/app.log
+      - ./logs:/app/logs
     cpu_count: 1
     cpu_quota: 80000
     cpu_period: 100000

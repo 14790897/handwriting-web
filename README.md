@@ -47,18 +47,20 @@
 
 ### CPU 限制配置
 
-默认配置中对容器进行了CPU限制：
-- frontend 容器：使用50%的CPU
-- backend 容器：使用80%的CPU
+默认配置中对容器进行了 CPU 限制：
 
-如果不想限制CPU使用，可以在 `docker-compose.yml` 文件中删除以下配置：
+- frontend 容器：使用 50%的 CPU
+- backend 容器：使用 80%的 CPU
+
+如果不想限制 CPU 使用，可以在 `docker-compose.yml` 文件中删除以下配置：
+
 ```yaml
 cpu_count: 1
-cpu_quota: 50000  # 或 80000
+cpu_quota: 50000 # 或 80000
 cpu_period: 100000
 ```
 
-或者可以调整 `cpu_quota` 的值来设置不同的CPU使用限制。
+或者可以调整 `cpu_quota` 的值来设置不同的 CPU 使用限制。
 
 ## 本地运行
 
@@ -83,25 +85,28 @@ npm run serve
 
 ## SEO 优化
 
-项目已经包含了完整的SEO优化配置：
+项目已经包含了完整的 SEO 优化配置：
 
-### 已包含的SEO文件
+### 已包含的 SEO 文件
+
 - `sitemap.xml` - 网站地图，帮助搜索引擎索引页面
 - `robots.txt` - 爬虫指令文件，指导搜索引擎爬取策略
-- `manifest.json` - PWA清单文件，支持添加到主屏幕
-- `.htaccess` - Apache服务器优化配置（压缩、缓存、安全头）
+- `manifest.json` - PWA 清单文件，支持添加到主屏幕
+- `.htaccess` - Apache 服务器优化配置（压缩、缓存、安全头）
 
-### Meta标签优化
-- 完整的Open Graph和Twitter Card标签
+### Meta 标签优化
+
+- 完整的 Open Graph 和 Twitter Card 标签
 - 结构化数据（JSON-LD）
 - 多语言支持（zh-CN）
 - 丰富的关键词和描述
 
-### Nginx优化
-- Gzip压缩
+### Nginx 优化
+
+- Gzip 压缩
 - 静态资源缓存
 - 安全头设置
-- SEO文件特殊处理
+- SEO 文件特殊处理
 
 这些配置有助于提升网站在搜索引擎中的排名和用户体验。
 
@@ -115,6 +120,6 @@ npm run serve
 
 ## 待做
 
-使用 websocket 保持连接，避免cf超时，并通知客户端目前生成进度
+使用 websocket 保持连接，避免 cf 超时，并通知客户端目前生成进度
 socketio.emit('image_generated', {'image_index': i, 'image_path': image_path})
 使用队列，通知客户端目前有多少人等待，暂存请求（目前好像是直接抛弃）
