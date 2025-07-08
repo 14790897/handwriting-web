@@ -8,6 +8,7 @@ import psutil
 
 load_dotenv()
 import os
+import gc
 
 import io
 import logging
@@ -25,6 +26,190 @@ from pdf import generate_pdf
 
 # 图片处理模块
 from identify import identify_distance
+
+
+# 安全文件删除函数
+def safe_remove_directory(directory_path, max_retries=5):
+    """安全删除目录，带重试机制和更强的文件处理"""
+    if not os.path.exists(directory_path):
+        return True
+
+    for attempt in range(max_retries):
+        try:
+            # 强制垃圾回收，释放可能的文件句柄
+            gc.collect()
+            # 等待更长时间让系统释放文件句柄
+            time.sleep(0.2 * (attempt + 1))  # 递增等待时间
+
+            # 递归删除所有文件和子目录
+            deleted_files = []
+            failed_files = []
+
+            for root, dirs, files in os.walk(directory_path, topdown=False):
+                # 删除文件
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    if safe_remove_single_file(file_path, max_retries=2):
+                        deleted_files.append(file_path)
+                    else:
+                        failed_files.append(file_path)
+
+                # 删除空目录
+                for dir in dirs:
+                    dir_path = os.path.join(root, dir)
+                    try:
+                        if os.path.exists(dir_path) and not os.listdir(dir_path):
+                            os.rmdir(dir_path)
+                    except Exception as dir_e:
+                        logger.warning(
+                            f"Failed to delete subdirectory {dir_path}: {dir_e}"
+                        )
+
+            # 如果有文件删除失败，记录但继续尝试删除目录
+            if failed_files:
+                logger.warning(
+                    f"Failed to delete {len(failed_files)} files: {failed_files[:3]}..."
+                )
+
+            # 最后尝试删除根目录
+            if os.path.exists(directory_path):
+                try:
+                    os.rmdir(directory_path)
+                    logger.info(
+                        f"Successfully deleted temp directory: {directory_path}"
+                    )
+                    return True
+                except OSError as e:
+                    if e.errno == 145:  # 目录不为空
+                        # 列出剩余文件
+                        remaining_files = []
+                        try:
+                            for root, dirs, files in os.walk(directory_path):
+                                remaining_files.extend(
+                                    [os.path.join(root, f) for f in files]
+                                )
+                        except:
+                            pass
+                        logger.warning(
+                            f"Directory not empty, remaining files: {remaining_files[:5]}"
+                        )
+                    raise
+
+        except Exception as e:
+            logger.warning(
+                f"Attempt {attempt + 1} to delete {directory_path} failed: {e}"
+            )
+            if attempt < max_retries - 1:
+                time.sleep(1.0 * (attempt + 1))  # 递增等待时间
+            else:
+                logger.error(
+                    f"Failed to delete temp directory after {max_retries} attempts: {directory_path}"
+                )
+                # 最后尝试：标记目录为稍后清理
+                try:
+                    cleanup_marker = os.path.join(directory_path, ".cleanup_later")
+                    with open(cleanup_marker, "w") as f:
+                        f.write(f"Failed to delete at {time.time()}")
+                    logger.info(f"Marked directory for later cleanup: {directory_path}")
+                except:
+                    pass
+    return False
+
+
+def safe_remove_single_file(file_path, max_retries=3):
+    """安全删除单个文件"""
+    if not os.path.exists(file_path):
+        return True
+
+    for attempt in range(max_retries):
+        try:
+            # 确保文件不是只读
+            os.chmod(file_path, 0o777)
+
+            # 强制垃圾回收
+            gc.collect()
+            time.sleep(0.1)
+
+            # 尝试删除文件
+            os.remove(file_path)
+            return True
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.3 * (attempt + 1))
+            else:
+                logger.warning(f"Failed to delete file {file_path}: {e}")
+    return False
+
+
+def safe_remove_file(file_path, max_retries=3):
+    """安全删除文件，带重试机制"""
+    result = safe_remove_single_file(file_path, max_retries)
+    if result:
+        logger.info(f"Successfully deleted file: {file_path}")
+    else:
+        logger.error(f"Failed to delete file after {max_retries} attempts: {file_path}")
+    return result
+
+
+def safe_save_and_close_image(image, image_path):
+    """安全保存并关闭图片，确保文件句柄被释放"""
+    try:
+        # 保存图片
+        image.save(image_path)
+
+        # 如果图片对象有 close 方法，调用它
+        if hasattr(image, "close"):
+            image.close()
+
+        # 强制垃圾回收
+        gc.collect()
+
+        # 等待一小段时间确保文件句柄被释放
+        time.sleep(0.1)
+
+        return True
+    except Exception as e:
+        logger.error(f"Failed to save image {image_path}: {e}")
+        return False
+
+
+def cleanup_marked_directories():
+    """清理项目内标记为稍后清理的目录"""
+    project_temp_base = "./temp"
+
+    # 确保项目临时目录存在
+    os.makedirs(project_temp_base, exist_ok=True)
+
+    try:
+        for item in os.listdir(project_temp_base):
+            item_path = os.path.join(project_temp_base, item)
+            if os.path.isdir(item_path) and item.startswith("tmp"):
+                cleanup_marker = os.path.join(item_path, ".cleanup_later")
+                if os.path.exists(cleanup_marker):
+                    try:
+                        # 检查标记时间，如果超过1小时则尝试清理
+                        with open(cleanup_marker, "r") as f:
+                            content = f.read()
+                            if "Failed to delete at" in content:
+                                timestamp = float(
+                                    content.split("Failed to delete at ")[1]
+                                )
+                                if time.time() - timestamp > 3600:  # 1小时后
+                                    logger.info(
+                                        f"Attempting to cleanup marked directory: {item_path}"
+                                    )
+                                    if safe_remove_directory(item_path, max_retries=2):
+                                        logger.info(
+                                            f"Successfully cleaned up marked directory: {item_path}"
+                                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to cleanup marked directory {item_path}: {e}"
+                        )
+    except Exception as e:
+        logger.warning(f"Error during cleanup of marked directories: {e}")
+
 
 # sentry 错误报告7.7
 import sentry_sdk
@@ -386,21 +571,53 @@ def generate_handwriting():
     if not data["pdf_save"] == "true":
         images = handwrite(text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
-        # 创建临时目录
-        temp_dir = tempfile.mkdtemp()
+        # 创建项目内的临时目录，避免使用系统临时目录
+        project_temp_base = "./temp"
+        os.makedirs(project_temp_base, exist_ok=True)
+        temp_dir = tempfile.mkdtemp(dir=project_temp_base)
         unique_filename = "images_" + str(time.time())
         zip_path = f"./temp/{unique_filename}.zip"
         try:
             for i, im in enumerate(images):
                 # 保存每张图像到临时目录
                 image_path = os.path.join(temp_dir, f"{i}.png")
-                im.save(image_path)
-                logger.info(f"Image {i} saved successfully")
+
+                # 使用安全保存函数
+                if safe_save_and_close_image(im, image_path):
+                    logger.info(f"Image {i} saved successfully")
+                else:
+                    logger.error(f"Failed to save image {i}")
+
                 del im  # 释放内存
 
                 if data["preview"] == "true":
-                    # 如果需要预览图像，直接发送文件
-                    return send_file(image_path, mimetype="image/png")
+                    # 预览模式：读取文件内容到内存，然后清理临时目录
+                    try:
+                        with open(image_path, "rb") as f:
+                            image_data = f.read()
+
+                        # 立即清理整个临时目录
+                        safe_remove_directory(temp_dir)
+
+                        # 从内存发送文件
+                        return send_file(
+                            io.BytesIO(image_data),
+                            mimetype="image/png",
+                            as_attachment=False,
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to read preview image: {e}")
+                        # 即使出错也要清理临时目录
+                        safe_remove_directory(temp_dir)
+                        return (
+                            jsonify(
+                                {
+                                    "status": "error",
+                                    "message": "Failed to generate preview",
+                                }
+                            ),
+                            500,
+                        )
 
             if not data["preview"] == "true":
                 # 创建ZIP文件
@@ -416,18 +633,9 @@ def generate_handwriting():
                 )
             return response
         finally:
-            try:
-                # 确保删除临时目录
-                if os.path.exists(temp_dir):
-                    shutil.rmtree(temp_dir)
-            except Exception as e:
-                logger.error(f"Failed to delete temp directory {temp_dir}: {e}")
-            # 如果存在zip，删除zip文件
-            try:
-                if os.path.exists(zip_path):
-                    os.remove(zip_path)
-            except Exception as e:
-                logger.error(f"Failed to delete zip file {zip_path}: {e}")
+            # 使用改进的安全删除函数
+            safe_remove_directory(temp_dir)
+            safe_remove_file(zip_path)
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
@@ -518,12 +726,7 @@ def textfileprocess():
             return jsonify({"error": f"Error reading file: {str(e)}"}), 500
 
         # 删除临时文件
-        # 检查文件是否存在
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            logger.info(f"{filepath} has been deleted.")
-        else:
-            logger.error(f"{filepath} does not exist.")
+        safe_remove_file(filepath)
 
         return jsonify({"text": text})
 
@@ -556,7 +759,7 @@ def imagefileprocess():
             avg_b_whitespace,
             avg_distance,
         ) = identify_distance(filepath)
-        os.remove(filepath)
+        safe_remove_file(filepath)
         return jsonify(
             {
                 "marginLeft": avg_l_whitespace,
@@ -735,6 +938,8 @@ def after_request(response):
 
 
 if __name__ == "__main__":
+    # 启动时清理之前标记的目录
+    cleanup_marked_directories()
     app.run(debug=True, host="0.0.0.0", port=5000)
 
 
