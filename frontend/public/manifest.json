@@ -7,6 +7,8 @@
   "background_color": "#ffffff",
   "theme_color": "#2196f3",
   "orientation": "portrait-primary",
+  "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

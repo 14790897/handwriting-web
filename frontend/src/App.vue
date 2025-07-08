@@ -3,16 +3,19 @@
       <router-view ref="myComponentRef"/>
       <!-- <HomeView /> -->
   </UserLayout>
+  <PWAInstallPrompt />
 </template>
 
 <script>
 import UserLayout from './views/UserLayout.vue';
+import PWAInstallPrompt from './components/PWAInstallPrompt.vue';
 // import HomeView from './views/HomeView.vue';
 
 export default {
   name: 'App',
   components: {
     UserLayout,
+    PWAInstallPrompt,
     // HomeView
   },
   // mounted() {
