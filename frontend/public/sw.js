@@ -48,40 +48,65 @@ self.addEventListener('activate', (event) => {
 
 // 拦截请求
 self.addEventListener('fetch', (event) => {
+  // 过滤掉不支持的请求协议
+  if (!event.request.url.startsWith("http")) {
+    return;
+  }
+
+  // 过滤掉 Chrome 扩展请求
+  if (event.request.url.startsWith("chrome-extension://")) {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // 如果缓存中有，返回缓存
-        if (response) {
-          return response;
-        }
-        
-        // 否则发起网络请求
-        return fetch(event.request)
-          .then((response) => {
-            // 检查是否是有效响应
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // 克隆响应
-            const responseToCache = response.clone();
-            
-            // 添加到缓存
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-            
+    caches.match(event.request).then((response) => {
+      // 如果缓存中有，返回缓存
+      if (response) {
+        return response;
+      }
+
+      // 否则发起网络请求
+      return fetch(event.request)
+        .then((response) => {
+          // 检查是否是有效响应
+          if (
+            !response ||
+            response.status !== 200 ||
+            response.type !== "basic"
+          ) {
             return response;
-          })
-          .catch(() => {
-            // 网络失败时的后备方案
-            if (event.request.destination === 'document') {
-              return caches.match('/');
-            }
-          });
-      })
+          }
+
+          // 克隆响应
+          const responseToCache = response.clone();
+
+          // 添加到缓存（使用 try-catch 避免不支持的请求）
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => {
+              try {
+                cache.put(event.request, responseToCache);
+              } catch (error) {
+                console.warn(
+                  "Failed to cache request:",
+                  event.request.url,
+                  error
+                );
+              }
+            })
+            .catch((error) => {
+              console.warn("Failed to open cache:", error);
+            });
+
+          return response;
+        })
+        .catch(() => {
+          // 网络失败时的后备方案
+          if (event.request.destination === "document") {
+            return caches.match("/");
+          }
+        });
+    })
   );
 });
 

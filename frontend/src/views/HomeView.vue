@@ -552,7 +552,8 @@ export default {
           if (!confirmed) {
             return; // 用户取消生成
           }
-          // 用户确认继续，将在后端截断到10页
+          // 用户确认继续，在前端截断文本到前10页
+          this.truncateTextToPages(10);
         }
       }
 
@@ -931,8 +932,10 @@ export default {
     },
 
     // 检查是否为生产网站
-    isProductionSite() {
-      return window.location.hostname === 'handwrite.14790897.xyz';
+    isProductionSite() { // localhost:8080 handwrite.14790897.xyz
+      return window.location.hostname === 'handwrite.14790897.xyz' ||
+             window.location.hostname === 'localhost' ||
+             window.location.hostname === '127.0.0.1';
     },
 
     // 估算页数
@@ -942,8 +945,8 @@ export default {
       }
 
       // 获取页面参数
-      const pageWidth = this.width || (this.backgroundImage ? 800 : 800); // 默认宽度
-      const pageHeight = this.height || (this.backgroundImage ? 1200 : 1200); // 默认高度
+      const pageWidth = this.width || (this.backgroundImage ? 2481 : 2481); // 默认宽度
+      const pageHeight = this.height || (this.backgroundImage ? 3507 : 3507); // 默认高度
       const fontSize = parseInt(this.fontSize) || 20;
       const lineSpacing = parseInt(this.lineSpacing) || 30;
       const marginTop = parseInt(this.marginTop) || 50;
@@ -981,8 +984,8 @@ export default {
 
     // 显示页数限制对话框
     async showPageLimitDialog(estimatedPages) {
-      return new Promise((resolve) => {
-        this.$swal({
+      try {
+        const result = await this.$swal.fire({
           title: '页数限制提醒',
           html: `
             <div style="text-align: left; line-height: 1.6;">
@@ -1009,10 +1012,63 @@ export default {
           confirmButtonColor: '#f39c12',
           cancelButtonColor: '#d33',
           width: '500px'
-        }).then((result) => {
-          resolve(result.isConfirmed);
         });
-      });
+
+        return result.isConfirmed;
+      } catch (error) {
+        console.error('SweetAlert2 error:', error);
+        // 降级到原生 confirm
+        return confirm(`检测到您的文本预计会生成 ${estimatedPages} 页。\n\n由于服务器资源限制，在 handwrite.14790897.xyz 网站上单次最多只能生成 10页。\n\n是否继续生成前10页？`);
+      }
+    },
+
+    // 截断文本到指定页数
+    truncateTextToPages(maxPages) {
+      if (!this.text || this.text.length === 0) {
+        return;
+      }
+
+      // 获取页面参数
+      const pageWidth = this.width || (this.backgroundImage ?2481 : 2481); // 默认宽度
+      const pageHeight = this.height || (this.backgroundImage ? 3507 : 3507); // 默认高度
+      const fontSize = parseInt(this.fontSize) || 20;
+      const lineSpacing = parseInt(this.lineSpacing) || 30;
+      const marginTop = parseInt(this.marginTop) || 50;
+      const marginBottom = parseInt(this.marginBottom) || 50;
+      const marginLeft = parseInt(this.marginLeft) || 50;
+      const marginRight = parseInt(this.marginRight) || 50;
+
+      // 计算可用区域
+      const usableWidth = pageWidth - marginLeft - marginRight;
+      const usableHeight = pageHeight - marginTop - marginBottom;
+
+      // 估算每行字符数
+      const avgCharWidth = fontSize * 0.8;
+      const charsPerLine = Math.floor(usableWidth / avgCharWidth);
+
+      // 估算每页行数
+      const linesPerPage = Math.floor(usableHeight / lineSpacing);
+
+      // 计算每页字符数
+      const charsPerPage = charsPerLine * linesPerPage;
+
+      // 计算最大字符数
+      const maxChars = charsPerPage * maxPages;
+
+      // 截断文本
+      if (this.text.length > maxChars) {
+        const originalLength = this.text.length;
+        this.text = this.text.substring(0, maxChars);
+
+        console.log('文本截断:', {
+          originalLength,
+          truncatedLength: this.text.length,
+          maxPages,
+          charsPerPage,
+          maxChars
+        });
+
+      }
     },
 
   },

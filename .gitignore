@@ -13,7 +13,7 @@ backend/_pycache__/*
 测试.txt
 backend\app.log
 *.log
-!app.log
+app.log
 backend/notebook.jpg
 backend/notebook2.jpg
 backend/app.log
