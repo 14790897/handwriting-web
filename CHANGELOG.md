@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/14790897/handwriting-web/compare/v1.10.1...v1.10.2) (2025-07-08)
+
+
+### Bug Fixes
+
+* 截断 ([054003f](https://github.com/14790897/handwriting-web/commit/054003f93729dedb63f115ab5341b3e0e425ff0e))
+
 ## [1.10.1](https://github.com/14790897/handwriting-web/compare/v1.10.0...v1.10.1) (2025-07-08)
 
 
