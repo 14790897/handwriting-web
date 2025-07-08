@@ -23,7 +23,7 @@ export default {
     return {
       showInstallPrompt: false,
       deferredPrompt: null
-    }
+    };
   },
   mounted() {
     // 监听 beforeinstallprompt 事件

@@ -8,6 +8,8 @@ import store from "./store";
 import i18n from "./i18n";
 import axios from "axios";
 import Clarity from "@microsoft/clarity";
+// eslint-disable-next-line no-unused-vars
+import Swal from "sweetalert2";
 
 import * as Sentry from "@sentry/vue";
 
@@ -84,6 +86,7 @@ app.use(router);
 app.use(i18n);
 
 app.config.globalProperties.$http = axios;
+app.config.globalProperties.$swal = Swal;
 // const http = axios.create({
 //   baseURL: "https://testhand.liuweiqing.top",
 // });

@@ -212,7 +212,19 @@
       <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
       <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
       <button @click="generateHandwriting(preview = false, pdf_save = true)">{{ $t('message.generatePdf') }}</button>
+
       <router-link to="/Feedback" class="btn btn-info">{{ $t('message.feedback') }}</router-link>
+    </div>
+
+    <!-- 页数提示 -->
+    <div v-if="isProductionSite() && text && text.length > 0" class="page-info-alert">
+      <div class="alert alert-warning" style="margin: 10px 0; font-size: 14px;">
+        <strong>📄 页数提示：</strong>
+        预计生成 <strong>{{ estimatePageCount() }}</strong> 页
+        <span v-if="estimatePageCount() > 10" style="color: #d63384;">
+          （handwrite.14790897.xyz限制一次最多10页，超出部分将被截断）
+        </span>
+      </div>
     </div>
     <!-- 预览区 -->
     <div class="preview">
@@ -531,6 +543,19 @@ export default {
     },
     async generateHandwriting(preview = false, pdf_save = false) {
       // console.log('pdf_save', pdf_save)
+
+      // 检查是否为生产环境并进行页数限制
+      if (!preview && this.isProductionSite()) {
+        const estimatedPages = this.estimatePageCount();
+        if (estimatedPages > 10) {
+          const confirmed = await this.showPageLimitDialog(estimatedPages);
+          if (!confirmed) {
+            return; // 用户取消生成
+          }
+          // 用户确认继续，将在后端截断到10页
+        }
+      }
+
       // 验证输入
       const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
       Items.forEach(item => {
@@ -904,6 +929,92 @@ export default {
       this.width = null
       this.height = null
     },
+
+    // 检查是否为生产网站
+    isProductionSite() {
+      return window.location.hostname === 'handwrite.14790897.xyz';
+    },
+
+    // 估算页数
+    estimatePageCount() {
+      if (!this.text || this.text.length === 0) {
+        return 0;
+      }
+
+      // 获取页面参数
+      const pageWidth = this.width || (this.backgroundImage ? 800 : 800); // 默认宽度
+      const pageHeight = this.height || (this.backgroundImage ? 1200 : 1200); // 默认高度
+      const fontSize = parseInt(this.fontSize) || 20;
+      const lineSpacing = parseInt(this.lineSpacing) || 30;
+      const marginTop = parseInt(this.marginTop) || 50;
+      const marginBottom = parseInt(this.marginBottom) || 50;
+      const marginLeft = parseInt(this.marginLeft) || 50;
+      const marginRight = parseInt(this.marginRight) || 50;
+
+      // 计算可用区域
+      const usableWidth = pageWidth - marginLeft - marginRight;
+      const usableHeight = pageHeight - marginTop - marginBottom;
+
+      // 估算每行字符数（粗略估算，中文字符按字体大小计算）
+      const avgCharWidth = fontSize * 0.8; // 中文字符宽度约为字体大小的0.8倍
+      const charsPerLine = Math.floor(usableWidth / avgCharWidth);
+
+      // 估算每页行数
+      const linesPerPage = Math.floor(usableHeight / lineSpacing);
+
+      // 估算每页字符数
+      const charsPerPage = charsPerLine * linesPerPage;
+
+      // 计算页数
+      const estimatedPages = Math.ceil(this.text.length / charsPerPage);
+
+      console.log('页数估算:', {
+        textLength: this.text.length,
+        charsPerLine,
+        linesPerPage,
+        charsPerPage,
+        estimatedPages
+      });
+
+      return estimatedPages;
+    },
+
+    // 显示页数限制对话框
+    async showPageLimitDialog(estimatedPages) {
+      return new Promise((resolve) => {
+        this.$swal({
+          title: '页数限制提醒',
+          html: `
+            <div style="text-align: left; line-height: 1.6;">
+              <p><strong>检测到您的文本预计会生成 ${estimatedPages} 页</strong></p>
+              <p>由于服务器资源限制，在 <strong>handwrite.14790897.xyz</strong> 网站上单次最多只能生成 <strong>10页</strong>。</p>
+              <p>如果您选择继续：</p>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>系统将只生成前 10 页内容</li>
+                <li>超出部分将被自动截断</li>
+                <li>建议您分批处理长文本</li>
+              </ul>
+              <p style="color: #666; font-size: 14px;">
+                💡 提示：您可以将长文本分成多个部分，分别生成，或者自行搭建本项目来处理更长的文本
+              </p>
+              <p style="color: #888; font-size: 12px; margin-top: 10px;">
+                注：此限制仅适用于 handwrite.14790897.xyz 网站
+              </p>
+            </div>
+          `,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: '继续生成（前10页）',
+          cancelButtonText: '取消',
+          confirmButtonColor: '#f39c12',
+          cancelButtonColor: '#d33',
+          width: '500px'
+        }).then((result) => {
+          resolve(result.isConfirmed);
+        });
+      });
+    },
+
   },
 
 };
