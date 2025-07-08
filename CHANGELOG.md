@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/14790897/handwriting-web/compare/v1.7.2...v1.8.0) (2025-07-08)
+
+
+### Features
+
+* icon manifest ([d96989e](https://github.com/14790897/handwriting-web/commit/d96989e649e0a7524ae9d3d8fa3045c4486bd1c6))
+
 ## [1.7.2](https://github.com/14790897/handwriting-web/compare/v1.7.1...v1.7.2) (2025-07-07)
 
 
