@@ -205,13 +205,30 @@
         </div>
       </div>
     </div>
+
+    <!-- 生成状态提示 -->
+    <div v-if="isGenerating || isInCooldown" class="generation-status">
+      <div v-if="isGenerating" class="status-generating">
+        🔄 正在生成中，请稍候...
+      </div>
+      <div v-else-if="isInCooldown" class="status-cooldown">
+        ⏳ 冷却中，还需等待 {{ cooldownTimeRemaining }} 秒
+      </div>
+    </div>
+
     <div class="buttons">
       <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
       <button @click="resetSettings">{{ $t('message.resetSettings') }}</button>
-      <button @click="generateHandwriting(preview = true)">{{ $t('message.preview') }}</button>
-      <button @click="generateHandwriting(preview = false)">{{ $t('message.generateFullHandwritingImage') }}</button>
-      <button @click="generateHandwriting(preview = false, pdf_save = true)">{{ $t('message.generatePdf') }}</button>
+      <button @click="generateHandwriting(preview = true)" :disabled="shouldDisableButtons">
+        {{ buttonText || $t('message.preview') }}
+      </button>
+      <button @click="generateHandwriting(preview = false)" :disabled="shouldDisableButtons">
+        {{ buttonText || $t('message.generateFullHandwritingImage') }}
+      </button>
+      <button @click="generateHandwriting(preview = false, pdf_save = true)" :disabled="shouldDisableButtons">
+        {{ buttonText || $t('message.generatePdf') }}
+      </button>
 
       <router-link to="/Feedback" class="btn btn-info">{{ $t('message.feedback') }}</router-link>
     </div>
@@ -307,6 +324,12 @@ export default {
       ink_depth_sigma: 30,
       isUnderlined: true,
       isExpanded: false,
+      // 生成状态控制
+      isGenerating: false,
+      lastGenerateTime: 0,
+      generateCooldown: 3000, // 3秒冷却时间
+      cooldownTimer: null,
+      remainingCooldown: 0,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined'],
     };
   },
@@ -349,6 +372,36 @@ export default {
       // 当有背景图片时，返回 true，这会禁用宽度和高度输入框
       return !!this.backgroundImage;
     },
+
+    // 计算是否在冷却期间
+    isInCooldown() {
+      if (this.lastGenerateTime === 0) return false;
+      const timeSinceLastGenerate = Date.now() - this.lastGenerateTime;
+      return timeSinceLastGenerate < this.generateCooldown;
+    },
+
+    // 计算剩余冷却时间
+    cooldownTimeRemaining() {
+      if (!this.isInCooldown) return 0;
+      const timeSinceLastGenerate = Date.now() - this.lastGenerateTime;
+      return Math.ceil((this.generateCooldown - timeSinceLastGenerate) / 1000);
+    },
+
+    // 按钮是否应该被禁用
+    shouldDisableButtons() {
+      return this.isGenerating || this.isInCooldown;
+    },
+
+    // 按钮显示文本
+    buttonText() {
+      if (this.isGenerating) {
+        return '生成中...';
+      } else if (this.isInCooldown) {
+        return `请等待 ${this.cooldownTimeRemaining}s`;
+      }
+      return null; // 使用默认文本
+    },
+
     //vuex中的login_delete_message，下面使用watch监控这个值  7.13
     ...mapState(['login_delete_message']),
   },
@@ -544,18 +597,41 @@ export default {
     async generateHandwriting(preview = false, pdf_save = false) {
       // console.log('pdf_save', pdf_save)
 
-      // 检查是否为生产环境并进行页数限制
-      if (!preview && this.isProductionSite()) {
-        const estimatedPages = this.estimatePageCount();
-        if (estimatedPages > 15) {
-          const confirmed = await this.showPageLimitDialog(estimatedPages);
-          if (!confirmed) {
-            return; // 用户取消生成
-          }
-          // 用户确认继续，在前端截断文本到前15页
-          this.truncateTextToPages(15);
-        }
+      // 检查是否正在生成
+      if (this.isGenerating) {
+        alert('正在生成中，请稍候...');
+        return;
       }
+
+      // 检查冷却时间
+      const currentTime = Date.now();
+      const timeSinceLastGenerate = currentTime - this.lastGenerateTime;
+      if (timeSinceLastGenerate < this.generateCooldown) {
+        const remainingTime = Math.ceil((this.generateCooldown - timeSinceLastGenerate) / 1000);
+        alert(`请等待 ${remainingTime} 秒后再次生成`);
+        return;
+      }
+
+      // 设置生成状态
+      this.isGenerating = true;
+      this.lastGenerateTime = currentTime;
+
+      // 启动冷却时间定时器
+      this.startCooldownTimer();
+
+      try {
+        // 检查是否为生产环境并进行页数限制
+        if (!preview && this.isProductionSite()) {
+          const estimatedPages = this.estimatePageCount();
+          if (estimatedPages > 15) {
+            const confirmed = await this.showPageLimitDialog(estimatedPages);
+            if (!confirmed) {
+              return; // 用户取消生成
+            }
+            // 用户确认继续，在前端截断文本到前15页
+            this.truncateTextToPages(15);
+          }
+        }
 
       // 验证输入
       const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
@@ -766,6 +842,13 @@ export default {
           this.uploadMessage = '';
         }
       });
+      } catch (error) {
+        console.error('生成过程中发生错误:', error);
+        alert('生成失败，请稍后重试');
+      } finally {
+        // 重置生成状态
+        this.isGenerating = false;
+      }
     },
     savePreset() {
       let data = {};
@@ -1069,6 +1152,30 @@ export default {
       }
     },
 
+    // 启动冷却时间定时器
+    startCooldownTimer() {
+      // 清除现有定时器
+      if (this.cooldownTimer) {
+        clearInterval(this.cooldownTimer);
+      }
+
+      // 启动新定时器，每100ms更新一次显示
+      this.cooldownTimer = setInterval(() => {
+        if (!this.isInCooldown) {
+          clearInterval(this.cooldownTimer);
+          this.cooldownTimer = null;
+        }
+      }, 100);
+    },
+
+  },
+
+  // 组件销毁时清理定时器
+  beforeUnmount() {
+    if (this.cooldownTimer) {
+      clearInterval(this.cooldownTimer);
+      this.cooldownTimer = null;
+    }
   },
 
 };
@@ -1387,4 +1494,33 @@ input[type="file"]:hover {
     flex: 1 0 100%;
   }
 }
+
+/* 生成状态提示样式 */
+.generation-status {
+  margin: 15px 0;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+.status-generating {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.status-cooldown {
+  background-color: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #ffcc02;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
 </style>
