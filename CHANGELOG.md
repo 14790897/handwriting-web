@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/14790897/handwriting-web/compare/v1.11.0...v1.11.1) (2025-07-08)
+
+
+### Bug Fixes
+
+* 响应式 ([caed098](https://github.com/14790897/handwriting-web/commit/caed09833a3ea65d102f01b70e04b34977116676))
+
 # [1.11.0](https://github.com/14790897/handwriting-web/compare/v1.10.3...v1.11.0) (2025-07-08)
 
 
