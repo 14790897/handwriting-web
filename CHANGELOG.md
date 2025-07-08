@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/14790897/handwriting-web/compare/v1.8.0...v1.9.0) (2025-07-08)
+
+
+### Features
+
+* pwa ([cfe12ad](https://github.com/14790897/handwriting-web/commit/cfe12ad0215ea1eb3c33564d30c7974edb4cbb66))
+
 # [1.8.0](https://github.com/14790897/handwriting-web/compare/v1.7.2...v1.8.0) (2025-07-08)
 
 
