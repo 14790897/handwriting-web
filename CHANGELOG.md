@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/14790897/handwriting-web/compare/v1.10.3...v1.11.0) (2025-07-08)
+
+
+### Features
+
+* cooldown ([04884d2](https://github.com/14790897/handwriting-web/commit/04884d2eba610d48ee6475c9c2d7fb2daf81fa24))
+
 ## [1.10.3](https://github.com/14790897/handwriting-web/compare/v1.10.2...v1.10.3) (2025-07-08)
 
 
