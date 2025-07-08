@@ -933,9 +933,7 @@ export default {
 
     // 检查是否为生产网站
     isProductionSite() { // localhost:8080 handwrite.14790897.xyz
-      return window.location.hostname === 'handwrite.14790897.xyz' ||
-             window.location.hostname === 'localhost' ||
-             window.location.hostname === '127.0.0.1';
+      return window.location.hostname === 'handwrite.14790897.xyz';
     },
 
     // 估算页数
