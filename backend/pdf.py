@@ -4,8 +4,10 @@ import tempfile
 import os, shutil
 
 def generate_pdf(images):
-    # 创建临时目录
-    temp_dir = tempfile.mkdtemp()
+    # 创建项目内的临时目录，避免使用系统临时目录
+    project_temp_base = "./temp"
+    os.makedirs(project_temp_base, exist_ok=True)
+    temp_dir = tempfile.mkdtemp(dir=project_temp_base)
     print('temp_dir', temp_dir)
     try:
         pdf_document = fitz.open()  # 创建一个新的空白PDF文档

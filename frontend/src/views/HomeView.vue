@@ -547,13 +547,13 @@ export default {
       // 检查是否为生产环境并进行页数限制
       if (!preview && this.isProductionSite()) {
         const estimatedPages = this.estimatePageCount();
-        if (estimatedPages > 10) {
+        if (estimatedPages > 15) {
           const confirmed = await this.showPageLimitDialog(estimatedPages);
           if (!confirmed) {
             return; // 用户取消生成
           }
-          // 用户确认继续，在前端截断文本到前10页
-          this.truncateTextToPages(10);
+          // 用户确认继续，在前端截断文本到前15页
+          this.truncateTextToPages(15);
         }
       }
 

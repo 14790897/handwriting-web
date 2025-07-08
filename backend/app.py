@@ -406,7 +406,7 @@ def generate_handwriting():
                     "status": "error",
                     "message": "The text is too long to process. If you want to use this service, please build your own application.",
                 }
-            ),
+            ),  
             500,
         )
     required_form_fields = [
@@ -608,21 +608,37 @@ def generate_handwriting():
 
             if not data["preview"] == "true":
                 # 创建ZIP文件
-
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
 
-                # 发送文件，并在之后删除ZIP文件
-                response = send_file(
-                    f"./temp/{unique_filename}.zip",
-                    download_name="images.zip",
-                    mimetype="application/zip",
-                    as_attachment=True,
-                )
+                # 读取ZIP文件到内存，然后立即删除文件
+                try:
+                    with open(zip_path, "rb") as f:
+                        zip_data = f.read()
+
+                    # 立即删除ZIP文件
+                    safe_remove_file(zip_path)
+
+                    # 从内存发送文件
+                    response = send_file(
+                        io.BytesIO(zip_data),
+                        download_name="images.zip",
+                        mimetype="application/zip",
+                        as_attachment=True,
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to read ZIP file: {e}")
+                    # 降级到直接发送文件
+                    response = send_file(
+                        zip_path,
+                        download_name="images.zip",
+                        mimetype="application/zip",
+                        as_attachment=True,
+                    )
             return response
         finally:
             # 使用改进的安全删除函数
             safe_remove_directory(temp_dir)
-            safe_remove_file(zip_path)
+            # ZIP文件已在上面删除，这里只是保险
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
