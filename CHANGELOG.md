@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/14790897/handwriting-web/compare/v1.9.0...v1.10.0) (2025-07-08)
+
+
+### Features
+
+* 主站最多一次十页 ([25bad47](https://github.com/14790897/handwriting-web/commit/25bad4771f53b4960c789eb40e85a5cce8a218cf))
+
 # [1.9.0](https://github.com/14790897/handwriting-web/compare/v1.8.0...v1.9.0) (2025-07-08)
 
 
