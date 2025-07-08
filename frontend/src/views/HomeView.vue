@@ -207,12 +207,12 @@
     </div>
 
     <!-- 生成状态提示 -->
-    <div v-if="isGenerating || isInCooldown" class="generation-status">
+    <div v-if="isGenerating || isInCooldownPeriod" class="generation-status">
       <div v-if="isGenerating" class="status-generating">
         🔄 正在生成中，请稍候...
       </div>
-      <div v-else-if="isInCooldown" class="status-cooldown">
-        ⏳ 冷却中，还需等待 {{ cooldownTimeRemaining }} 秒
+      <div v-else-if="isInCooldownPeriod" class="status-cooldown">
+        ⏳ 冷却中，还需等待 {{ remainingCooldown }} 秒
       </div>
     </div>
 
@@ -330,6 +330,7 @@ export default {
       generateCooldown: 3000, // 3秒冷却时间
       cooldownTimer: null,
       remainingCooldown: 0,
+      isInCooldownPeriod: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined'],
     };
   },
@@ -373,31 +374,17 @@ export default {
       return !!this.backgroundImage;
     },
 
-    // 计算是否在冷却期间
-    isInCooldown() {
-      if (this.lastGenerateTime === 0) return false;
-      const timeSinceLastGenerate = Date.now() - this.lastGenerateTime;
-      return timeSinceLastGenerate < this.generateCooldown;
-    },
-
-    // 计算剩余冷却时间
-    cooldownTimeRemaining() {
-      if (!this.isInCooldown) return 0;
-      const timeSinceLastGenerate = Date.now() - this.lastGenerateTime;
-      return Math.ceil((this.generateCooldown - timeSinceLastGenerate) / 1000);
-    },
-
     // 按钮是否应该被禁用
     shouldDisableButtons() {
-      return this.isGenerating || this.isInCooldown;
+      return this.isGenerating || this.isInCooldownPeriod;
     },
 
     // 按钮显示文本
     buttonText() {
       if (this.isGenerating) {
         return '生成中...';
-      } else if (this.isInCooldown) {
-        return `请等待 ${this.cooldownTimeRemaining}s`;
+      } else if (this.isInCooldownPeriod) {
+        return `请等待 ${this.remainingCooldown}s`;
       }
       return null; // 使用默认文本
     },
@@ -846,8 +833,9 @@ export default {
         console.error('生成过程中发生错误:', error);
         alert('生成失败，请稍后重试');
       } finally {
-        // 重置生成状态
+        // 重置生成状态，但保持冷却状态
         this.isGenerating = false;
+        // 冷却定时器会自动处理冷却状态的重置
       }
     },
     savePreset() {
@@ -1159,13 +1147,27 @@ export default {
         clearInterval(this.cooldownTimer);
       }
 
-      // 启动新定时器，每100ms更新一次显示
+      // 设置初始冷却状态
+      this.isInCooldownPeriod = true;
+      this.remainingCooldown = Math.ceil(this.generateCooldown / 1000);
+
+      // 启动新定时器，每1秒更新一次显示
       this.cooldownTimer = setInterval(() => {
-        if (!this.isInCooldown) {
+        const currentTime = Date.now();
+        const timeSinceLastGenerate = currentTime - this.lastGenerateTime;
+        const remaining = this.generateCooldown - timeSinceLastGenerate;
+
+        if (remaining <= 0) {
+          // 冷却结束
+          this.isInCooldownPeriod = false;
+          this.remainingCooldown = 0;
           clearInterval(this.cooldownTimer);
           this.cooldownTimer = null;
+        } else {
+          // 更新剩余时间
+          this.remainingCooldown = Math.ceil(remaining / 1000);
         }
-      }, 100);
+      }, 1000);
     },
 
   },
