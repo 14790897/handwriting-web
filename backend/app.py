@@ -159,14 +159,14 @@ def safe_save_and_close_image(image, image_path):
         image.save(image_path)
 
         # 如果图片对象有 close 方法，调用它
-        if hasattr(image, "close"):
-            image.close()
+        # if hasattr(image, "close"):
+        #     image.close()
 
-        # 强制垃圾回收
-        gc.collect()
+        # # 强制垃圾回收
+        # gc.collect()
 
-        # 等待一小段时间确保文件句柄被释放
-        time.sleep(0.1)
+        # # 等待一小段时间确保文件句柄被释放
+        # time.sleep(0.1)
 
         return True
     except Exception as e:
@@ -592,32 +592,19 @@ def generate_handwriting():
 
                 if data["preview"] == "true":
                     # 预览模式：读取文件内容到内存，然后清理临时目录
-                    try:
-                        with open(image_path, "rb") as f:
-                            image_data = f.read()
 
-                        # 立即清理整个临时目录
-                        safe_remove_directory(temp_dir)
+                    with open(image_path, "rb") as f:
+                        image_data = f.read()
 
-                        # 从内存发送文件
-                        return send_file(
-                            io.BytesIO(image_data),
-                            mimetype="image/png",
-                            as_attachment=False,
-                        )
-                    except Exception as e:
-                        logger.error(f"Failed to read preview image: {e}")
-                        # 即使出错也要清理临时目录
-                        safe_remove_directory(temp_dir)
-                        return (
-                            jsonify(
-                                {
-                                    "status": "error",
-                                    "message": "Failed to generate preview",
-                                }
-                            ),
-                            500,
-                        )
+                    # 立即清理整个临时目录
+                    # safe_remove_directory(temp_dir)
+
+                    # 从内存发送文件
+                    return send_file(
+                        io.BytesIO(image_data),
+                        mimetype="image/png",
+                        as_attachment=False,
+                    )
 
             if not data["preview"] == "true":
                 # 创建ZIP文件

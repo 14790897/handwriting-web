@@ -254,3 +254,187 @@
 2025-07-08 21:33:27,594 - __main__ - INFO - Image 0 saved successfully
 2025-07-08 21:33:27,986 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmps9_1fc2r
 2025-07-08 21:33:27,987 - __main__ - INFO - Successfully deleted file: ./temp/images_1751981607.1653876.zip
+2025-07-08 21:38:06,799 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手
+2025-07-08 21:38:06,800 - __main__ - INFO - font_size: 124
+2025-07-08 21:38:06,800 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:38:06,801 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:38:06,801 - __main__ - INFO - left_margin: 50
+2025-07-08 21:38:06,801 - __main__ - INFO - top_margin: 50
+2025-07-08 21:38:06,801 - __main__ - INFO - right_margin: 50
+2025-07-08 21:38:06,801 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:38:06,801 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:38:06,801 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:38:06,801 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:38:06,802 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:38:06,802 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:38:06,802 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:38:06,802 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:38:06,802 - __main__ - INFO - preview: true
+2025-07-08 21:38:06,813 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:38:06,813 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:38:06,813 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:38:06,818 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:38:06,818 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:38:07,157 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:38:07,971 - __main__ - WARNING - Failed to delete file ./temp\tmpjjxf4t56\0.png: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: './temp\\tmpjjxf4t56\\0.png'
+2025-07-08 21:38:07,971 - __main__ - WARNING - Failed to delete 1 files: ['./temp\\tmpjjxf4t56\\0.png']...
+2025-07-08 21:38:07,972 - __main__ - WARNING - Attempt 1 to delete ./temp\tmpjjxf4t56 failed: [WinError 145] 目录不是空的。: './temp\\tmpjjxf4t56'
+2025-07-08 21:38:10,002 - __main__ - WARNING - Failed to delete file ./temp\tmpjjxf4t56\0.png: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: './temp\\tmpjjxf4t56\\0.png'
+2025-07-08 21:38:10,002 - __main__ - WARNING - Failed to delete 1 files: ['./temp\\tmpjjxf4t56\\0.png']...
+2025-07-08 21:38:10,003 - __main__ - WARNING - Attempt 2 to delete ./temp\tmpjjxf4t56 failed: [WinError 145] 目录不是空的。: './temp\\tmpjjxf4t56'
+2025-07-08 21:38:13,220 - __main__ - WARNING - Failed to delete file ./temp\tmpjjxf4t56\0.png: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: './temp\\tmpjjxf4t56\\0.png'
+2025-07-08 21:38:13,220 - __main__ - WARNING - Failed to delete 1 files: ['./temp\\tmpjjxf4t56\\0.png']...
+2025-07-08 21:38:13,221 - __main__ - WARNING - Attempt 3 to delete ./temp\tmpjjxf4t56 failed: [WinError 145] 目录不是空的。: './temp\\tmpjjxf4t56'
+2025-07-08 21:38:17,621 - __main__ - WARNING - Failed to delete file ./temp\tmpjjxf4t56\0.png: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: './temp\\tmpjjxf4t56\\0.png'
+2025-07-08 21:38:17,622 - __main__ - WARNING - Failed to delete 1 files: ['./temp\\tmpjjxf4t56\\0.png']...
+2025-07-08 21:38:17,622 - __main__ - WARNING - Attempt 4 to delete ./temp\tmpjjxf4t56 failed: [WinError 145] 目录不是空的。: './temp\\tmpjjxf4t56'
+2025-07-08 21:38:23,260 - __main__ - WARNING - Failed to delete file ./temp\tmpjjxf4t56\0.png: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: './temp\\tmpjjxf4t56\\0.png'
+2025-07-08 21:38:23,261 - __main__ - WARNING - Failed to delete 1 files: ['./temp\\tmpjjxf4t56\\0.png']...
+2025-07-08 21:38:23,261 - __main__ - WARNING - Attempt 5 to delete ./temp\tmpjjxf4t56 failed: [WinError 145] 目录不是空的。: './temp\\tmpjjxf4t56'
+2025-07-08 21:38:23,261 - __main__ - ERROR - Failed to delete temp directory after 5 attempts: ./temp\tmpjjxf4t56
+2025-07-08 21:38:23,344 - __main__ - INFO - Marked directory for later cleanup: ./temp\tmpjjxf4t56
+2025-07-08 21:38:23,345 - __main__ - INFO - Successfully deleted file: ./temp/images_1751981886.819245.zip
+2025-07-08 21:42:39,927 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手
+2025-07-08 21:42:39,927 - __main__ - INFO - font_size: 124
+2025-07-08 21:42:39,927 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:42:39,927 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:42:39,928 - __main__ - INFO - left_margin: 50
+2025-07-08 21:42:39,928 - __main__ - INFO - top_margin: 50
+2025-07-08 21:42:39,928 - __main__ - INFO - right_margin: 50
+2025-07-08 21:42:39,928 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:42:39,928 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:42:39,929 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:42:39,929 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:42:39,929 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:42:39,929 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:42:39,929 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:42:39,929 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:42:39,929 - __main__ - INFO - preview: true
+2025-07-08 21:42:39,943 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:42:39,943 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:42:39,944 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:42:39,948 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:42:39,948 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:42:40,429 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:42:40,788 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmpgchdruiy
+2025-07-08 21:42:40,789 - __main__ - INFO - Successfully deleted file: ./temp/images_1751982159.9497807.zip
+2025-07-08 21:43:38,827 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手安师大
+2025-07-08 21:43:38,828 - __main__ - INFO - font_size: 124
+2025-07-08 21:43:38,828 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:43:38,828 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:43:38,828 - __main__ - INFO - left_margin: 50
+2025-07-08 21:43:38,828 - __main__ - INFO - top_margin: 50
+2025-07-08 21:43:38,828 - __main__ - INFO - right_margin: 50
+2025-07-08 21:43:38,829 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:43:38,829 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:43:38,829 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:43:38,829 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:43:38,829 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:43:38,829 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:43:38,830 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:43:38,830 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:43:38,830 - __main__ - INFO - preview: true
+2025-07-08 21:43:38,843 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:43:38,844 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:43:38,844 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:43:38,847 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:43:38,847 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:43:39,283 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:43:39,658 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmpx9e5abx7
+2025-07-08 21:43:39,659 - __main__ - INFO - Successfully deleted file: ./temp/images_1751982218.8488576.zip
+2025-07-08 21:44:09,445 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手安师大
+2025-07-08 21:44:09,446 - __main__ - INFO - font_size: 124
+2025-07-08 21:44:09,446 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:44:09,446 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:44:09,446 - __main__ - INFO - left_margin: 50
+2025-07-08 21:44:09,446 - __main__ - INFO - top_margin: 50
+2025-07-08 21:44:09,446 - __main__ - INFO - right_margin: 50
+2025-07-08 21:44:09,447 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:44:09,447 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:44:09,447 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:44:09,447 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:44:09,447 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:44:09,447 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:44:09,448 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:44:09,448 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:44:09,448 - __main__ - INFO - preview: true
+2025-07-08 21:44:09,463 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:44:09,463 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:44:09,463 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:44:09,467 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:44:09,468 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:44:10,004 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:44:10,377 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmp5epffq9b
+2025-07-08 21:44:10,378 - __main__ - INFO - Successfully deleted file: ./temp/images_1751982249.4695578.zip
+2025-07-08 21:44:20,650 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手安师大sa
+2025-07-08 21:44:20,651 - __main__ - INFO - font_size: 124
+2025-07-08 21:44:20,651 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:44:20,651 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:44:20,652 - __main__ - INFO - left_margin: 50
+2025-07-08 21:44:20,652 - __main__ - INFO - top_margin: 50
+2025-07-08 21:44:20,652 - __main__ - INFO - right_margin: 50
+2025-07-08 21:44:20,652 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:44:20,653 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:44:20,653 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:44:20,653 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:44:20,654 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:44:20,654 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:44:20,654 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:44:20,654 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:44:20,655 - __main__ - INFO - preview: true
+2025-07-08 21:44:20,672 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:44:20,672 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:44:20,672 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:44:20,675 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:44:20,675 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:44:21,226 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:44:21,618 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmpbx5vj07g
+2025-07-08 21:44:21,619 - __main__ - INFO - Successfully deleted file: ./temp/images_1751982260.6767647.zip
+2025-07-08 21:45:55,539 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手安师大sa
+2025-07-08 21:45:55,540 - __main__ - INFO - font_size: 124
+2025-07-08 21:45:55,540 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:45:55,540 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:45:55,540 - __main__ - INFO - left_margin: 50
+2025-07-08 21:45:55,540 - __main__ - INFO - top_margin: 50
+2025-07-08 21:45:55,540 - __main__ - INFO - right_margin: 50
+2025-07-08 21:45:55,541 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:45:55,541 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:45:55,541 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:45:55,541 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:45:55,541 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:45:55,542 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:45:55,542 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:45:55,542 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:45:55,542 - __main__ - INFO - preview: true
+2025-07-08 21:45:55,556 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:45:55,557 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:45:55,557 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:45:55,561 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:45:55,562 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:45:55,923 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:45:56,289 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmpdv69vn45
+2025-07-08 21:45:56,289 - __main__ - INFO - Successfully deleted file: ./temp/images_1751982355.563327.zip
+2025-07-08 21:46:46,679 - __main__ - INFO - text: 啊啊啊啊啊舍得安师大分手安师大sa
+2025-07-08 21:46:46,680 - __main__ - INFO - font_size: 124
+2025-07-08 21:46:46,680 - __main__ - INFO - line_spacing: 200
+2025-07-08 21:46:46,680 - __main__ - INFO - fill: (0, 0, 0, 255)
+2025-07-08 21:46:46,680 - __main__ - INFO - left_margin: 50
+2025-07-08 21:46:46,680 - __main__ - INFO - top_margin: 50
+2025-07-08 21:46:46,681 - __main__ - INFO - right_margin: 50
+2025-07-08 21:46:46,681 - __main__ - INFO - bottom_margin: 50
+2025-07-08 21:46:46,681 - __main__ - INFO - word_spacing: 1
+2025-07-08 21:46:46,681 - __main__ - INFO - line_spacing_sigma: 0
+2025-07-08 21:46:46,681 - __main__ - INFO - font_size_sigma: 2
+2025-07-08 21:46:46,681 - __main__ - INFO - word_spacing_sigma: 2
+2025-07-08 21:46:46,681 - __main__ - INFO - perturb_x_sigma: 3
+2025-07-08 21:46:46,682 - __main__ - INFO - perturb_y_sigma: 3
+2025-07-08 21:46:46,682 - __main__ - INFO - perturb_theta_sigma: 0.05
+2025-07-08 21:46:46,682 - __main__ - INFO - preview: true
+2025-07-08 21:46:46,698 - __main__ - INFO - font_option: 云烟体.ttf
+2025-07-08 21:46:46,698 - __main__ - INFO - font_file_names: ['云烟体.ttf', '华阳手写体.ttf', '李国夫手写体.ttf', '神韵英子楷书.ttf', '青叶手写体.ttf']
+2025-07-08 21:46:46,698 - __main__ - INFO - font_path: font_assets\云烟体.ttf
+2025-07-08 21:46:46,704 - __main__ - INFO - data[pdf_save]: false
+2025-07-08 21:46:46,705 - __main__ - INFO - handwrite initial images generated successfully
+2025-07-08 21:46:47,158 - __main__ - INFO - Image 0 saved successfully
+2025-07-08 21:46:47,517 - __main__ - INFO - Successfully deleted temp directory: ./temp\tmpihi8t46a
+2025-07-08 21:46:47,518 - __main__ - INFO - Successfully deleted file: ./temp/images_1751982406.706521.zip
