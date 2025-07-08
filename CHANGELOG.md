@@ -1,3 +1,10 @@
+## [1.10.3](https://github.com/14790897/handwriting-web/compare/v1.10.2...v1.10.3) (2025-07-08)
+
+
+### Bug Fixes
+
+* rm zip ([ee944c8](https://github.com/14790897/handwriting-web/commit/ee944c8c207ec95a65fa198157df099c8ae9a5af))
+
 ## [1.10.2](https://github.com/14790897/handwriting-web/compare/v1.10.1...v1.10.2) (2025-07-08)
 
 
