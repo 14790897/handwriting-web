@@ -497,21 +497,21 @@ def generate_handwriting():
             return jsonify({"status": "error", "message": "Invalid image format"}), 400
 
     text_to_generate = data["text"]
-    
+
     # Conditionally adjust spacing for English text based on user setting
-    if data.get("enableEnglishSpacing", "true").lower() == "true":
+    if data.get("enableEnglishSpacing", "false").lower() == "true":
         # Only apply to English words, leave Chinese text unchanged
         import re
-        
+
         def replace_english_spaces(text):
             """Replace single spaces with double spaces only for English text, preserving all other whitespace"""
             # Pattern to identify English characters (including common punctuation, hyphens, underscores)
             english_pattern = r'^[a-zA-Z0-9.,!?;:\'\"()\-_]+$'
-            
+
             # Split by lines to preserve newlines
             lines = text.split('\n')
             processed_lines = []
-            
+
             for line in lines:
                 # Only process spaces within each line, preserve tabs and other whitespace
                 # Split only on spaces (not all whitespace)
@@ -520,29 +520,29 @@ def generate_handwriting():
                     # No spaces in this line, keep as is
                     processed_lines.append(line)
                     continue
-                
+
                 result = []
                 for i, part in enumerate(parts):
                     result.append(part)
-                    
+
                     # If this isn't the last part, check if we should add double space
                     if i < len(parts) - 1:
                         current_is_english = bool(re.match(english_pattern, part)) if part.strip() else False
                         next_is_english = bool(re.match(english_pattern, parts[i + 1])) if parts[i + 1].strip() else False
-                        
+
                         # Add double space only if both current and next parts are English
                         if current_is_english and next_is_english:
                             result.append('  ')  # Double space
                         else:
                             result.append(' ')   # Single space
-                
+
                 processed_lines.append(''.join(result))
-            
+
             # Rejoin with newlines to preserve line structure
             return '\n'.join(processed_lines)
-        
+
         text_to_generate = replace_english_spaces(text_to_generate)
-    
+
     # if data["preview"] == "true":
     #     # 截短字符，只生成一面
     #     preview_length = 300  # 可以调整为所需的预览长度

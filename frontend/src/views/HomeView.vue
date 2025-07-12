@@ -329,7 +329,7 @@ export default {
       strikethrough_width: 8,
       ink_depth_sigma: 30,
       isUnderlined: true,
-      enableEnglishSpacing: true,
+      enableEnglishSpacing: false,
       isExpanded: false,
       // 生成状态控制
       isGenerating: false,
@@ -890,7 +890,7 @@ export default {
       this.strikethrough_width = 8;
       this.ink_depth_sigma = 30;
       this.isUnderlined = true;
-      this.enableEnglishSpacing = true;
+      this.enableEnglishSpacing = false;
       this.errorMessage = '';
       this.message = '';
       this.uploadMessage = '';

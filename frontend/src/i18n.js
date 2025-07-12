@@ -118,7 +118,7 @@ const messages = {
       strikethrough_angle_sigma: "涂改线角度的标准差",
       strikethrough_width: "涂改线宽度",
       ink_depth_sigma: "墨汁深度标准差",
-      enableEnglishSpacing: "自动调整英文间距",
+      enableEnglishSpacing: "增大英文单词间距",
       email: "邮箱",
       feedback: "反馈",
       introduce: "介绍",
