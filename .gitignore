@@ -1,5 +1,6 @@
 .history
-.vscode
+.vscode/*
+!.vscode/tasks.json
 env-handwrite
 hand-write
 .env
