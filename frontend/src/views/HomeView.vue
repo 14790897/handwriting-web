@@ -348,7 +348,12 @@ export default {
     this.localStorageItems.forEach(item => {
       const value = localStorage.getItem(item);
       if (value !== null && value !== "undefined") {
-        this[item] = JSON.parse(value);
+        try {
+          this[item] = JSON.parse(value);
+          console.log('成功加载localStorage项目:', item, '值:', this[item]);
+        } catch (error) {
+          console.error('解析localStorage项目失败:', item, '原始值:', value, '错误:', error);
+        }
       } else {
         console.log('localstorage缺失item:' + item)
       }

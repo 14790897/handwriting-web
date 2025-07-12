@@ -1,7 +1,7 @@
 <template>
     <div id='text_file_select' class="d-flex justify-content-between">
         <label for="textArea">{{ $t('message.text') }}:</label>
-        <textarea id="textArea" class="form-control" v-model="text_handwriting"
+        <textarea id="textArea" class="form-control" v-model="text"
             :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
@@ -25,19 +25,19 @@ export default {
 
     data() {
         return {
-            text_handwriting: '',
+            text: '',
             isLoading: false,
             selectedTextFileName: '',
         }
     },
     //当输入框的值发生变化时，通知HomeView更新text_handwriting 7.4
     watch: {
-        text_handwriting: function (val) {
+        text: function (val) {
             this.$emit('childEvent', val);
         }
     },
     created() {
-        const localStorageItems = ['selectedTextFileName', 'text_handwriting']
+        const localStorageItems = ['selectedTextFileName','text']
         localStorageItems.forEach(item => {
             const value = localStorage.getItem(item);
             if (value !== null && value !== "undefined") {
@@ -68,10 +68,11 @@ export default {
                 }
             })
                 .then(response => {
-                    this.text_handwriting = response.data.text;
-                    //通知HomeView更新text_handwriting 7.3, 但是如果直接输入文字，这里不会通知父组件7.4
-                    this.$emit('childEvent', this.text_handwriting);
-                    localStorage.setItem('text_handwriting', JSON.stringify(this.text_handwriting));
+                    this.text = response.data.text;
+                    //通知HomeView更新text 7.3, 但是如果直接输入文字，这里不会通知父组件7.4
+                    this.$emit('childEvent', this.text);
+                    // 使用与 HomeView 一致的键名存储
+                    localStorage.setItem('text', JSON.stringify(this.text));
                     this.isLoading = false;
                 })
                 .catch(error => {
