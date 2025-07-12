@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/14790897/handwriting-web/compare/v1.11.1...v1.12.0) (2025-07-12)
+
+
+### Features
+
+* 一键启动tasks.json ([bedde2b](https://github.com/14790897/handwriting-web/commit/bedde2b7e2a3fa6f19e92d06a7d604134ab415de))
+
 ## [1.11.1](https://github.com/14790897/handwriting-web/compare/v1.11.0...v1.11.1) (2025-07-08)
 
 
