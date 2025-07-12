@@ -498,6 +498,13 @@ def generate_handwriting():
             return jsonify({"status": "error", "message": "Invalid image format"}), 400
 
     text_to_generate = data["text"]
+    
+    # Apply letter spacing by replacing single spaces with double spaces
+    letter_spacing = int(data.get("letter_spacing", 0))
+    if letter_spacing != 0:
+        # Replace single spaces with double spaces to increase spacing
+        text_to_generate = text_to_generate.replace(" ", "  ")
+    
     # if data["preview"] == "true":
     #     # 截短字符，只生成一面
     #     preview_length = 300  # 可以调整为所需的预览长度
@@ -543,7 +550,7 @@ def generate_handwriting():
         top_margin=int(data["top_margin"]),
         right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
         bottom_margin=int(data["bottom_margin"]),
-        word_spacing=int(data["word_spacing"]) + int(data.get("letter_spacing", 0)),
+        word_spacing=int(data["word_spacing"]),
         line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
         font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
         word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
