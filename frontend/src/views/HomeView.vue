@@ -858,15 +858,22 @@ export default {
       }
     },
     savePreset() {
-      let data = {};
-      this.localStorageItems.forEach(item => {
-        data[item] = this[item];
-      });
-      // 将对象转换为 JSON 格式的字符串
-      let dataString = JSON.stringify(data);
+      try {
+        let data = {};
+        this.localStorageItems.forEach(item => {
+          data[item] = this[item];
+        });
+        // 将对象转换为 JSON 格式的字符串
+        let dataString = JSON.stringify(data);
 
-      // 将字符串存储到 localStorage 中
-      localStorage.setItem('myPreset', dataString);
+        // 将字符串存储到 localStorage 中
+        localStorage.setItem('myPreset', dataString);
+
+        alert('预设设置保存成功！');
+      } catch (error) {
+        console.error('保存预设设置失败:', error);
+        alert('保存预设设置失败');
+      }
     },
     resetSettings() {
       // this.text = '';13213不能删除，会导致文字为空，但是输入框没有清除
@@ -905,14 +912,26 @@ export default {
       this.previewImage = "/default1.png";
     },
     loadPreset() {
-      // 从 localStorage 中获取字符串
-      let dataString = localStorage.getItem('myPreset');
+      try {
+        // 从 localStorage 中获取字符串
+        let dataString = localStorage.getItem('myPreset');
 
-      // 将字符串转换回对象
-      let data = JSON.parse(dataString);
-      Object.keys(data).forEach(item => {
-        this[item] = data[item];
-      });
+        if (dataString === null || dataString === "undefined") {
+          alert('没有找到保存的预设设置');
+          return;
+        }
+
+        // 将字符串转换回对象
+        let data = JSON.parse(dataString);
+        Object.keys(data).forEach(item => {
+          this[item] = data[item];
+        });
+
+        alert('预设设置加载成功！');
+      } catch (error) {
+        console.error('加载预设设置失败:', error);
+        alert('加载预设设置失败，请检查保存的数据是否有效');
+      }
     },
     onBackgroundImageChange(event) {
       // 当用户选择了一个新的背景图片文件时，更新 selectedImageFileName，由于这边直接触发函数了，所以localstorage可以在这里修改，
