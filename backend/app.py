@@ -504,29 +504,42 @@ def generate_handwriting():
         import re
         
         def replace_english_spaces(text):
-            """Replace single spaces with double spaces only for English text"""
-            # Split text into words and analyze each transition
+            """Replace single spaces with double spaces only for English text, preserving all other whitespace"""
             # Pattern to identify English characters (including common punctuation, hyphens, underscores)
             english_pattern = r'^[a-zA-Z0-9.,!?;:\'\"()\-_]+$'
             
-            words = text.split()
-            result = []
+            # Split by lines to preserve newlines
+            lines = text.split('\n')
+            processed_lines = []
             
-            for i, word in enumerate(words):
-                result.append(word)
+            for line in lines:
+                # Only process spaces within each line, preserve tabs and other whitespace
+                # Split only on spaces (not all whitespace)
+                parts = line.split(' ')
+                if len(parts) <= 1:
+                    # No spaces in this line, keep as is
+                    processed_lines.append(line)
+                    continue
                 
-                # If this isn't the last word, check if we should add double space
-                if i < len(words) - 1:
-                    current_is_english = bool(re.match(english_pattern, word))
-                    next_is_english = bool(re.match(english_pattern, words[i + 1]))
+                result = []
+                for i, part in enumerate(parts):
+                    result.append(part)
                     
-                    # Add double space only if both current and next words are English
-                    if current_is_english and next_is_english:
-                        result.append('  ')  # Double space
-                    else:
-                        result.append(' ')   # Single space
+                    # If this isn't the last part, check if we should add double space
+                    if i < len(parts) - 1:
+                        current_is_english = bool(re.match(english_pattern, part)) if part.strip() else False
+                        next_is_english = bool(re.match(english_pattern, parts[i + 1])) if parts[i + 1].strip() else False
+                        
+                        # Add double space only if both current and next parts are English
+                        if current_is_english and next_is_english:
+                            result.append('  ')  # Double space
+                        else:
+                            result.append(' ')   # Single space
+                
+                processed_lines.append(''.join(result))
             
-            return ''.join(result)
+            # Rejoin with newlines to preserve line structure
+            return '\n'.join(processed_lines)
         
         text_to_generate = replace_english_spaces(text_to_generate)
     
