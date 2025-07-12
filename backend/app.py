@@ -419,6 +419,7 @@ def generate_handwriting():
         "right_margin",
         "bottom_margin",
         "word_spacing",
+        "letter_spacing",
         "line_spacing_sigma",
         "font_size_sigma",
         "word_spacing_sigma",
@@ -542,7 +543,7 @@ def generate_handwriting():
         top_margin=int(data["top_margin"]),
         right_margin=int(data["right_margin"]) - int(data["word_spacing"]) * 2,
         bottom_margin=int(data["bottom_margin"]),
-        word_spacing=int(data["word_spacing"]),
+        word_spacing=int(data["word_spacing"]) + int(data.get("letter_spacing", 0)),
         line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
         font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
         word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动

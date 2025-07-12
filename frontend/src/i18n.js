@@ -47,6 +47,7 @@ const messages = {
       perturbYSigma: "Perturb Y Sigma",
       perturbThetaSigma: "Perturb Theta Sigma",
       wordSpacing: "Word Spacing",
+      letterSpacing: "Letter Spacing",
       expand: "expand",
       strikethrough_probability: "Probability of a strikethrough occurring",
       strikethrough_length_sigma:
@@ -110,6 +111,7 @@ const messages = {
       perturbYSigma: "笔画纵向偏移",
       perturbThetaSigma: "笔画旋转偏移",
       wordSpacing: "字间距",
+      letterSpacing: "字母间距",
       expand: "更多内容",
       strikethrough_probability: "涂改出现的几率",
       strikethrough_length_sigma: "涂改线长度的标准差",
