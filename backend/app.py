@@ -505,8 +505,8 @@ def generate_handwriting():
     def replace_english_spaces(text):
         """Replace single spaces with double spaces only for English text"""
         # Split text into words and analyze each transition
-        # Pattern to identify English characters
-        english_pattern = r'^[a-zA-Z0-9.,!?;:\'\"()]+$'
+        # Pattern to identify English characters (including common punctuation, hyphens, underscores)
+        english_pattern = r'^[a-zA-Z0-9.,!?;:\'\"()\-_]+$'
         
         words = text.split()
         result = []
