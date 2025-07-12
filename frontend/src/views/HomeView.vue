@@ -81,6 +81,10 @@
         v-model="isUnderlined">
       <label for="optionUnderline" style="margin-right: 0px;">增加下划线</label>
 
+      <input class="optionEnglishSpacing" type="checkbox" id="optionEnglishSpacing" name="optionEnglishSpacing" value="englishSpacing"
+        v-model="enableEnglishSpacing">
+      <label for="optionEnglishSpacing" style="margin-right: 0px;">{{ $t('message.enableEnglishSpacing') }}</label>
+
       <div class="label-container">
 
         <label>{{ $t('message.fontSize') }}:
@@ -166,6 +170,8 @@
               <input type="number" v-model="wordSpacing" />
             </label>
           </div>
+
+
 
           <div class="label-container">
             <label>{{ $t('message.strikethrough_length_sigma') }}:
@@ -323,6 +329,7 @@ export default {
       strikethrough_width: 8,
       ink_depth_sigma: 30,
       isUnderlined: true,
+      enableEnglishSpacing: true,
       isExpanded: false,
       // 生成状态控制
       isGenerating: false,
@@ -331,7 +338,7 @@ export default {
       cooldownTimer: null,
       remainingCooldown: 0,
       isInCooldownPeriod: false,
-      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined'],
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
     };
   },
   created() {
@@ -575,6 +582,12 @@ export default {
       },
       deep: true
     },
+    enableEnglishSpacing: {
+      handler(newVal) {
+        localStorage.setItem('enableEnglishSpacing', JSON.stringify(newVal));
+      },
+      deep: true
+    },
   },
 
   methods: {
@@ -731,6 +744,7 @@ export default {
       formData.append("ink_depth_sigma", this.ink_depth_sigma);
       formData.append("pdf_save", pdf_save.toString());
       formData.append("isUnderlined", this.isUnderlined.toString());
+      formData.append("enableEnglishSpacing", this.enableEnglishSpacing.toString());
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
@@ -876,6 +890,7 @@ export default {
       this.strikethrough_width = 8;
       this.ink_depth_sigma = 30;
       this.isUnderlined = true;
+      this.enableEnglishSpacing = true;
       this.errorMessage = '';
       this.message = '';
       this.uploadMessage = '';
@@ -1464,6 +1479,17 @@ input[type="file"]:hover {
 }
 
 .optionUnderline {
+  margin: 0;
+  padding: 0;
+  width: 10px;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  box-sizing: content-box !important;
+}
+
+.optionEnglishSpacing {
   margin: 0;
   padding: 0;
   width: 10px;
