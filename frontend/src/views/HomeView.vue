@@ -167,11 +167,7 @@
             </label>
           </div>
 
-          <div class="label-container">
-            <label>{{ $t('message.letterSpacing') }}:
-              <input type="number" v-model="letterSpacing" />
-            </label>
-          </div>
+
 
           <div class="label-container">
             <label>{{ $t('message.strikethrough_length_sigma') }}:
@@ -312,7 +308,6 @@ export default {
       perturbYSigma: 3,
       perturbThetaSigma: 0.05,
       wordSpacing: 1,
-      letterSpacing: 0,
       endChars: '',
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
@@ -338,7 +333,7 @@ export default {
       cooldownTimer: null,
       remainingCooldown: 0,
       isInCooldownPeriod: false,
-      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'letterSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined'],
+      localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined'],
     };
   },
   created() {
@@ -540,12 +535,6 @@ export default {
       },
       deep: true
     },
-    letterSpacing: {
-      handler(newVal) {
-        localStorage.setItem('letterSpacing', JSON.stringify(newVal));
-      },
-      deep: true
-    },
     strikethrough_length_sigma: {
       handler(newVal) {
         localStorage.setItem('strikethrough_length_sigma', JSON.stringify(newVal));
@@ -634,7 +623,7 @@ export default {
         }
 
       // 验证输入
-      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'letterSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
+      const Items = ['text', 'backgroundImage', 'fontSize', 'lineSpacing', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma'];
       Items.forEach(item => {
         let value = this[item];
         // if (!value) {
@@ -664,7 +653,6 @@ export default {
           case 'perturbYSigma':
           case 'perturbThetaSigma':
           case 'wordSpacing':
-          case 'letterSpacing':
           case 'strikethrough_length_sigma':
           case 'strikethrough_angle_sigma':
           case 'strikethrough_width_sigma':
@@ -735,7 +723,6 @@ export default {
       formData.append("perturb_y_sigma", this.perturbYSigma);
       formData.append("perturb_theta_sigma", this.perturbThetaSigma);
       formData.append("word_spacing", this.wordSpacing);
-      formData.append("letter_spacing", this.letterSpacing);
       formData.append("preview", this.preview.toString());
       formData.append("font_option", this.options[this.selectedOption - 1].text);
       formData.append("strikethrough_length_sigma", this.strikethrough_length_sigma);
@@ -884,7 +871,6 @@ export default {
       this.perturbYSigma = 3;
       this.perturbThetaSigma = 0.05;
       this.wordSpacing = 1;
-      this.letterSpacing = 0;
       this.strikethrough_length_sigma = 2;
       this.strikethrough_angle_sigma = 2;
       this.strikethrough_width_sigma = 2;

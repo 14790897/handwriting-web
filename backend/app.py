@@ -419,7 +419,6 @@ def generate_handwriting():
         "right_margin",
         "bottom_margin",
         "word_spacing",
-        "letter_spacing",
         "line_spacing_sigma",
         "font_size_sigma",
         "word_spacing_sigma",
@@ -499,11 +498,36 @@ def generate_handwriting():
 
     text_to_generate = data["text"]
     
-    # Apply letter spacing by replacing single spaces with double spaces
-    letter_spacing = int(data.get("letter_spacing", 0))
-    if letter_spacing != 0:
-        # Replace single spaces with double spaces to increase spacing
-        text_to_generate = text_to_generate.replace(" ", "  ")
+    # Automatically adjust spacing for English text by replacing single spaces with double spaces
+    # Only apply to English words, leave Chinese text unchanged
+    import re
+    
+    def replace_english_spaces(text):
+        """Replace single spaces with double spaces only for English text"""
+        # Split text into words and analyze each transition
+        # Pattern to identify English characters
+        english_pattern = r'^[a-zA-Z0-9.,!?;:\'\"()]+$'
+        
+        words = text.split()
+        result = []
+        
+        for i, word in enumerate(words):
+            result.append(word)
+            
+            # If this isn't the last word, check if we should add double space
+            if i < len(words) - 1:
+                current_is_english = bool(re.match(english_pattern, word))
+                next_is_english = bool(re.match(english_pattern, words[i + 1]))
+                
+                # Add double space only if both current and next words are English
+                if current_is_english and next_is_english:
+                    result.append('  ')  # Double space
+                else:
+                    result.append(' ')   # Single space
+        
+        return ''.join(result)
+    
+    text_to_generate = replace_english_spaces(text_to_generate)
     
     # if data["preview"] == "true":
     #     # 截短字符，只生成一面
