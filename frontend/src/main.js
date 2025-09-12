@@ -10,6 +10,7 @@ import axios from "axios";
 import Clarity from "@microsoft/clarity";
 // eslint-disable-next-line no-unused-vars
 import Swal from "sweetalert2";
+import { createHead } from "@vueuse/head";
 
 import * as Sentry from "@sentry/vue";
 
@@ -17,6 +18,7 @@ import * as Sentry from "@sentry/vue";
 // import "viewerjs/dist/viewer.css";
 
 const app = createApp(App);
+const head = createHead();
 
 // 异步加载Google Analytics的JavaScript库
 const script = document.createElement("script");
@@ -84,6 +86,7 @@ Sentry.init({
 app.use(store);
 app.use(router);
 app.use(i18n);
+app.use(head);
 
 app.config.globalProperties.$http = axios;
 app.config.globalProperties.$swal = Swal;

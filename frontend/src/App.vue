@@ -10,6 +10,9 @@
 import UserLayout from './views/UserLayout.vue';
 import PWAInstallPrompt from './components/PWAInstallPrompt.vue';
 // import HomeView from './views/HomeView.vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useHead } from '@vueuse/head';
 
 export default {
   name: 'App',
@@ -18,16 +21,40 @@ export default {
     PWAInstallPrompt,
     // HomeView
   },
-  // mounted() {
-  //   // 请注意，$el 指向的是该组件最外层的 DOM 元素
-  //   const contentElement = this.$refs.myComponentRef.$el;
+  setup() {
+    const route = useRoute();
+    const site = 'https://handwrite.14790897.xyz';
+    const defaultTitle = '手写文字生成网站 - 在线生成手写图片与 PDF';
+    const defaultDesc = '手写文字生成网站，支持多种字体和背景，在线生成高质量手写文字图片与 PDF。适合作业、论文、信件等场景，支持自定义字体、背景与参数调节。';
 
-  //   // 然后，你可以使用原生的 getBoundingClientRect 方法来获取元素的位置：
-  //   if (contentElement) {
-  //     const yPosition = contentElement.getBoundingClientRect().top;
-  //     window.scrollTo(0, yPosition);
-  //   }
-  // },
+    const title = computed(() => route.meta?.title || defaultTitle);
+    const description = computed(() => route.meta?.description || defaultDesc);
+    const robots = computed(() => route.meta?.robots || 'index, follow');
+    const canonical = computed(() => site + route.fullPath);
+
+    useHead(() => ({
+      title: title.value,
+      meta: [
+        { name: 'description', content: description.value },
+        { name: 'robots', content: robots.value },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: canonical.value },
+        { property: 'og:title', content: title.value },
+        { property: 'og:description', content: description.value },
+        { property: 'og:image', content: '/default1.png' },
+        { property: 'twitter:card', content: 'summary_large_image' },
+        { property: 'twitter:url', content: canonical.value },
+        { property: 'twitter:title', content: title.value },
+        { property: 'twitter:description', content: description.value },
+        { property: 'twitter:image', content: '/default1.png' },
+      ],
+      link: [
+        { rel: 'canonical', href: canonical.value },
+      ],
+    }));
+
+    return {};
+  },
 };
 </script>
 
@@ -70,3 +97,4 @@ button:hover {
 }
 
 </style>
+
