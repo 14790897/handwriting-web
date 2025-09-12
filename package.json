@@ -4,5 +4,8 @@
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.1",
     "semantic-release": "^24.2.2"
+  },
+  "dependencies": {
+    "@vueuse/head": "^2.0.0"
   }
 }
