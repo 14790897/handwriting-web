@@ -1,0 +1,79 @@
+name: ✨ Feature 请求
+description: 为这个项目提出一个新功能或改进建议
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你为改进项目提出建议！
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 相关问题
+      description: 这个功能请求是否与某个问题相关？请描述。
+      placeholder: 我在使用时遇到了一个问题...
+    validations:
+      required: false
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 建议的解决方案
+      description: 清晰简洁地描述你想要的功能或改进
+      placeholder: 我希望能够...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: 使用场景
+      description: 描述这个功能的具体使用场景
+      placeholder: |
+        作为一个用户，我想要...
+        这样我就可以...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案
+      description: 清晰简洁地描述你考虑过的任何替代解决方案或功能
+      placeholder: 我也考虑过...
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或图片
+      description: |
+        如果适用，请添加截图、示意图或参考图片来帮助说明你的想法。
+        你可以直接拖拽图片到这个文本框中，或者粘贴图片。
+      placeholder: |
+        拖拽图片到这里，或点击上传...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 附加信息
+      description: 在这里添加任何其他有关功能请求的信息
+      placeholder: 任何其他相关信息...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认
+      description: 在提交之前，请确认以下内容
+      options:
+        - label: 我已经搜索过现有的 issues，确认这不是重复的功能请求
+          required: true
+        - label: 我已经阅读了文档，确认这个功能目前不存在
+          required: false
