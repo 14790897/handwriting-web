@@ -1,0 +1,121 @@
+name: 🐛 Bug 反馈
+description: 报告一个问题或错误
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你花时间填写这个 bug 报告！
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug 描述
+      description: 清晰简洁地描述这个 bug 是什么
+      placeholder: 请详细描述遇到的问题...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 如何复现这个问题？
+      placeholder: |
+        1. 访问 '...'
+        2. 点击 '....'
+        3. 滚动到 '....'
+        4. 看到错误
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 清晰简洁地描述你期望发生什么
+      placeholder: 我期望...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 清晰简洁地描述实际发生了什么
+      placeholder: 实际上...
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或图片
+      description: |
+        如果适用，请添加截图或图片来帮助解释你的问题。
+        你可以直接拖拽图片到这个文本框中，或者粘贴图片。
+      placeholder: |
+        拖拽图片到这里，或点击上传...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: 浏览器
+      description: 你使用的是什么浏览器？
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - 其他
+      multiple: true
+    validations:
+      required: false
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: 浏览器版本
+      description: 你使用的浏览器版本是什么？
+      placeholder: "例如：Chrome 120.0.6099.109"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      description: 你使用的是什么操作系统？
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Android
+        - iOS
+        - 其他
+      multiple: true
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 附加信息
+      description: 在这里添加任何其他有关问题的信息
+      placeholder: 任何其他相关信息...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认
+      description: 在提交之前，请确认以下内容
+      options:
+        - label: 我已经搜索过现有的 issues，确认这不是重复问题
+          required: true
+        - label: 我已经阅读了文档和常见问题
+          required: false
