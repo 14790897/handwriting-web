@@ -24,12 +24,5 @@ services:
     cpu_period: 100000
     mem_limit: 1500m
     memswap_limit: 4000m
-  # db:
-  #   image: 14790897/mysql-handwriting:latest
-  #   command: --default-authentication-plugin=mysql_native_password
-  #   restart: always
-  #   ports:
-  #     - "3306:3306"
-  #   networks:
-  #     - mynetwork
+ 
 
