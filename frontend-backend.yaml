@@ -1,0 +1,142 @@
+# =========================================
+# Backend: Deployment
+# =========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  # 为了避免多副本同时写同一个日志文件造成冲突，
+  # 如果使用 hostPath 挂载日志，建议副本数设为 1。
+  # 如果需要多副本，建议日志改用 emptyDir (不持久化) 或专业的日志收集方案。
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: 14790897/backend-handwriting:latest
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+          - name: ttf-files
+            mountPath: /app/font_assets
+            readOnly: true
+          - name: logs
+            mountPath: /app/logs
+        resources:
+          limits:
+            memory: "1500Mi"
+            cpu: "0.8"
+          requests:
+            memory: "500Mi"
+            cpu: "0.1"
+        readinessProbe:
+           tcpSocket:
+             port: 5000
+           initialDelaySeconds: 5
+           periodSeconds: 10
+      volumes:
+        # [K3s 简易方案] 直接使用主机路径，类似 Docker Compose 的 - ./ttf_files:/app/font_assets
+        - name: ttf-files
+          hostPath:
+            path: /data/handwriting/ttf_files
+            type: Directory
+        - name: logs
+          hostPath:
+            path: /data/handwriting/logs
+            type: DirectoryOrCreate
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+
+---
+# =========================================
+# Frontend: Deployment
+# =========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: 14790897/frontend-handwriting:latest
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            memory: "800Mi"
+            cpu: "0.5"
+          requests:
+            memory: "500Mi"
+            cpu: "0.1"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+# =========================================
+# Ingress: K3s 默认使用 Traefik
+# =========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: handwriting-ingress
+  annotations:
+    # K3s 默认无需指定 ingress.class，它会自动用 Traefik 接管。
+    # 但显式指定是个好习惯。
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  # 如果您没有域名，可以先删除 host 这一行，
+  # 这样直接访问服务器 IP 就能看到（前提是服务器上没跑其他 80 端口服务）
+  - host: handwriting.local  # <--- 测试时，可以在本机 hosts 文件把这个域名指向服务器IP
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+
+# sudo cat /var/lib/rancher/k3s/server/node-token
+              # curl -sfL https://get.k3s.io | K3S_URL=https://<主服务器公网IP>:6443 K3S_TOKEN=<主服务器的密码> sh -s - --node-external-ip=<本机的公网IP>
