@@ -42,14 +42,10 @@
     {
       "label": "🐍 启动后端Flask服务器",
       "type": "shell",
-      "command": "${workspaceFolder}\\venv\\Scripts\\python.exe",
+      "command": "${workspaceFolder}/venv/Scripts/python.exe",
       "args": ["app.py"],
       "options": {
-        "cwd": "${workspaceFolder}/backend",
-        "shell": {
-          "executable": "cmd.exe",
-          "args": ["/c"]
-        }
+        "cwd": "${workspaceFolder}/backend"
       },
       "group": "build",
       "isBackground": true,
@@ -64,15 +60,14 @@
       "problemMatcher": {
         "owner": "python",
         "pattern": {
-          "regexp": "^\\s*File \"(.+)\", line (\\d+), in (.+)$",
+          "regexp": "^\\s*File \"(.+)\", line (\\d+).*$",
           "file": 1,
-          "line": 2,
-          "message": 3
+          "line": 2
         },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "^\\s*\\*\\s*Running on",
-          "endsPattern": "^\\s*\\*\\s*Debug mode:"
+          "beginsPattern": ".*Serving Flask app.*",
+          "endsPattern": ".*Debugger PIN:.*"
         }
       }
     },
