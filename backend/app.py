@@ -339,15 +339,15 @@ def read_docx(file_path):
     return text
 
 
-# import pypandoc
-# pypandoc.download_pandoc()
+import pypandoc
+pypandoc.download_pandoc()
 
 
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
-    # text = pypandoc.convert_file(docx_file_path, 'plain')
-    # return text
-    return None
+    text = pypandoc.convert_file(docx_file_path, 'plain')
+    return text
+    # return None
 
 
 def read_pdf(file_path):
