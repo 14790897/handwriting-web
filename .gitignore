@@ -27,3 +27,5 @@ backend/textfileprocess/docx
 backend/pandoc-3.1.11-windows-x86_64.msi
 backend/pyproject2.toml
 node_modules
+pandoc-3.8.3-windows-x86_64.msi
+pandoc-*-windows-x86_64.msi
