@@ -340,8 +340,17 @@ def read_docx(file_path):
 
 
 import pypandoc
-# pypandoc.download_pandoc()
+try:
+    # 1. 尝试获取 Pandoc 版本
+    # 如果系统里已经安装了（比如你在 Dockerfile 里用 apt-get 装了），这里会成功
+    version = pypandoc.get_pandoc_version()
+    print(f"Pandoc found: {version}")
 
+except OSError:
+    # 2. 如果报错说找不到，说明没装，开始自动下载
+    print("Pandoc not found. Downloading...")
+    pypandoc.download_pandoc()
+    print("Pandoc downloaded successfully.")
 
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
