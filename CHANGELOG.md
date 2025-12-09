@@ -1,3 +1,10 @@
+## [1.13.3](https://github.com/14790897/handwriting-web/compare/v1.13.2...v1.13.3) (2025-12-09)
+
+
+### Bug Fixes
+
+* install pandoc ([e6497c3](https://github.com/14790897/handwriting-web/commit/e6497c33078d39d7f16373d3a52dcc1a511a7a27))
+
 ## [1.13.2](https://github.com/14790897/handwriting-web/compare/v1.13.1...v1.13.2) (2025-12-05)
 
 
