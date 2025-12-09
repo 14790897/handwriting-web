@@ -1,22 +1,30 @@
 # Use an official Python runtime as a parent image
-FROM python:3.10-slim-bookworm
+FROM python:3.12-slim-bookworm
 
 # Set the working directory in the container to /app
 WORKDIR /app
 
-# Install libgl1-mesa-glx(required for opencv)
-RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 && \
-    apt-get clean && \
+# Install system dependencies
+# Added 'pandoc' here to fix the "FileNotFoundError: [Errno 2] No such file or directory: 'ar'" error
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    pandoc \
+    && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Add the current directory contents into the container at /app
-ADD . /app
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt /app/
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install gunicorn
+# Install gunicorn (if it's not in your requirements.txt)
 RUN pip install gunicorn
+
+# Copy the current directory contents into the container at /app
+# Do this last so code changes don't invalidate the pip install cache
+COPY . /app
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000

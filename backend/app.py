@@ -340,7 +340,7 @@ def read_docx(file_path):
 
 
 import pypandoc
-pypandoc.download_pandoc()
+# pypandoc.download_pandoc()
 
 
 def convert_docx_to_text(docx_file_path):
