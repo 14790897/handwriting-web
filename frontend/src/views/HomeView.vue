@@ -781,6 +781,10 @@ export default {
       formData.append("pdf_save", pdf_save.toString());
       formData.append("isUnderlined", this.isUnderlined.toString());
       formData.append("enableEnglishSpacing", this.enableEnglishSpacing.toString());
+      
+      // 根据环境决定预览模式：开发环境使用完整多页预览，生产环境使用单页预览以节省资源
+      const isDevEnv = process.env.NODE_ENV === 'development';
+      formData.append("full_preview", isDevEnv.toString());
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
@@ -793,7 +797,8 @@ export default {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-          responseType: preview ? 'json' : 'blob', // 预览时使用json，否则使用blob
+          // 预览模式下：开发环境使用json接收多页图片，生产环境使用blob接收单页图片
+          responseType: preview ? (isDevEnv ? 'json' : 'blob') : 'blob',
           withCredentials: true, //在跨域的时候，需要添加这句话，才能发送cookie 6.30
         }
 

@@ -633,6 +633,12 @@ def generate_handwriting():
         temp_dir = tempfile.mkdtemp(dir=project_temp_base)
         unique_filename = "images_" + str(time.time())
         zip_path = f"./temp/{unique_filename}.zip"
+        # 预览模式：检查是否为完整预览模式（本地开发）或单页预览模式（生产环境）
+        is_preview = data["preview"] == "true"
+        full_preview = data.get("full_preview", "true") if is_preview else None
+        if is_preview:
+            logger.info(f"Preview mode enabled, full_preview: {full_preview}")
+        
         try:
             preview_images_base64 = []
             for i, im in enumerate(images):
@@ -647,17 +653,26 @@ def generate_handwriting():
 
                 del im  # 释放内存
 
-                if data["preview"] == "true":
+                if is_preview:
                     # 预览模式：读取文件内容到内存
                     with open(image_path, "rb") as f:
                         image_data = f.read()
                     
-                    # 将图片转换为Base64字符串
+                    if full_preview == "false":
+                        # 单页预览模式（生产环境）：只返回第一张图片，立即返回
+                        safe_remove_directory(temp_dir)
+                        return send_file(
+                            io.BytesIO(image_data),
+                            mimetype="image/png",
+                            as_attachment=False,
+                        )
+                    
+                    # 完整预览模式（本地开发）：将图片转换为Base64字符串
                     base64_str = base64.b64encode(image_data).decode('utf-8')
                     preview_images_base64.append(base64_str)
 
-            if data["preview"] == "true":
-                # 预览模式：返回包含所有图片Base64字符串的JSON
+            if is_preview:
+                # 完整预览模式：返回包含所有图片Base64字符串的JSON
                 # 立即清理整个临时目录
                 safe_remove_directory(temp_dir)
                 
@@ -666,7 +681,7 @@ def generate_handwriting():
                     "images": preview_images_base64
                 })
 
-            if not data["preview"] == "true":
+            if not is_preview:
                 # 创建ZIP文件
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
 
