@@ -253,9 +253,28 @@
     <div class="preview">
       <h2>{{ $t('message.preview') }}:</h2>
 
-      <!-- <div v-viewer> -->
-      <img :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px;" />
-      <!-- </div> -->
+      <div class="preview-container text-center">
+        <!-- 导航按钮 -->
+        <div v-if="previewImages && previewImages.length > 1" class="mb-3 d-flex justify-content-center align-items-center gap-3">
+          <button @click="prevPage" class="btn btn-outline-primary btn-sm" :disabled="currentPreviewIndex === 0">
+            &larr; 上一页
+          </button>
+          <span class="mx-3 font-weight-bold">
+            第 {{ currentPreviewIndex + 1 }} 页 / 共 {{ previewImages.length }} 页
+          </span>
+          <button @click="nextPage" class="btn btn-outline-primary btn-sm" :disabled="currentPreviewIndex === previewImages.length - 1">
+            下一页 &rarr;
+          </button>
+        </div>
+
+        <!-- 图片显示 -->
+        <div v-if="previewImages && previewImages.length > 0">
+          <img :src="previewImages[currentPreviewIndex]" 
+               :alt="$t('message.previewImage') + ' ' + (currentPreviewIndex + 1)" 
+               style="width: 600px; max-width: 100%; border: 1px solid #ddd; padding: 5px; border-radius: 4px;" />
+        </div>
+        <img v-else :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px; max-width: 100%;" />
+      </div>
     </div>
     <footer class=" footer mt-auto py-3 bg-white">
       <div class="container text-center">
@@ -304,6 +323,8 @@ export default {
       marginLeft: 50,
       marginRight: 50,
       previewImage: "/default1.png", // 添加一个新的数据属性来保存预览图片的 URL
+      previewImages: [], // 用于存储多页预览图片的数组
+      currentPreviewIndex: 0, // 当前预览的图片索引
       preview: false,
       lineSpacingSigma: 0,
       fontSizeSigma: 2,
@@ -596,6 +617,16 @@ export default {
   },
 
   methods: {
+    prevPage() {
+      if (this.currentPreviewIndex > 0) {
+        this.currentPreviewIndex--;
+      }
+    },
+    nextPage() {
+      if (this.currentPreviewIndex < this.previewImages.length - 1) {
+        this.currentPreviewIndex++;
+      }
+    },
     toggleCollapse() {
       this.isExpanded = !this.isExpanded;
     },
@@ -762,16 +793,29 @@ export default {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-          responseType: 'blob', // 这里设置为'blob'
+          responseType: preview ? 'json' : 'blob', // 预览时使用json，否则使用blob
           withCredentials: true, //在跨域的时候，需要添加这句话，才能发送cookie 6.30
         }
 
       ).then((response) => {
-        if (response.headers['content-type'] === 'image/png') {
-          // 处理预览图像
+        if (response.headers['content-type'].includes('application/json')) {
+          // 处理多页预览图像 (JSON)
+          if (response.data && response.data.status === 'success') {
+            this.previewImages = response.data.images.map(img => 'data:image/png;base64,' + img);
+            this.currentPreviewIndex = 0; // 重置为第一页
+            if (this.previewImages.length > 0) {
+              this.previewImage = this.previewImages[0]; // 兼容显示第一页
+            }
+            this.message = '预览图像已加载。';
+            this.uploadMessage = '';
+            this.errorMessage = '';
+          }
+        } else if (response.headers['content-type'] === 'image/png') {
+          // 兼容旧的单张图片返回逻辑
           const blobUrl = URL.createObjectURL(response.data);
           // 将预览图像的 URL 保存到数据属性中
           this.previewImage = blobUrl;
+          this.previewImages = [blobUrl];
           // 设置提示信息
           this.message = '预览图像已加载。';//显示message时，隐藏其他提示信息
           this.uploadMessage = '';
