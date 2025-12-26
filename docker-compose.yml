@@ -15,7 +15,7 @@ services:
   backend:
     image: 14790897/backend-handwriting:latest
     ports:
-      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:5001:5001"
     volumes:
       - ./ttf_files:/app/font_assets
       - ./logs:/app/logs
