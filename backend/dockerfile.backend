@@ -33,4 +33,4 @@ COPY ttf_files /app/font_assets
 EXPOSE 5000
 
 # Run gunicorn when the container launches
-CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5000", "-w", "1", "--threads", "2", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5005", "-w", "1", "--threads", "2", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]
