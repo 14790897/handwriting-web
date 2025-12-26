@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/14790897/handwriting-web/compare/v1.15.0...v1.15.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* update backend port mappings in docker-compose and nginx configuration ([c9864cd](https://github.com/14790897/handwriting-web/commit/c9864cd00b912324b9817b21685582cb93dabd76))
+
 # [1.15.0](https://github.com/14790897/handwriting-web/compare/v1.14.0...v1.15.0) (2025-12-26)
 
 
