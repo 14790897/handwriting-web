@@ -69,7 +69,6 @@ cpu_period: 100000
 - **Python 版本**: 3.8 - 3.13（推荐 3.10 或 3.11）
 - **Node.js 版本**: 14.x 或更高
 
-
 ### 方法一：使用 VS Code 一键启动（推荐）
 
 1. 克隆项目到本地
@@ -78,6 +77,7 @@ cpu_period: 100000
 4. 打开浏览器，输入 http://localhost:8080 ，即可访问网站
 
 **其他可用任务**（通过 `Ctrl+Shift+P` → `Tasks: Run Task` 访问）：
+
 - 🔧 安装所有依赖
 - 📦 安装前端依赖
 - 🐍 安装后端依赖
@@ -94,6 +94,7 @@ cpu_period: 100000
 cd backend
 pip install -r requirements.txt
 python app.py
+# 注意：服务将在 5001 端口启动，以避免与 macOS AirPlay (5000端口) 冲突
 ```
 
 3. 进入 frontend 文件夹，运行前端程序
@@ -105,7 +106,6 @@ npm run serve
 ```
 
 4. 打开浏览器，输入 http://localhost:8080 ，即可访问网站
-
 
 ## 结语
 

@@ -1,3 +1,4 @@
+import base64
 import time
 from flask import Flask, request, jsonify, send_file, session, current_app
 from handright import Template, handwrite
@@ -632,7 +633,14 @@ def generate_handwriting():
         temp_dir = tempfile.mkdtemp(dir=project_temp_base)
         unique_filename = "images_" + str(time.time())
         zip_path = f"./temp/{unique_filename}.zip"
+        # 预览模式：检查是否为完整预览模式（本地开发）或单页预览模式（生产环境）
+        is_preview = data["preview"] == "true"
+        full_preview = data.get("full_preview", "true") if is_preview else None
+        if is_preview:
+            logger.info(f"Preview mode enabled, full_preview: {full_preview}")
+        
         try:
+            preview_images_base64 = []
             for i, im in enumerate(images):
                 # 保存每张图像到临时目录
                 image_path = os.path.join(temp_dir, f"{i}.png")
@@ -645,23 +653,35 @@ def generate_handwriting():
 
                 del im  # 释放内存
 
-                if data["preview"] == "true":
-                    # 预览模式：读取文件内容到内存，然后清理临时目录
-
+                if is_preview:
+                    # 预览模式：读取文件内容到内存
                     with open(image_path, "rb") as f:
                         image_data = f.read()
+                    
+                    if full_preview == "false":
+                        # 单页预览模式（生产环境）：只返回第一张图片，立即返回
+                        safe_remove_directory(temp_dir)
+                        return send_file(
+                            io.BytesIO(image_data),
+                            mimetype="image/png",
+                            as_attachment=False,
+                        )
+                    
+                    # 完整预览模式（本地开发）：将图片转换为Base64字符串
+                    base64_str = base64.b64encode(image_data).decode('utf-8')
+                    preview_images_base64.append(base64_str)
 
-                    # 立即清理整个临时目录
-                    # safe_remove_directory(temp_dir)
+            if is_preview:
+                # 完整预览模式：返回包含所有图片Base64字符串的JSON
+                # 立即清理整个临时目录
+                safe_remove_directory(temp_dir)
+                
+                return jsonify({
+                    "status": "success",
+                    "images": preview_images_base64
+                })
 
-                    # 从内存发送文件
-                    return send_file(
-                        io.BytesIO(image_data),
-                        mimetype="image/png",
-                        as_attachment=False,
-                    )
-
-            if not data["preview"] == "true":
+            if not is_preview:
                 # 创建ZIP文件
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
 
@@ -998,12 +1018,14 @@ def after_request(response):
 if __name__ == "__main__":
     # 启动时清理之前标记的目录
     cleanup_marked_directories()
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # macOS Monterey+ 使用 5000 端口作为 AirPlay 接收器，导致冲突
+    # 因此将默认端口修改为 5001
+    app.run(debug=True, host="0.0.0.0", port=5001)
 
 
 # poetry
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5001)
 
     # good luck 6/16/2023
     # thank you 2/14/2025
