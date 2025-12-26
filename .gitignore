@@ -29,6 +29,8 @@ backend/pyproject2.toml
 node_modules
 pandoc-3.8.3-windows-x86_64.msi
 pandoc-*-windows-x86_64.msi
+create_transparent.py
+transparent_image.png
 # macOS pandoc installer
 backend/pandoc-*-macOS.pkg
 *.pkg

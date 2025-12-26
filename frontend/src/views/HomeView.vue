@@ -229,6 +229,9 @@
       <button @click="generateHandwriting(preview = true)" :disabled="shouldDisableButtons">
         {{ buttonText || $t('message.preview') }}
       </button>
+      <button v-if="isDevEnv" @click="toggleFullPreview" :disabled="shouldDisableButtons">
+        本地全量预览：{{ enableFullPreview ? '开' : '关' }}
+      </button>
       <button @click="generateHandwriting(preview = false)" :disabled="shouldDisableButtons">
         {{ buttonText || $t('message.generateFullHandwritingImage') }}
       </button>
@@ -359,6 +362,7 @@ export default {
       cooldownTimer: null,
       remainingCooldown: 0,
       isInCooldownPeriod: false,
+      enableFullPreview: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
     };
   },
@@ -420,6 +424,9 @@ export default {
         return `请等待 ${this.remainingCooldown}s`;
       }
       return null; // 使用默认文本
+    },
+    isDevEnv() {
+      return process.env.NODE_ENV === 'development';
     },
 
     //vuex中的login_delete_message，下面使用watch监控这个值  7.13
@@ -630,6 +637,9 @@ export default {
     toggleCollapse() {
       this.isExpanded = !this.isExpanded;
     },
+    toggleFullPreview() {
+      this.enableFullPreview = !this.enableFullPreview;
+    },
     async generateHandwriting(preview = false, pdf_save = false) {
       // console.log('pdf_save', pdf_save)
 
@@ -782,9 +792,10 @@ export default {
       formData.append("isUnderlined", this.isUnderlined.toString());
       formData.append("enableEnglishSpacing", this.enableEnglishSpacing.toString());
       
-      // 根据环境决定预览模式：开发环境使用完整多页预览，生产环境使用单页预览以节省资源
+      // 根据环境与按钮决定是否启用多页预览
       const isDevEnv = process.env.NODE_ENV === 'development';
-      formData.append("full_preview", isDevEnv.toString());
+      const allowFullPreview = isDevEnv && this.enableFullPreview && preview;
+      formData.append("full_preview", allowFullPreview.toString());
 
       for (let pair of formData.entries()) {
         console.log(pair[0] + ', ' + pair[1]);
@@ -798,7 +809,7 @@ export default {
             "Content-Type": "multipart/form-data",
           },
           // 预览模式下：开发环境使用json接收多页图片，生产环境使用blob接收单页图片
-          responseType: preview ? (isDevEnv ? 'json' : 'blob') : 'blob',
+          responseType: preview ? (allowFullPreview ? 'json' : 'blob') : 'blob',
           withCredentials: true, //在跨域的时候，需要添加这句话，才能发送cookie 6.30
         }
 
