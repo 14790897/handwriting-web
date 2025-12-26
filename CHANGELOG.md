@@ -1,3 +1,10 @@
+## [1.18.1](https://github.com/14790897/handwriting-web/compare/v1.18.0...v1.18.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* update gunicorn binding port from 5000 to 5005 in Dockerfile ([c55a7c0](https://github.com/14790897/handwriting-web/commit/c55a7c029d5ebca53f264d39deae6cfe3859bee7))
+
 # [1.18.0](https://github.com/14790897/handwriting-web/compare/v1.17.1...v1.18.0) (2025-12-26)
 
 
