@@ -29,8 +29,8 @@ COPY backend /app
 # Copy default fonts into the image
 COPY ttf_files /app/font_assets
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Make port 5005 available to the world outside this container
+EXPOSE 5005
 
 # Run gunicorn when the container launches
 CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5005", "-w", "1", "--threads", "2", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]
