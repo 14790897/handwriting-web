@@ -9,14 +9,20 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm64
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -33,8 +39,28 @@ jobs:
           context: ./frontend
           file: ./frontend/dockerfile.frontend
           push: true
-          tags: 14790897/frontend-handwriting:latest
-          platforms: linux/amd64,linux/arm64  # <-- 新增多平台支持
+          tags: 14790897/frontend-handwriting:${{ matrix.arch }}
+          platforms: ${{ matrix.platform }}
+
+  manifest:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Create and Push Manifest
+        run: |
+          docker buildx imagetools create \
+            -t 14790897/frontend-handwriting:latest \
+            14790897/frontend-handwriting:amd64 \
+            14790897/frontend-handwriting:arm64
 
   # release-please-frontend:
   #   runs-on: ubuntu-latest
