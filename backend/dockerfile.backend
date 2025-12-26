@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt /app/
+COPY backend/requirements.txt /app/requirements.txt
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
@@ -22,9 +22,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install gunicorn (if it's not in your requirements.txt)
 RUN pip install gunicorn
 
-# Copy the current directory contents into the container at /app
+# Copy the backend source code into the container at /app
 # Do this last so code changes don't invalidate the pip install cache
-COPY . /app
+COPY backend /app
+
+# Copy default fonts into the image
+COPY ttf_files /app/font_assets
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
