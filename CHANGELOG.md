@@ -1,3 +1,10 @@
+## [1.18.2](https://github.com/14790897/handwriting-web/compare/v1.18.1...v1.18.2) (2025-12-26)
+
+
+### Bug Fixes
+
+* update exposed port from 5000 to 5005 in Dockerfile ([e07b8c7](https://github.com/14790897/handwriting-web/commit/e07b8c7a13cfdad97c577327685fdc1d54538e1a))
+
 ## [1.18.1](https://github.com/14790897/handwriting-web/compare/v1.18.0...v1.18.1) (2025-12-26)
 
 
