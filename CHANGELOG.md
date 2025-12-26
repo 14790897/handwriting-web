@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/14790897/handwriting-web/compare/v1.15.1...v1.15.2) (2025-12-26)
+
+
+### Bug Fixes
+
+* 将字体文件直接放入后端镜像 ([4bfe2c1](https://github.com/14790897/handwriting-web/commit/4bfe2c1a068d8aa92a5fe9620635552f17be9b55))
+
 ## [1.15.1](https://github.com/14790897/handwriting-web/compare/v1.15.0...v1.15.1) (2025-12-26)
 
 
