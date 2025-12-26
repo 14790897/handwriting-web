@@ -1037,14 +1037,12 @@ def after_request(response):
 if __name__ == "__main__":
     # 启动时清理之前标记的目录
     cleanup_marked_directories()
-    # macOS Monterey+ 使用 5000 端口作为 AirPlay 接收器，导致冲突
-    # 因此将默认端口修改为 5001
-    app.run(debug=True, host="0.0.0.0", port=5001)
+    app.run(debug=True, host="0.0.0.0", port=5005)
 
 
 # poetry
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5001)
+    app.run(debug=True, host="0.0.0.0", port=5005)
 
     # good luck 6/16/2023
     # thank you 2/14/2025

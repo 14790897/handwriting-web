@@ -15,7 +15,7 @@ services:
   backend:
     image: 14790897/backend-handwriting:latest
     ports:
-      - "127.0.0.1:5002:5001"
+      - "127.0.0.1:5005:5005"
     environment:
       - FONT_ASSETS_DIR=/app/font_assets_host
       - FONT_ASSETS_BUNDLED_DIR=/app/font_assets

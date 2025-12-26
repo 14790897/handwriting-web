@@ -94,7 +94,7 @@ cpu_period: 100000
 cd backend
 pip install -r requirements.txt
 python app.py
-# 注意：服务将在 5001 端口启动，以避免与 macOS AirPlay (5000端口) 冲突
+# 注意：服务将在 5005 端口启动
 ```
 
 3. 进入 frontend 文件夹，运行前端程序

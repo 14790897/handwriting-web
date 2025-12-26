@@ -7,7 +7,7 @@ module.exports = defineConfig({
     port: 8080,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:5001", // 使用 5001 端口以避免 macOS AirPlay 冲突
+        target: "http://127.0.0.1:5005",
         changeOrigin: true,
       },
     },
