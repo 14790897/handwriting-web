@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/14790897/handwriting-web/compare/v1.14.0...v1.15.0) (2025-12-26)
+
+
+### Features
+
+* add full preview toggle for development environment in HomeView ([bc4afd4](https://github.com/14790897/handwriting-web/commit/bc4afd45ded75fd201565e97ac0e59db15aff414))
+
 # [1.14.0](https://github.com/14790897/handwriting-web/compare/v1.13.4...v1.14.0) (2025-12-26)
 
 
