@@ -240,11 +240,30 @@ directory = ["./textfileprocess", "imagefileprocess"]
 for directory in directory:
     if not os.path.exists(directory):
         os.makedirs(directory)
-directory = "./font_assets"
+
+font_assets_dir = os.getenv("FONT_ASSETS_DIR", "./font_assets")
+font_assets_bundled_dir = os.getenv("FONT_ASSETS_BUNDLED_DIR", "./font_assets")
+
+def sync_font_assets(source_dir, target_dir):
+    if os.path.abspath(source_dir) == os.path.abspath(target_dir):
+        return
+    if not os.path.isdir(source_dir) or not os.path.isdir(target_dir):
+        return
+    for filename in os.listdir(source_dir):
+        if not filename.lower().endswith(".ttf"):
+            continue
+        source_path = os.path.join(source_dir, filename)
+        target_path = os.path.join(target_dir, filename)
+        if os.path.isfile(source_path) and not os.path.exists(target_path):
+            shutil.copy2(source_path, target_path)
+
+os.makedirs(font_assets_dir, exist_ok=True)
+sync_font_assets(font_assets_bundled_dir, font_assets_dir)
+
 font_file_names = [
     f
-    for f in os.listdir(directory)
-    if os.path.isfile(os.path.join(directory, f)) and f.endswith(".ttf")
+    for f in os.listdir(font_assets_dir)
+    if os.path.isfile(os.path.join(font_assets_dir, f)) and f.endswith(".ttf")
 ]
 # sentry部分 7.7
 sentry_sdk.init(
@@ -568,7 +587,7 @@ def generate_handwriting():
         logger.info(f"font_file_names: {font_file_names}")
         if font_option in font_file_names:
             # 确定字体文件的完整路径
-            font_path = os.path.join("font_assets", font_option)
+            font_path = os.path.join(font_assets_dir, font_option)
             logger.info(f"font_path: {font_path}")
             # 打开字体文件并读取其内容为字节
             with open(font_path, "rb") as f:
@@ -861,7 +880,7 @@ def get_filenames_in_dir(directory):
 
 @app.route("/api/fonts_info", methods=["GET"])
 def get_fonts_info():
-    filenames = get_filenames_in_dir("./font_assets")
+    filenames = get_filenames_in_dir(font_assets_dir)
     logger.info(f"filenames: {filenames}")
     if filenames == []:
         return jsonify({"error": "fontfile not found"}), 400
