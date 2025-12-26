@@ -1,3 +1,12 @@
+# [1.14.0](https://github.com/14790897/handwriting-web/compare/v1.13.4...v1.14.0) (2025-12-26)
+
+
+### Features
+
+* add environment-based preview mode ([813406f](https://github.com/14790897/handwriting-web/commit/813406fbbb2bb0bffb2441b48be9f7f886936127))
+* implement multi-page preview and update backend port to 5001 ([bc54039](https://github.com/14790897/handwriting-web/commit/bc540393298f863c6cb4e9265933528c03cddad5))
+* 实现多页预览模式并优化环境配置 ([1d494fb](https://github.com/14790897/handwriting-web/commit/1d494fbe6c6a843d575df33a9cc2fb355be1b640))
+
 ## [1.13.4](https://github.com/14790897/handwriting-web/compare/v1.13.3...v1.13.4) (2025-12-09)
 
 
