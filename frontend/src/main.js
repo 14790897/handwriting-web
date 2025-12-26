@@ -57,6 +57,20 @@ script.onload = () => {
   })(window, document, "clarity", "script", "ounxp8da5s");
 };
 
+const chatwootScript = document.createElement("script");
+chatwootScript.async = true;
+chatwootScript.defer = true;
+chatwootScript.src = "https://chatwoot.14790897.xyz/packs/js/sdk.js";
+chatwootScript.onload = () => {
+  if (window.chatwootSDK) {
+    window.chatwootSDK.run({
+      websiteToken: "LqgSJHw9boXsan69qwxSs8eg",
+      baseUrl: "https://chatwoot.14790897.xyz",
+    });
+  }
+};
+document.head.appendChild(chatwootScript);
+
 Sentry.init({
   app,
   dsn: "https://507b601bbd374cf58b7c5468cb434578@o4505255803551744.ingest.sentry.io/4505485557891072",
