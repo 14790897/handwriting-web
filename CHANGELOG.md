@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/14790897/handwriting-web/compare/v1.15.2...v1.16.0) (2025-12-26)
+
+
+### Features
+
+* chatwoot客服 ([26f23cf](https://github.com/14790897/handwriting-web/commit/26f23cf06019a91ed894ea1d6549864f86af2bc2))
+
 ## [1.15.2](https://github.com/14790897/handwriting-web/compare/v1.15.1...v1.15.2) (2025-12-26)
 
 
