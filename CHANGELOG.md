@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/14790897/handwriting-web/compare/v1.17.1...v1.18.0) (2025-12-26)
+
+
+### Features
+
+* add multi-platform support for frontend Docker images in GitHub Actions workflow ([dadcc22](https://github.com/14790897/handwriting-web/commit/dadcc2208d605d316807e7bb64140250c58754f5))
+
 ## [1.17.1](https://github.com/14790897/handwriting-web/compare/v1.17.0...v1.17.1) (2025-12-26)
 
 
