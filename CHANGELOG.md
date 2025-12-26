@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/14790897/handwriting-web/compare/v1.16.0...v1.17.0) (2025-12-26)
+
+
+### Features
+
+* sync font assets and update docker-compose configuration ([535170d](https://github.com/14790897/handwriting-web/commit/535170deb0c4c5270d4bfd7d0df2b62e29dfba68))
+
 # [1.16.0](https://github.com/14790897/handwriting-web/compare/v1.15.2...v1.16.0) (2025-12-26)
 
 
