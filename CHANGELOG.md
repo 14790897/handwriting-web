@@ -1,3 +1,10 @@
+## [1.18.3](https://github.com/14790897/handwriting-web/compare/v1.18.2...v1.18.3) (2026-02-09)
+
+
+### Bug Fixes
+
+* clean up temp directory PDF files ([1a48070](https://github.com/14790897/handwriting-web/commit/1a4807081e85488a02dfad66388d2302015c1d73)), closes [#56](https://github.com/14790897/handwriting-web/issues/56)
+
 ## [1.18.2](https://github.com/14790897/handwriting-web/compare/v1.18.1...v1.18.2) (2025-12-26)
 
 
