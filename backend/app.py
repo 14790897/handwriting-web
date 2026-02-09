@@ -657,7 +657,7 @@ def generate_handwriting():
         full_preview = data.get("full_preview", "true") if is_preview else None
         if is_preview:
             logger.info(f"Preview mode enabled, full_preview: {full_preview}")
-        
+
         try:
             preview_images_base64 = []
             for i, im in enumerate(images):
@@ -676,7 +676,7 @@ def generate_handwriting():
                     # 预览模式：读取文件内容到内存
                     with open(image_path, "rb") as f:
                         image_data = f.read()
-                    
+
                     if full_preview == "false":
                         # 单页预览模式（生产环境）：只返回第一张图片，立即返回
                         safe_remove_directory(temp_dir)
@@ -685,7 +685,7 @@ def generate_handwriting():
                             mimetype="image/png",
                             as_attachment=False,
                         )
-                    
+
                     # 完整预览模式（本地开发）：将图片转换为Base64字符串
                     base64_str = base64.b64encode(image_data).decode('utf-8')
                     preview_images_base64.append(base64_str)
@@ -694,7 +694,7 @@ def generate_handwriting():
                 # 完整预览模式：返回包含所有图片Base64字符串的JSON
                 # 立即清理整个临时目录
                 safe_remove_directory(temp_dir)
-                
+
                 return jsonify({
                     "status": "success",
                     "images": preview_images_base64
@@ -752,6 +752,7 @@ def generate_handwriting():
             # 清理生成的临时 PDF 文件
             if temp_pdf_file_path is not None and os.path.exists(temp_pdf_file_path):
                 safe_remove_file(temp_pdf_file_path)
+        # 2.9.2026 之前这里忘记删除temp_pdf_file_path, 根据记载是两年前就存在的问题，不知道最近为什么频繁出现
         #     if temp_pdf_file_path is not None:  # 检查变量是否已赋值
         #         for _ in range(5):  # 尝试5次
         #             try:
