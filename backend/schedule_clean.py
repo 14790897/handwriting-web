@@ -5,7 +5,7 @@ import os
 import threading
 
 def clear_temp_dir():
-    temp_dir = '你的临时目录路径'
+    temp_dir = './temp'
     if os.path.exists(temp_dir):
         for filename in os.listdir(temp_dir):
             file_path = os.path.join(temp_dir, filename)

@@ -749,7 +749,9 @@ def generate_handwriting():
                 conditional=True,
             )
         finally:
-            pass
+            # 清理生成的临时 PDF 文件
+            if temp_pdf_file_path is not None and os.path.exists(temp_pdf_file_path):
+                safe_remove_file(temp_pdf_file_path)
         #     if temp_pdf_file_path is not None:  # 检查变量是否已赋值
         #         for _ in range(5):  # 尝试5次
         #             try:
