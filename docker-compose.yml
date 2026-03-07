@@ -16,6 +16,7 @@ services:
     image: 14790897/backend-handwriting:latest
     ports:
       - "127.0.0.1:5005:5005"
+    # 启动时同步字体文件到指定文件夹，如果直接将字体文件夹挂载到容器中，会默认同步宿主机的空文件导致被覆盖
     environment:
       - FONT_ASSETS_DIR=/app/font_assets_host
       - FONT_ASSETS_BUNDLED_DIR=/app/font_assets
