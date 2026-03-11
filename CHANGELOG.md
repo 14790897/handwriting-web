@@ -1,3 +1,10 @@
+## [1.18.4](https://github.com/14790897/handwriting-web/compare/v1.18.3...v1.18.4) (2026-03-11)
+
+
+### Bug Fixes
+
+* Failed to execute 'put' on 'Cache': Request method 'POST' is unsupported ([6dbbf73](https://github.com/14790897/handwriting-web/commit/6dbbf732e6f7fbfc518641a95f64432428c5ee2a))
+
 ## [1.18.3](https://github.com/14790897/handwriting-web/compare/v1.18.2...v1.18.3) (2026-02-09)
 
 
