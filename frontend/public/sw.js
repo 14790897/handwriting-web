@@ -48,6 +48,11 @@ self.addEventListener('activate', (event) => {
 
 // 拦截请求
 self.addEventListener('fetch', (event) => {
+  // 过滤掉非 GET 请求
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   // 过滤掉不支持的请求协议
   if (!event.request.url.startsWith("http")) {
     return;
