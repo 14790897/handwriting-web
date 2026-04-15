@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "🚀 启动前端开发服务器",
+      "label": "frontend",
       "type": "shell",
       "command": "npm",
       "args": ["run", "serve"],
@@ -40,10 +40,20 @@
       }
     },
     {
-      "label": "🐍 启动后端Flask服务器",
+      "label": "backend",
       "type": "shell",
+      // uvicorn app:app --reload
       "command": "${workspaceFolder}/venv/Scripts/python.exe",
-      "args": ["app.py"],
+      "args": [
+        "-m",
+        "uvicorn",
+        "app:app",
+        "--reload",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "5005"
+      ],
       "options": {
         "cwd": "${workspaceFolder}/backend"
       },
@@ -74,7 +84,7 @@
     {
       "label": "⚡ 全栈开发 - 同时启动前后端",
       "dependsOrder": "parallel",
-      "dependsOn": ["🚀 启动前端开发服务器", "🐍 启动后端Flask服务器"],
+      "dependsOn": ["frontend", "backend"],
       "group": {
         "kind": "build",
         "isDefault": true

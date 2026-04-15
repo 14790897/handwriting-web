@@ -2,6 +2,7 @@ import base64
 import time
 from fastapi import FastAPI, Request, Form, File, UploadFile
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from typing import Union
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from handright import Template, handwrite
@@ -445,9 +446,14 @@ async def generate_handwriting(
     font_option: str = Form(None),
     pdf_save: str = Form("false"),
     full_preview: str = Form("true"),
-    background_image: UploadFile = File(None),
-    font_file: UploadFile = File(None),
+    background_image: Union[UploadFile, str] = File(None),
+    font_file: Union[UploadFile, str] = File(None),
 ):
+    # 归一化：前端可能发字符串 "null"，需要转成 Python None
+    if isinstance(background_image, str):
+        background_image = None
+    if isinstance(font_file, str):
+        font_file = None
     # 把所有 form 字段收拢成 data dict，方便后续代码不大改
     data = {
         "text": text,
