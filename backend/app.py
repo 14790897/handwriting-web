@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI, Request, Form, File, UploadFile
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from handright import Template, handwrite
 # from threading import Thread
 from PIL import Image, ImageFont, ImageDraw
@@ -711,7 +712,7 @@ async def generate_handwriting(
     # 创建一个BytesIO对象，用于保存.zip文件的内容
     logger.info(f"data[pdf_save]: {data['pdf_save']}")
     if not data["pdf_save"] == "true":
-        images = handwrite(text_to_generate, template)
+        images = await run_in_threadpool(handwrite, text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
         # 创建项目内的临时目录，避免使用系统临时目录
         project_temp_base = "./temp"
@@ -805,9 +806,9 @@ async def generate_handwriting(
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
-        images = handwrite(text_to_generate, template)
+        images = await run_in_threadpool(handwrite, text_to_generate, template)
         try:
-            temp_pdf_file_path = generate_pdf(images=images)
+            temp_pdf_file_path = await run_in_threadpool(generate_pdf, images=images)
             # 将文件路径存储在请求上下文中，以便稍后可以访问它
             # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
             with open(temp_pdf_file_path, "rb") as f:
