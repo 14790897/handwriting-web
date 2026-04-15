@@ -19,8 +19,8 @@ COPY backend/requirements.txt /app/requirements.txt
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install gunicorn (if it's not in your requirements.txt)
-RUN pip install gunicorn
+# Install gunicorn + uvicorn worker
+RUN pip install gunicorn uvicorn[standard]
 
 # Copy the backend source code into the container at /app
 # Do this last so code changes don't invalidate the pip install cache
@@ -33,4 +33,4 @@ COPY ttf_files /app/font_assets
 EXPOSE 5005
 
 # Run gunicorn when the container launches
-CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5005", "-w", "1", "--threads", "2", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5005", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]

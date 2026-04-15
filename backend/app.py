@@ -1,6 +1,8 @@
 import base64
 import time
-from flask import Flask, request, jsonify, send_file, session, current_app
+from fastapi import FastAPI, Request, Form, File, UploadFile
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from handright import Template, handwrite
 # from threading import Thread
 from PIL import Image, ImageFont, ImageDraw
@@ -13,9 +15,7 @@ import gc
 
 import io
 import logging
-from flask_cors import CORS
 from datetime import timedelta
-from flask_session import Session  # 导入扩展
 from werkzeug.utils import secure_filename
 
 # 文件模块
@@ -214,11 +214,13 @@ def cleanup_marked_directories():
 
 # sentry 错误报告7.7
 import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 # 限制请求速率 7.9
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # 装饰器 7.15
 from functools import wraps
@@ -269,7 +271,8 @@ font_file_names = [
 sentry_sdk.init(
     dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
     integrations=[
-        FlaskIntegration(),
+        StarletteIntegration(),
+        FastApiIntegration(),
     ],
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
@@ -305,24 +308,30 @@ fh.setFormatter(formatter)
 logger.addHandler(ch)
 logger.addHandler(fh)
 
-app = Flask(__name__)
-CORS(app)  # , origins='*', supports_credentials=True)
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 设置Flask app的logger级别
-app.logger.setLevel(logging.DEBUG)
+# app.logger.setLevel(logging.DEBUG)
 
 
 SECRET_KEY = "437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88"
-app.config["SECRET_KEY"] = SECRET_KEY
+# app.config["SECRET_KEY"] = SECRET_KEY
 # app.config["SESSION_COOKIE_SECURE"] = True
 # app.config["SESSION_COOKIE_SAMESITE"] = "None"
-app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
-app.permanent_session_lifetime = timedelta(minutes=5000000)
-app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
-Session(app)  # 初始化扩展，传入应用程序实例
-limiter = Limiter(
-    app=app, key_func=get_remote_address, default_limits=["1000 per 5 minute"]
-)
+# app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
+# app.permanent_session_lifetime = timedelta(minutes=5000000)
+# app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
+# Session(app)  # 初始化扩展，传入应用程序实例
+limiter = Limiter(key_func=get_remote_address, default_limits=["1000 per 5 minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # 创建一个新的白色图片，并添加间隔的线条作为背景
@@ -391,52 +400,115 @@ def read_pdf(file_path):
 
 def handle_exceptions(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
         except Exception as e:
             logger.info("An error occurred during the request: %s", e)
-            return jsonify({"status": "error", "message": str(e)}), 500
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
     return decorated_function
 
 
-@app.route("/api/generate_handwriting", methods=["POST"])
+@app.post("/api/generate_handwriting")
 @limiter.limit("200 per 5 minute")
 @handle_exceptions  # 错误捕获的装饰器7.15
-def generate_handwriting():
+async def generate_handwriting(
+    request: Request,
+    text: str = Form(...),
+    font_size: str = Form(...),
+    line_spacing: str = Form(...),
+    fill: str = Form(...),
+    left_margin: str = Form(...),
+    top_margin: str = Form(...),
+    right_margin: str = Form(...),
+    bottom_margin: str = Form(...),
+    word_spacing: str = Form(...),
+    line_spacing_sigma: str = Form(...),
+    font_size_sigma: str = Form(...),
+    word_spacing_sigma: str = Form(...),
+    perturb_x_sigma: str = Form(...),
+    perturb_y_sigma: str = Form(...),
+    perturb_theta_sigma: str = Form(...),
+    preview: str = Form(...),
+    strikethrough_probability: str = Form("0"),
+    strikethrough_length_sigma: str = Form("0"),
+    strikethrough_width_sigma: str = Form("0"),
+    strikethrough_angle_sigma: str = Form("0"),
+    strikethrough_width: str = Form("0"),
+    ink_depth_sigma: str = Form("0"),
+    width: str = Form(None),
+    height: str = Form(None),
+    isUnderlined: str = Form("false"),
+    enableEnglishSpacing: str = Form("false"),
+    font_option: str = Form(None),
+    pdf_save: str = Form("false"),
+    full_preview: str = Form("true"),
+    background_image: UploadFile = File(None),
+    font_file: UploadFile = File(None),
+):
+    # 把所有 form 字段收拢成 data dict，方便后续代码不大改
+    data = {
+        "text": text,
+        "font_size": font_size,
+        "line_spacing": line_spacing,
+        "fill": fill,
+        "left_margin": left_margin,
+        "top_margin": top_margin,
+        "right_margin": right_margin,
+        "bottom_margin": bottom_margin,
+        "word_spacing": word_spacing,
+        "line_spacing_sigma": line_spacing_sigma,
+        "font_size_sigma": font_size_sigma,
+        "word_spacing_sigma": word_spacing_sigma,
+        "perturb_x_sigma": perturb_x_sigma,
+        "perturb_y_sigma": perturb_y_sigma,
+        "perturb_theta_sigma": perturb_theta_sigma,
+        "preview": preview,
+        "strikethrough_probability": strikethrough_probability,
+        "strikethrough_length_sigma": strikethrough_length_sigma,
+        "strikethrough_width_sigma": strikethrough_width_sigma,
+        "strikethrough_angle_sigma": strikethrough_angle_sigma,
+        "strikethrough_width": strikethrough_width,
+        "ink_depth_sigma": ink_depth_sigma,
+        "isUnderlined": isUnderlined,
+        "enableEnglishSpacing": enableEnglishSpacing,
+        "font_option": font_option,
+        "pdf_save": pdf_save,
+        "full_preview": full_preview,
+    }
+    if width is not None:
+        data["width"] = width
+    if height is not None:
+        data["height"] = height
+
     cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
     if cpu_usage > 90:
         # 如果 CPU 使用率超过 90%，返回提醒
-        return (
-            jsonify(
-                {
-                    "status": "waiting",
-                    "message": f"CPU usage is too high. Please wait and try again. current cpu_usage: {cpu_usage}%",
-                }
-            ),
-            429,
+        return JSONResponse(
+            {
+                "status": "waiting",
+                "message": f"CPU usage is too high. Please wait and try again. current cpu_usage: {cpu_usage}%",
+            },
+            status_code=429,
         )  # HTTP 429: Too Many Requests
     # logger.info("已经进入generate_handwriting")
     if enable_user_auth.lower() == "true":
-        if "username" not in session:
-            return jsonify({"status": "error", "message": "You haven't login."}), 500
+        # session auth 已移除，如需恢复请使用 JWT 或 cookie
+        pass
     # try:
     # 先获取 form 数据
-    data = request.form
     if len(data["text"]) > 10000 and (
-        request.base_url == "https://handwrite.14790897.xyz"
-        or request.base_url == "https://handwrite.paperai.life"
+        str(request.base_url) == "https://handwrite.14790897.xyz/"
+        or str(request.base_url) == "https://handwrite.sixiangjia.de/"
     ):
         # 请自己构建应用来运行而不是使用这个网页
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "The text is too long to process. If you want to use this service, please build your own application.",
-                }
-            ),  
-            500,
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "The text is too long to process. If you want to use this service, please build your own application.",
+            },
+            status_code=500,
         )
     required_form_fields = [
         "text",
@@ -460,14 +532,12 @@ def generate_handwriting():
 
     for field in required_form_fields:
         if field not in data:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": f"Missing required field: {field}",
-                    }
-                ),
-                400,
+            return JSONResponse(
+                {
+                    "status": "fail",
+                    "message": f"Missing required field: {field}",
+                },
+                status_code=400,
             )
         else:
             logger.info(f"{field}: {data[field]}")  # 打印具体的 form 字段值
@@ -486,7 +556,7 @@ def generate_handwriting():
         height = int(data["height"])
         font_size = int(data.get("font_size", 0))
         isUnderlined = data.get("isUnderlined", False)
-        background_image = create_notebook_image(
+        background_image_obj = create_notebook_image(
             width,
             height,
             line_spacing,
@@ -500,30 +570,29 @@ def generate_handwriting():
 
     else:
         # 否则使用用户上传的背景图像
-        background_image = request.files.get("background_image")
         if background_image is None:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": "Missing required field: background_image",
-                    }
-                ),
-                400,
+            return JSONResponse(
+                {
+                    "status": "fail",
+                    "message": "Missing required field: background_image",
+                },
+                status_code=400,
             )
-        image_data = io.BytesIO(background_image.read())
+        image_data = io.BytesIO(await background_image.read())
 
         # 使用 PIL 打开图像
         try:
-            background_image = Image.open(image_data)
+            background_image_obj = Image.open(image_data)
 
             # 如果图像包含 Alpha 通道（模式为 'RGBA' 或 'LA'），则去除 Alpha 通道
-            if background_image.mode in ("RGBA", "LA"):
+            if background_image_obj.mode in ("RGBA", "LA"):
                 # 将图像转换为 'RGB' 模式
-                background_image = background_image.convert("RGB")
+                background_image_obj = background_image_obj.convert("RGB")
 
         except IOError:
-            return jsonify({"status": "error", "message": "Invalid image format"}), 400
+            return JSONResponse(
+                {"status": "error", "message": "Invalid image format"}, status_code=400
+            )
 
     text_to_generate = data["text"]
 
@@ -578,9 +647,9 @@ def generate_handwriting():
     #     text_to_generate = text_to_generate[:preview_length]
 
     # 从表单中获取字体文件并处理 7.4
-    if "font_file" in request.files:
-        font = request.files["font_file"].read()
-        font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
+    if font_file is not None:
+        font_bytes = await font_file.read()
+        font = ImageFont.truetype(io.BytesIO(font_bytes), size=int(data["font_size"]))
     else:
         font_option = data["font_option"]
         logger.info(f"font_option: {font_option}")
@@ -597,18 +666,16 @@ def generate_handwriting():
                 io.BytesIO(font_content), size=int(data["font_size"])
             )
         else:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": "Missing  fontfile.",
-                    }
-                ),
-                400,
+            return JSONResponse(
+                {
+                    "status": "fail",
+                    "message": "Missing  fontfile.",
+                },
+                status_code=400,
             )
 
     template = Template(
-        background=background_image,
+        background=background_image_obj,
         font=font,
         line_spacing=int(data["line_spacing"]),  # + int(data["font_size"])
         # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
@@ -680,10 +747,9 @@ def generate_handwriting():
                     if full_preview == "false":
                         # 单页预览模式（生产环境）：只返回第一张图片，立即返回
                         safe_remove_directory(temp_dir)
-                        return send_file(
-                            io.BytesIO(image_data),
-                            mimetype="image/png",
-                            as_attachment=False,
+                        return Response(
+                            content=image_data,
+                            media_type="image/png",
                         )
 
                     # 完整预览模式（本地开发）：将图片转换为Base64字符串
@@ -695,10 +761,9 @@ def generate_handwriting():
                 # 立即清理整个临时目录
                 safe_remove_directory(temp_dir)
 
-                return jsonify({
-                    "status": "success",
-                    "images": preview_images_base64
-                })
+                return JSONResponse(
+                    {"status": "success", "images": preview_images_base64}
+                )
 
             if not is_preview:
                 # 创建ZIP文件
@@ -713,20 +778,24 @@ def generate_handwriting():
                     safe_remove_file(zip_path)
 
                     # 从内存发送文件
-                    response = send_file(
-                        io.BytesIO(zip_data),
-                        download_name="images.zip",
-                        mimetype="application/zip",
-                        as_attachment=True,
+                    response = Response(
+                        content=zip_data,
+                        media_type="application/zip",
+                        headers={
+                            "Content-Disposition": "attachment; filename=images.zip"
+                        },
                     )
                 except Exception as e:
                     logger.error(f"Failed to read ZIP file: {e}")
-                    # 降级到直接发送文件
-                    response = send_file(
-                        zip_path,
-                        download_name="images.zip",
-                        mimetype="application/zip",
-                        as_attachment=True,
+                    # 降级到直接读文件发送
+                    with open(zip_path, "rb") as f:
+                        zip_data = f.read()
+                    response = Response(
+                        content=zip_data,
+                        media_type="application/zip",
+                        headers={
+                            "Content-Disposition": "attachment; filename=images.zip"
+                        },
                     )
             return response
         finally:
@@ -740,13 +809,13 @@ def generate_handwriting():
         try:
             temp_pdf_file_path = generate_pdf(images=images)
             # 将文件路径存储在请求上下文中，以便稍后可以访问它
-            request.temp_file_path = temp_pdf_file_path
-            return send_file(
-                temp_pdf_file_path,
-                download_name="images.pdf",
-                mimetype="application/pdf",
-                as_attachment=True,
-                conditional=True,
+            # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
+            with open(temp_pdf_file_path, "rb") as f:
+                pdf_data = f.read()
+            return Response(
+                content=pdf_data,
+                media_type="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=images.pdf"},
             )
         finally:
             # 清理生成的临时 PDF 文件
@@ -791,15 +860,11 @@ def generate_handwriting():
 #     return response
 
 
-@app.route("/api/textfileprocess", methods=["POST"])
+@app.post("/api/textfileprocess")
 @limiter.limit("200 per 5 minute")
-def textfileprocess():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No file part in the request"}), 400
+async def textfileprocess(request: Request, file: UploadFile = File(...)):
+    if file is None or file.filename == "":
+        return JSONResponse({"error": "No file part in the request"}, status_code=400)
 
     if file and (
         file.filename.endswith(".docx")
@@ -810,7 +875,9 @@ def textfileprocess():
     ):
         filename = secure_filename(file.filename)
         filepath = os.path.join(".", "textfileprocess", filename)  # 临时目录
-        file.save(filepath)
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
         text = "读取失败"  # Default value for text
         try:
             if file.filename.endswith(".docx"):
@@ -823,25 +890,23 @@ def textfileprocess():
             elif file.filename.endswith(".doc"):
                 text = "doc文件暂不支持"
         except Exception as e:
-            return jsonify({"error": f"Error reading file: {str(e)}"}), 500
+            return JSONResponse(
+                {"error": f"Error reading file: {str(e)}"}, status_code=500
+            )
 
         # 删除临时文件
         safe_remove_file(filepath)
 
-        return jsonify({"text": text})
+        return JSONResponse({"text": text})
 
-    return jsonify({"error": "Invalid file type"}), 400
+    return JSONResponse({"error": "Invalid file type"}, status_code=400)
 
 
-@app.route("/api/imagefileprocess", methods=["POST"])
+@app.post("/api/imagefileprocess")
 @limiter.limit("200 per 5 minute")
-def imagefileprocess():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No file part in the request"}), 400
+async def imagefileprocess(request: Request, file: UploadFile = File(...)):
+    if file is None or file.filename == "":
+        return JSONResponse({"error": "No file part in the request"}, status_code=400)
 
     if file and (
         file.filename.endswith(".jpf")
@@ -851,7 +916,9 @@ def imagefileprocess():
     ):
         filename = secure_filename(file.filename)
         filepath = os.path.join("./imagefileprocess", filename)
-        file.save(filepath)
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
         (
             avg_l_whitespace,
             avg_r_whitespace,
@@ -860,7 +927,7 @@ def imagefileprocess():
             avg_distance,
         ) = identify_distance(filepath)
         safe_remove_file(filepath)
-        return jsonify(
+        return JSONResponse(
             {
                 "marginLeft": avg_l_whitespace,
                 "marginRight": avg_r_whitespace,
@@ -870,7 +937,7 @@ def imagefileprocess():
             }
         )
     else:
-        return jsonify({"error": "Invalid file type"}), 400
+        return JSONResponse({"error": "Invalid file type"}, status_code=400)
 
 
 def get_filenames_in_dir(directory):
@@ -881,40 +948,41 @@ def get_filenames_in_dir(directory):
     ]
 
 
-@app.route("/api/fonts_info", methods=["GET"])
+@app.get("/api/fonts_info")
 def get_fonts_info():
     filenames = get_filenames_in_dir(font_assets_dir)
     logger.info(f"filenames: {filenames}")
     if filenames == []:
-        return jsonify({"error": "fontfile not found"}), 400
-    return jsonify(filenames)
+        return JSONResponse({"error": "fontfile not found"}, status_code=400)
+    return JSONResponse(filenames)
 
 
 def mysql_operation(image_data):
-    cursor = current_app.cnx.cursor()
-    username = session["username"]
+    # cursor = current_app.cnx.cursor()
+    # username = session["username"]
+    username = None  # session 已移除
     # 先检查用户是否已存在
-    cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
-    result = cursor.fetchone()
+    # cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
+    # result = cursor.fetchone()
 
     # 根据查询结果来判断应该插入新纪录还是更新旧纪录
-    if result is None:
-        # 如果用户不存在，插入新纪录
-        sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
-        params = (username, image_data)
-    else:
-        # 如果用户已存在，更新旧纪录
-        sql = "UPDATE user_images SET image=%s WHERE username=%s"
-        params = (image_data, username)
+    # if result is None:
+    #     # 如果用户不存在，插入新纪录
+    #     sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
+    #     params = (username, image_data)
+    # else:
+    #     # 如果用户已存在，更新旧纪录
+    #     sql = "UPDATE user_images SET image=%s WHERE username=%s"
+    #     params = (image_data, username)
     try:
         pass
         # 执行 SQL 语句
         # 提交到数据库执行
-        cursor.execute(sql, params)
-        current_app.cnx.commit()
+        # cursor.execute(sql, params)
+        # current_app.cnx.commit()
     except Exception as e:
         # 发生错误时回滚
-        current_app.cnx.rollback()
+        # current_app.cnx.rollback()
         logger.info(f"An error occurred: {e}")
 
 
@@ -1024,11 +1092,12 @@ def mysql_operation(image_data):
 #         pass
 
 
-@app.after_request
-def after_request(response):
+@app.middleware("http")
+async def after_request(request: Request, call_next):
+    response = await call_next(request)
     if enable_user_auth.lower() == "true":
-        if hasattr(current_app, "cnx"):
-            current_app.cnx.close()
+        # if hasattr(current_app, "cnx"):
+        #     current_app.cnx.close()
         # 仅用于调试 7.13
         # session.clear()
         return response
@@ -1038,14 +1107,18 @@ def after_request(response):
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     # 启动时清理之前标记的目录
     cleanup_marked_directories()
-    app.run(debug=True, host="0.0.0.0", port=5005)
+    uvicorn.run(app, host="0.0.0.0", port=5005)
 
 
 # poetry
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5005)
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=5005)
 
     # good luck 6/16/2023
     # thank you 2/14/2025
