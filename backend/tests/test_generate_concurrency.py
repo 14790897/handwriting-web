@@ -147,9 +147,6 @@ def _run_one_request(
 
 
 def test_generate_handwriting_concurrency():
-    if os.getenv("RUN_HANDWRITING_LOAD_TEST", "0") != "1":
-        pytest.skip("Set RUN_HANDWRITING_LOAD_TEST=1 to run this integration load test.")
-
     base_url = os.getenv("HANDWRITING_BASE_URL", "http://127.0.0.1:5005").rstrip("/")
     total_requests = int(os.getenv("HANDWRITING_LOAD_REQUESTS", "6"))
     concurrency = int(os.getenv("HANDWRITING_LOAD_CONCURRENCY", "4"))

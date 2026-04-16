@@ -1,6 +1,7 @@
 import base64
 import time
 import asyncio
+from pathlib import Path
 from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from typing import Union, Optional, Any
@@ -231,6 +232,15 @@ from slowapi.errors import RateLimitExceeded
 from functools import wraps
 from pydantic import BaseModel
 from task_types import GenerationTask
+from task_store import (
+    set_task as set_generation_task,
+    get_task as get_generation_task,
+    pop_task as pop_generation_task,
+    cleanup_expired as cleanup_expired_generation_tasks,
+    get_queue_metrics as get_generation_queue_metrics,
+    read_result_file,
+    generation_task_ttl_seconds,
+)
 
 # 定时清理文件 10.28
 import schedule_clean
@@ -417,87 +427,11 @@ def handle_exceptions(f):
     return decorated_function
 
 
-# 简单内存任务池：提交生成任务后前端轮询状态并拉取结果
-generation_tasks: dict[str, GenerationTask] = {}
-generation_tasks_lock = Lock()
-generation_task_ttl_seconds = 60 * 30  # 任务最多保留 30 分钟
+
+# WebSocket 推送（仍需内存存储，仅同进程有效）
 task_websocket_connections: dict[str, set[WebSocket]] = {}
 task_websocket_connections_lock = asyncio.Lock()
 
-
-def set_generation_task(task_id: str, **updates: Any) -> GenerationTask:
-    with generation_tasks_lock:
-        task: GenerationTask = generation_tasks.get(task_id, {})
-        task.update(updates)
-        task["updated_at"] = time.time()
-        generation_tasks[task_id] = task
-        return task
-
-
-def get_generation_task(task_id: str) -> Optional[GenerationTask]:
-    with generation_tasks_lock:
-        return generation_tasks.get(task_id)
-
-
-def pop_generation_task(task_id: str) -> Optional[GenerationTask]:
-    with generation_tasks_lock:
-        return generation_tasks.pop(task_id, None)
-
-
-def cleanup_expired_generation_tasks():
-    now = time.time()
-    expired_task_ids = []
-    with generation_tasks_lock:
-        for task_id, task in generation_tasks.items():
-            updated_at = task.get("updated_at", now)
-            if now - updated_at > generation_task_ttl_seconds:
-                expired_task_ids.append(task_id)
-        for task_id in expired_task_ids:
-            generation_tasks.pop(task_id, None)
-
-
-def get_generation_queue_metrics(task_id: str) -> dict[str, int]:
-    with generation_tasks_lock:
-        task = generation_tasks.get(task_id)
-        if task is None:
-            return {
-                "queue_pending_count": 0,
-                "queue_ahead_count": 0,
-                "processing_count": 0,
-                "active_task_count": 0,
-            }
-
-        pending_tasks = [
-            (tid, t) for tid, t in generation_tasks.items() if t.get("status") == "pending"
-        ]
-        processing_count = sum(
-            1 for t in generation_tasks.values() if t.get("status") == "processing"
-        )
-        active_task_count = sum(
-            1
-            for t in generation_tasks.values()
-            if t.get("status") in ("pending", "processing")
-        )
-
-        queue_pending_count = len(pending_tasks)
-        queue_ahead_count = 0
-        if task.get("status") == "pending":
-            current_created_at = task.get("created_at", 0)
-            for pending_task_id, pending_task in pending_tasks:
-                pending_created_at = pending_task.get("created_at", 0)
-                # created_at 相同的场景下用 task_id 作为稳定次序
-                if pending_created_at < current_created_at or (
-                    pending_created_at == current_created_at
-                    and pending_task_id < task_id
-                ):
-                    queue_ahead_count += 1
-
-        return {
-            "queue_pending_count": queue_pending_count,
-            "queue_ahead_count": queue_ahead_count,
-            "processing_count": processing_count,
-            "active_task_count": active_task_count,
-        }
 
 
 def build_task_status_payload(
@@ -1180,7 +1114,6 @@ async def generate_handwriting(
         response_status_code=None,
         response_content_type=None,
         response_headers={},
-        response_body=None,
         error_message=None,
     )
     background_tasks.add_task(run_generation_task, task_id, str(request.base_url), payload)
@@ -1248,8 +1181,14 @@ async def get_generate_handwriting_task_result(request: Request, task_id: str):
             status_code=500,
         )
 
+    # 从磁盘文件读取响应体
+    result_file_path = task.get("result_file_path")
+    response_body = read_result_file(result_file_path) if result_file_path else b""
+    if response_body is None:
+        response_body = b""
+
     response = Response(
-        content=task.get("response_body") or b"",
+        content=response_body,
         media_type=task.get("response_content_type") or "application/octet-stream",
         status_code=task.get("response_status_code") or 200,
         headers=task.get("response_headers") or {},
