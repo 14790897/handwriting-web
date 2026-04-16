@@ -2,6 +2,8 @@
 
 # 手写文字生成网站
 
+![star](https://atomgit.com/liuweiqing147/handwriting-web/star/badge.svg)
+
 欢迎来到我的手写文字生成网站！这个平台允许你使用现有的字体来创建模拟手写文字的图片。
 
 网址：https://handwrite.14790897.xyz
