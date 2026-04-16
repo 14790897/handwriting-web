@@ -1,8 +1,9 @@
 import base64
 import time
-from fastapi import FastAPI, Request, Form, File, UploadFile
+import asyncio
+from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response, StreamingResponse
-from typing import Union
+from typing import Union, Optional, Any
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from handright import Template, handwrite
@@ -19,6 +20,8 @@ import io
 import logging
 from datetime import timedelta
 from werkzeug.utils import secure_filename
+from threading import Lock
+from uuid import uuid4
 
 # 文件模块
 from docx import Document
@@ -226,6 +229,8 @@ from slowapi.errors import RateLimitExceeded
 
 # 装饰器 7.15
 from functools import wraps
+from pydantic import BaseModel
+from task_types import GenerationTask
 
 # 定时清理文件 10.28
 import schedule_clean
@@ -412,83 +417,283 @@ def handle_exceptions(f):
     return decorated_function
 
 
-@app.post("/api/generate_handwriting")
-@limiter.limit("200 per 5 minute")
-@handle_exceptions  # 错误捕获的装饰器7.15
-async def generate_handwriting(
-    request: Request,
-    text: str = Form(...),
-    font_size: str = Form(...),
-    line_spacing: str = Form(...),
-    fill: str = Form(...),
-    left_margin: str = Form(...),
-    top_margin: str = Form(...),
-    right_margin: str = Form(...),
-    bottom_margin: str = Form(...),
-    word_spacing: str = Form(...),
-    line_spacing_sigma: str = Form(...),
-    font_size_sigma: str = Form(...),
-    word_spacing_sigma: str = Form(...),
-    perturb_x_sigma: str = Form(...),
-    perturb_y_sigma: str = Form(...),
-    perturb_theta_sigma: str = Form(...),
-    preview: str = Form(...),
-    strikethrough_probability: str = Form("0"),
-    strikethrough_length_sigma: str = Form("0"),
-    strikethrough_width_sigma: str = Form("0"),
-    strikethrough_angle_sigma: str = Form("0"),
-    strikethrough_width: str = Form("0"),
-    ink_depth_sigma: str = Form("0"),
-    width: str = Form(None),
-    height: str = Form(None),
-    isUnderlined: str = Form("false"),
-    enableEnglishSpacing: str = Form("false"),
-    font_option: str = Form(None),
-    pdf_save: str = Form("false"),
-    full_preview: str = Form("true"),
-    background_image: Union[UploadFile, str] = File(None),
-    font_file: Union[UploadFile, str] = File(None),
+# 简单内存任务池：提交生成任务后前端轮询状态并拉取结果
+generation_tasks: dict[str, GenerationTask] = {}
+generation_tasks_lock = Lock()
+generation_task_ttl_seconds = 60 * 30  # 任务最多保留 30 分钟
+task_websocket_connections: dict[str, set[WebSocket]] = {}
+task_websocket_connections_lock = asyncio.Lock()
+
+
+def set_generation_task(task_id: str, **updates: Any) -> GenerationTask:
+    with generation_tasks_lock:
+        task: GenerationTask = generation_tasks.get(task_id, {})
+        task.update(updates)
+        task["updated_at"] = time.time()
+        generation_tasks[task_id] = task
+        return task
+
+
+def get_generation_task(task_id: str) -> Optional[GenerationTask]:
+    with generation_tasks_lock:
+        return generation_tasks.get(task_id)
+
+
+def pop_generation_task(task_id: str) -> Optional[GenerationTask]:
+    with generation_tasks_lock:
+        return generation_tasks.pop(task_id, None)
+
+
+def cleanup_expired_generation_tasks():
+    now = time.time()
+    expired_task_ids = []
+    with generation_tasks_lock:
+        for task_id, task in generation_tasks.items():
+            updated_at = task.get("updated_at", now)
+            if now - updated_at > generation_task_ttl_seconds:
+                expired_task_ids.append(task_id)
+        for task_id in expired_task_ids:
+            generation_tasks.pop(task_id, None)
+
+
+def get_generation_queue_metrics(task_id: str) -> dict[str, int]:
+    with generation_tasks_lock:
+        task = generation_tasks.get(task_id)
+        if task is None:
+            return {
+                "queue_pending_count": 0,
+                "queue_ahead_count": 0,
+                "processing_count": 0,
+                "active_task_count": 0,
+            }
+
+        pending_tasks = [
+            (tid, t) for tid, t in generation_tasks.items() if t.get("status") == "pending"
+        ]
+        processing_count = sum(
+            1 for t in generation_tasks.values() if t.get("status") == "processing"
+        )
+        active_task_count = sum(
+            1
+            for t in generation_tasks.values()
+            if t.get("status") in ("pending", "processing")
+        )
+
+        queue_pending_count = len(pending_tasks)
+        queue_ahead_count = 0
+        if task.get("status") == "pending":
+            current_created_at = task.get("created_at", 0)
+            for pending_task_id, pending_task in pending_tasks:
+                pending_created_at = pending_task.get("created_at", 0)
+                # created_at 相同的场景下用 task_id 作为稳定次序
+                if pending_created_at < current_created_at or (
+                    pending_created_at == current_created_at
+                    and pending_task_id < task_id
+                ):
+                    queue_ahead_count += 1
+
+        return {
+            "queue_pending_count": queue_pending_count,
+            "queue_ahead_count": queue_ahead_count,
+            "processing_count": processing_count,
+            "active_task_count": active_task_count,
+        }
+
+
+def build_task_status_payload(
+    task_id: str, task: Optional[GenerationTask] = None
+) -> Optional[dict[str, Any]]:
+    if task is None:
+        task = get_generation_task(task_id)
+    if task is None:
+        return None
+    queue_metrics = get_generation_queue_metrics(task_id)
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "task_status": task.get("status"),
+        "task_stage": task.get("stage"),
+        "task_message": task.get("message"),
+        "task_progress": task.get("progress"),
+        "created_at": task.get("created_at"),
+        "updated_at": task.get("updated_at"),
+        "error_message": task.get("error_message"),
+        "queue_pending_count": queue_metrics.get("queue_pending_count"),
+        "queue_ahead_count": queue_metrics.get("queue_ahead_count"),
+        "processing_count": queue_metrics.get("processing_count"),
+        "active_task_count": queue_metrics.get("active_task_count"),
+    }
+
+
+async def register_task_websocket(task_id, websocket):
+    async with task_websocket_connections_lock:
+        if task_id not in task_websocket_connections:
+            task_websocket_connections[task_id] = set()
+        task_websocket_connections[task_id].add(websocket)
+
+
+async def unregister_task_websocket(task_id, websocket):
+    async with task_websocket_connections_lock:
+        sockets = task_websocket_connections.get(task_id)
+        if sockets is None:
+            return
+        sockets.discard(websocket)
+        if len(sockets) == 0:
+            task_websocket_connections.pop(task_id, None)
+
+
+async def push_task_status_update(task_id):
+    task = get_generation_task(task_id)
+    if task is None:
+        return
+    payload = build_task_status_payload(task_id, task=task)
+    if payload is None:
+        return
+    async with task_websocket_connections_lock:
+        sockets = list(task_websocket_connections.get(task_id, set()))
+    if len(sockets) == 0:
+        return
+
+    dead_sockets = []
+    for socket in sockets:
+        try:
+            await socket.send_json(payload)
+        except Exception:
+            dead_sockets.append(socket)
+
+    if dead_sockets:
+        async with task_websocket_connections_lock:
+            current_sockets = task_websocket_connections.get(task_id, set())
+            for socket in dead_sockets:
+                current_sockets.discard(socket)
+            if len(current_sockets) == 0 and task_id in task_websocket_connections:
+                task_websocket_connections.pop(task_id, None)
+
+
+class GenerateHandwritingParams(BaseModel):
+    text: str
+    font_size: str
+    line_spacing: str
+    fill: str
+    left_margin: str
+    top_margin: str
+    right_margin: str
+    bottom_margin: str
+    word_spacing: str
+    line_spacing_sigma: str
+    font_size_sigma: str
+    word_spacing_sigma: str
+    perturb_x_sigma: str
+    perturb_y_sigma: str
+    perturb_theta_sigma: str
+    preview: str
+    strikethrough_probability: str = "0"
+    strikethrough_length_sigma: str = "0"
+    strikethrough_width_sigma: str = "0"
+    strikethrough_angle_sigma: str = "0"
+    strikethrough_width: str = "0"
+    ink_depth_sigma: str = "0"
+    width: Union[str, None] = None
+    height: Union[str, None] = None
+    isUnderlined: str = "false"
+    enableEnglishSpacing: str = "false"
+    font_option: Union[str, None] = None
+    pdf_save: str = "false"
+    full_preview: str = "true"
+
+    @classmethod
+    def as_form(
+        cls,
+        text: str = Form(...),
+        font_size: str = Form(...),
+        line_spacing: str = Form(...),
+        fill: str = Form(...),
+        left_margin: str = Form(...),
+        top_margin: str = Form(...),
+        right_margin: str = Form(...),
+        bottom_margin: str = Form(...),
+        word_spacing: str = Form(...),
+        line_spacing_sigma: str = Form(...),
+        font_size_sigma: str = Form(...),
+        word_spacing_sigma: str = Form(...),
+        perturb_x_sigma: str = Form(...),
+        perturb_y_sigma: str = Form(...),
+        perturb_theta_sigma: str = Form(...),
+        preview: str = Form(...),
+        strikethrough_probability: str = Form("0"),
+        strikethrough_length_sigma: str = Form("0"),
+        strikethrough_width_sigma: str = Form("0"),
+        strikethrough_angle_sigma: str = Form("0"),
+        strikethrough_width: str = Form("0"),
+        ink_depth_sigma: str = Form("0"),
+        width: str = Form(None),
+        height: str = Form(None),
+        isUnderlined: str = Form("false"),
+        enableEnglishSpacing: str = Form("false"),
+        font_option: str = Form(None),
+        pdf_save: str = Form("false"),
+        full_preview: str = Form("true"),
+    ):
+        return cls(
+            text=text,
+            font_size=font_size,
+            line_spacing=line_spacing,
+            fill=fill,
+            left_margin=left_margin,
+            top_margin=top_margin,
+            right_margin=right_margin,
+            bottom_margin=bottom_margin,
+            word_spacing=word_spacing,
+            line_spacing_sigma=line_spacing_sigma,
+            font_size_sigma=font_size_sigma,
+            word_spacing_sigma=word_spacing_sigma,
+            perturb_x_sigma=perturb_x_sigma,
+            perturb_y_sigma=perturb_y_sigma,
+            perturb_theta_sigma=perturb_theta_sigma,
+            preview=preview,
+            strikethrough_probability=strikethrough_probability,
+            strikethrough_length_sigma=strikethrough_length_sigma,
+            strikethrough_width_sigma=strikethrough_width_sigma,
+            strikethrough_angle_sigma=strikethrough_angle_sigma,
+            strikethrough_width=strikethrough_width,
+            ink_depth_sigma=ink_depth_sigma,
+            width=width,
+            height=height,
+            isUnderlined=isUnderlined,
+            enableEnglishSpacing=enableEnglishSpacing,
+            font_option=font_option,
+            pdf_save=pdf_save,
+            full_preview=full_preview,
+        )
+
+
+def model_to_dict(model):
+    if hasattr(model, "model_dump"):
+        return model.model_dump(exclude_none=True)
+    return model.dict(exclude_none=True)
+
+
+async def generate_handwriting_impl(
+    base_url: str,
+    params: GenerateHandwritingParams,
+    background_image: Union[UploadFile, str, bytes] = File(None),
+    font_file: Union[UploadFile, str, bytes] = File(None),
+    progress_hook=None,
 ):
+    def report_progress(stage, message, progress):
+        if progress_hook is not None:
+            progress_hook(stage=stage, message=message, progress=progress)
+
+    report_progress("validating", "正在校验参数", 5)
     # 归一化：前端可能发字符串 "null"，需要转成 Python None
     if isinstance(background_image, str):
         background_image = None
     if isinstance(font_file, str):
         font_file = None
     # 把所有 form 字段收拢成 data dict，方便后续代码不大改
-    data = {
-        "text": text,
-        "font_size": font_size,
-        "line_spacing": line_spacing,
-        "fill": fill,
-        "left_margin": left_margin,
-        "top_margin": top_margin,
-        "right_margin": right_margin,
-        "bottom_margin": bottom_margin,
-        "word_spacing": word_spacing,
-        "line_spacing_sigma": line_spacing_sigma,
-        "font_size_sigma": font_size_sigma,
-        "word_spacing_sigma": word_spacing_sigma,
-        "perturb_x_sigma": perturb_x_sigma,
-        "perturb_y_sigma": perturb_y_sigma,
-        "perturb_theta_sigma": perturb_theta_sigma,
-        "preview": preview,
-        "strikethrough_probability": strikethrough_probability,
-        "strikethrough_length_sigma": strikethrough_length_sigma,
-        "strikethrough_width_sigma": strikethrough_width_sigma,
-        "strikethrough_angle_sigma": strikethrough_angle_sigma,
-        "strikethrough_width": strikethrough_width,
-        "ink_depth_sigma": ink_depth_sigma,
-        "isUnderlined": isUnderlined,
-        "enableEnglishSpacing": enableEnglishSpacing,
-        "font_option": font_option,
-        "pdf_save": pdf_save,
-        "full_preview": full_preview,
-    }
-    if width is not None:
-        data["width"] = width
-    if height is not None:
-        data["height"] = height
+    data = model_to_dict(params)
 
+    report_progress("system_check", "正在检查服务器负载", 10)
     cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
     if cpu_usage > 90:
         # 如果 CPU 使用率超过 90%，返回提醒
@@ -506,8 +711,8 @@ async def generate_handwriting(
     # try:
     # 先获取 form 数据
     if len(data["text"]) > 10000 and (
-        str(request.base_url) == "https://handwrite.14790897.xyz/"
-        or str(request.base_url) == "https://handwrite.sixiangjia.de/"
+        base_url == "https://handwrite.14790897.xyz/"
+        or base_url == "https://handwrite.sixiangjia.de/"
     ):
         # 请自己构建应用来运行而不是使用这个网页
         return JSONResponse(
@@ -554,6 +759,7 @@ async def generate_handwriting(
 
     # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if "width" in data and "height" in data:
+        report_progress("prepare_background", "正在创建背景图", 20)
         line_spacing = int(data.get("line_spacing", 30))
         top_margin = int(data.get("top_margin", 0))
         bottom_margin = int(data.get("bottom_margin", 0))
@@ -577,6 +783,7 @@ async def generate_handwriting(
 
     else:
         # 否则使用用户上传的背景图像
+        report_progress("prepare_background", "正在读取背景图", 20)
         if background_image is None:
             return JSONResponse(
                 {
@@ -585,7 +792,10 @@ async def generate_handwriting(
                 },
                 status_code=400,
             )
-        image_data = io.BytesIO(await background_image.read())
+        if isinstance(background_image, (bytes, bytearray)):
+            image_data = io.BytesIO(background_image)
+        else:
+            image_data = io.BytesIO(await background_image.read())
 
         # 使用 PIL 打开图像
         try:
@@ -655,9 +865,14 @@ async def generate_handwriting(
 
     # 从表单中获取字体文件并处理 7.4
     if font_file is not None:
-        font_bytes = await font_file.read()
+        report_progress("prepare_font", "正在加载字体文件", 30)
+        if isinstance(font_file, (bytes, bytearray)):
+            font_bytes = font_file
+        else:
+            font_bytes = await font_file.read()
         font = ImageFont.truetype(io.BytesIO(font_bytes), size=int(data["font_size"]))
     else:
+        report_progress("prepare_font", "正在读取系统字体", 30)
         font_option = data["font_option"]
         logger.info(f"font_option: {font_option}")
         logger.info(f"font_file_names: {font_file_names}")
@@ -718,6 +933,7 @@ async def generate_handwriting(
     # 创建一个BytesIO对象，用于保存.zip文件的内容
     logger.info(f"data[pdf_save]: {data['pdf_save']}")
     if not data["pdf_save"] == "true":
+        report_progress("rendering", "正在生成手写图像", 45)
         images = await run_in_threadpool(handwrite, text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
         # 创建项目内的临时目录，避免使用系统临时目录
@@ -734,7 +950,20 @@ async def generate_handwriting(
 
         try:
             preview_images_base64 = []
+            try:
+                total_images = len(images)
+                if total_images <= 0:
+                    total_images = 1
+            except TypeError:
+                total_images = None
             for i, im in enumerate(images):
+                if total_images is None:
+                    # 兼容 handwrite 返回 map/generator 等无长度可迭代对象
+                    dynamic_progress = min(90, 60 + min(i, 30))
+                    report_progress("rendering", f"正在处理第 {i + 1} 页", dynamic_progress)
+                else:
+                    dynamic_progress = min(90, 60 + int((i / total_images) * 25))
+                    report_progress("rendering", f"正在处理第 {i + 1}/{total_images} 页", dynamic_progress)
                 # 保存每张图像到临时目录
                 image_path = os.path.join(temp_dir, f"{i}.png")
 
@@ -754,6 +983,7 @@ async def generate_handwriting(
                     if full_preview == "false":
                         # 单页预览模式（生产环境）：只返回第一张图片，立即返回
                         safe_remove_directory(temp_dir)
+                        report_progress("finalizing", "正在返回预览结果", 100)
                         return Response(
                             content=image_data,
                             media_type="image/png",
@@ -767,12 +997,14 @@ async def generate_handwriting(
                 # 完整预览模式：返回包含所有图片Base64字符串的JSON
                 # 立即清理整个临时目录
                 safe_remove_directory(temp_dir)
+                report_progress("finalizing", "正在返回预览结果", 100)
 
                 return JSONResponse(
                     {"status": "success", "images": preview_images_base64}
                 )
 
             if not is_preview:
+                report_progress("packaging", "正在打包ZIP文件", 92)
                 # 创建ZIP文件
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
 
@@ -785,6 +1017,7 @@ async def generate_handwriting(
                     safe_remove_file(zip_path)
 
                     # 从内存发送文件
+                    report_progress("finalizing", "正在返回ZIP结果", 100)
                     response = Response(
                         content=zip_data,
                         media_type="application/zip",
@@ -797,6 +1030,7 @@ async def generate_handwriting(
                     # 降级到直接读文件发送
                     with open(zip_path, "rb") as f:
                         zip_data = f.read()
+                    report_progress("finalizing", "正在返回ZIP结果", 100)
                     response = Response(
                         content=zip_data,
                         media_type="application/zip",
@@ -812,13 +1046,16 @@ async def generate_handwriting(
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
+        report_progress("rendering", "正在生成手写图像", 45)
         images = await run_in_threadpool(handwrite, text_to_generate, template)
         try:
+            report_progress("packaging", "正在导出PDF文件", 92)
             temp_pdf_file_path = await run_in_threadpool(generate_pdf, images=images)
             # 将文件路径存储在请求上下文中，以便稍后可以访问它
             # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
             with open(temp_pdf_file_path, "rb") as f:
                 pdf_data = f.read()
+            report_progress("finalizing", "正在返回PDF结果", 100)
             return Response(
                 content=pdf_data,
                 media_type="application/pdf",
@@ -851,6 +1088,174 @@ async def generate_handwriting(
         #     mimetype="application/pdf",
         #     as_attachment=True,
         # )
+
+
+async def run_generation_task(task_id, base_url, payload):
+    set_generation_task(
+        task_id,
+        status="processing",
+        stage="started",
+        message="任务已开始",
+        progress=1,
+    )
+    await push_task_status_update(task_id)
+    try:
+        def progress_notify(**kwargs):
+            set_generation_task(task_id, **kwargs)
+            asyncio.create_task(push_task_status_update(task_id))
+
+        response = await generate_handwriting_impl(
+            base_url=base_url,
+            progress_hook=progress_notify,
+            **payload,
+        )
+        response_body = response.body if response.body is not None else b""
+        response_headers = {}
+        if "content-disposition" in response.headers:
+            response_headers["Content-Disposition"] = response.headers[
+                "content-disposition"
+            ]
+        set_generation_task(
+            task_id,
+            status="completed",
+            response_status_code=response.status_code,
+            response_content_type=response.headers.get("content-type")
+            or response.media_type
+            or "application/octet-stream",
+            response_headers=response_headers,
+            response_body=response_body,
+            stage="completed",
+            message="任务处理完成",
+            progress=100,
+        )
+        await push_task_status_update(task_id)
+    except Exception as e:
+        logger.exception("Generation task failed, task_id=%s", task_id)
+        set_generation_task(
+            task_id,
+            status="failed",
+            error_message=str(e),
+            stage="failed",
+            message="任务处理失败",
+        )
+        await push_task_status_update(task_id)
+
+
+@app.post("/api/generate_handwriting")
+@limiter.limit("200 per 5 minute")
+@handle_exceptions  # 错误捕获的装饰器7.15
+async def generate_handwriting(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    params: GenerateHandwritingParams = Depends(GenerateHandwritingParams.as_form),
+    background_image: Union[UploadFile, str] = File(None),
+    font_file: Union[UploadFile, str] = File(None),
+):
+    cleanup_expired_generation_tasks()
+
+    background_image_bytes = None
+    if isinstance(background_image, UploadFile):
+        background_image_bytes = await background_image.read()
+
+    font_file_bytes = None
+    if isinstance(font_file, UploadFile):
+        font_file_bytes = await font_file.read()
+
+    payload = {
+        "params": params,
+        "background_image": background_image_bytes,
+        "font_file": font_file_bytes,
+    }
+
+    task_id = uuid4().hex
+    now = time.time()
+    set_generation_task(
+        task_id,
+        status="pending",
+        stage="queued",
+        message="任务排队中",
+        progress=0,
+        created_at=now,
+        updated_at=now,
+        response_status_code=None,
+        response_content_type=None,
+        response_headers={},
+        response_body=None,
+        error_message=None,
+    )
+    background_tasks.add_task(run_generation_task, task_id, str(request.base_url), payload)
+
+    return JSONResponse({"status": "accepted", "task_id": task_id})
+
+
+@app.websocket("/api/generate_handwriting/ws/{task_id}")
+async def generate_handwriting_task_websocket(websocket: WebSocket, task_id: str):
+    await websocket.accept()
+    await register_task_websocket(task_id, websocket)
+    try:
+        task = get_generation_task(task_id)
+        if task is None:
+            await websocket.send_json(
+                {"status": "error", "message": "Task not found", "task_id": task_id}
+            )
+            return
+        await websocket.send_json(build_task_status_payload(task_id, task=task))
+
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await unregister_task_websocket(task_id, websocket)
+
+
+@app.get("/api/generate_handwriting/task/{task_id}")
+@limiter.limit("600 per 5 minute")
+@handle_exceptions
+async def get_generate_handwriting_task_status(request: Request, task_id: str):
+    cleanup_expired_generation_tasks()
+    task = get_generation_task(task_id)
+    if task is None:
+        return JSONResponse(
+            {"status": "error", "message": "Task not found"},
+            status_code=404,
+        )
+    return JSONResponse(build_task_status_payload(task_id, task=task))
+
+
+@app.get("/api/generate_handwriting/task/{task_id}/result")
+@limiter.limit("600 per 5 minute")
+@handle_exceptions
+async def get_generate_handwriting_task_result(request: Request, task_id: str):
+    cleanup_expired_generation_tasks()
+    task = get_generation_task(task_id)
+    if task is None:
+        return JSONResponse(
+            {"status": "error", "message": "Task not found"},
+            status_code=404,
+        )
+
+    task_status = task.get("status")
+    if task_status in ("pending", "processing"):
+        return JSONResponse(
+            {"status": "processing", "message": "Task is still running"},
+            status_code=409,
+        )
+    if task_status == "failed":
+        pop_generation_task(task_id)
+        return JSONResponse(
+            {"status": "error", "message": task.get("error_message", "Task failed")},
+            status_code=500,
+        )
+
+    response = Response(
+        content=task.get("response_body") or b"",
+        media_type=task.get("response_content_type") or "application/octet-stream",
+        status_code=task.get("response_status_code") or 200,
+        headers=task.get("response_headers") or {},
+    )
+    pop_generation_task(task_id)
+    return response
 
 
 # @app.after_request

@@ -640,6 +640,164 @@ export default {
     toggleFullPreview() {
       this.enableFullPreview = !this.enableFullPreview;
     },
+    updateTaskUploadMessage(taskData, taskId) {
+      const taskStatus = taskData?.task_status;
+      const taskMessage = taskData?.task_message || '任务处理中';
+      const taskProgress = taskData?.task_progress;
+      const queuePendingCount = taskData?.queue_pending_count;
+      const queueAheadCount = taskData?.queue_ahead_count;
+      const processingCount = taskData?.processing_count;
+      if (taskStatus === 'pending' && typeof queuePendingCount === 'number' && typeof queueAheadCount === 'number') {
+        if (typeof processingCount === 'number') {
+          this.uploadMessage = `${taskMessage}（前方排队 ${queueAheadCount} 人，当前排队 ${queuePendingCount} 人，处理中 ${processingCount} 人） Task ID: ${taskId}`;
+        } else {
+          this.uploadMessage = `${taskMessage}（前方排队 ${queueAheadCount} 人，当前排队 ${queuePendingCount} 人） Task ID: ${taskId}`;
+        }
+      } else if (typeof taskProgress === 'number') {
+        this.uploadMessage = `${taskMessage}（${taskProgress}%） Task ID: ${taskId}`;
+      } else {
+        this.uploadMessage = `${taskMessage} Task ID: ${taskId}`;
+      }
+    },
+    async waitForTaskViaWebSocket(taskId, timeoutMs = 5 * 60 * 1000) {
+      return new Promise((resolve, reject) => {
+        let isSettled = false;
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${protocol}://${window.location.host}/api/generate_handwriting/ws/${taskId}`;
+        const socket = new WebSocket(wsUrl);
+
+        const timeoutId = setTimeout(() => {
+          if (isSettled) return;
+          isSettled = true;
+          try {
+            socket.close();
+          } catch (e) {
+            // ignore close errors
+          }
+          reject(new Error('WebSocket任务等待超时'));
+        }, timeoutMs);
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data?.status === 'error') {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timeoutId);
+              socket.close();
+              reject(new Error(data?.message || '任务不存在'));
+              return;
+            }
+
+            this.updateTaskUploadMessage(data, taskId);
+            if (data?.task_status === 'completed') {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timeoutId);
+              socket.close();
+              resolve();
+            } else if (data?.task_status === 'failed') {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timeoutId);
+              socket.close();
+              reject(new Error(data?.error_message || '任务执行失败'));
+            }
+          } catch (e) {
+            // ignore malformed payload
+          }
+        };
+
+        socket.onerror = () => {
+          if (isSettled) return;
+          isSettled = true;
+          clearTimeout(timeoutId);
+          reject(new Error('WebSocket连接失败'));
+        };
+
+        socket.onclose = () => {
+          if (isSettled) return;
+          isSettled = true;
+          clearTimeout(timeoutId);
+          reject(new Error('WebSocket连接已关闭'));
+        };
+      });
+    },
+    async pollGenerationTask(taskId, timeoutMs = 5 * 60 * 1000, intervalMs = 1500) {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const statusResponse = await this.$http.get(`/api/generate_handwriting/task/${taskId}`);
+        const taskStatus = statusResponse.data?.task_status;
+        this.updateTaskUploadMessage(statusResponse.data, taskId);
+        if (taskStatus === 'completed') {
+          return;
+        }
+        if (taskStatus === 'failed') {
+          throw new Error(statusResponse.data?.error_message || '任务执行失败');
+        }
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      }
+      throw new Error('任务处理超时，请重试');
+    },
+    handleGenerationResultResponse(response) {
+      const contentType = response.headers['content-type'] || '';
+      if (contentType.includes('application/json')) {
+        // 处理多页预览图像 (JSON)
+        if (response.data && response.data.status === 'success') {
+          this.previewImages = response.data.images.map(img => 'data:image/png;base64,' + img);
+          this.currentPreviewIndex = 0; // 重置为第一页
+          if (this.previewImages.length > 0) {
+            this.previewImage = this.previewImages[0]; // 兼容显示第一页
+          }
+          this.message = '预览图像已加载。';
+          this.uploadMessage = '';
+          this.errorMessage = '';
+        }
+      } else if (contentType.includes('image/png')) {
+        // 兼容旧的单张图片返回逻辑
+        const blobUrl = URL.createObjectURL(response.data);
+        // 将预览图像的 URL 保存到数据属性中
+        this.previewImage = blobUrl;
+        this.previewImages = [blobUrl];
+        // 设置提示信息
+        this.message = '预览图像已加载。';//显示message时，隐藏其他提示信息
+        this.uploadMessage = '';
+        this.errorMessage = '';
+
+      } else if (contentType.includes('application/zip')) {
+        // 处理.zip文件
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'images.zip'); // 或任何其他文件名
+        document.body.appendChild(link);
+        link.click();
+        // 下载完成后，将链接删除，7.5
+        document.body.removeChild(link);
+        // 设置提示信息
+        this.message = '文件已下载。';
+        this.uploadMessage = '';
+        this.errorMessage = '';
+
+      } else if (contentType.includes('application/pdf')) {
+        // 处理.pdf文件
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'images.pdf'); // 或任何其他文件名
+        document.body.appendChild(link);
+        link.click();
+        // 下载完成后，将链接删除
+        document.body.removeChild(link);
+        // 设置提示信息
+        this.message = '文件已下载。';
+        this.uploadMessage = '';
+        this.errorMessage = '';
+      } else {
+        // console.log(text);
+        console.error(`Unexpected response type: ${contentType}, ${response.data}`);
+      }
+    },
     async generateHandwriting(preview = false, pdf_save = false) {
       // console.log('pdf_save', pdf_save)
 
@@ -801,116 +959,72 @@ export default {
         console.log(pair[0] + ', ' + pair[1]);
       }
 
-      this.$http.post(
+      const taskCreateResponse = await this.$http.post(
         '/api/generate_handwriting',
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-          // 预览模式下：开发环境使用json接收多页图片，生产环境使用blob接收单页图片
-          responseType: preview ? (allowFullPreview ? 'json' : 'blob') : 'blob',
           withCredentials: true, //在跨域的时候，需要添加这句话，才能发送cookie 6.30
         }
+      );
 
-      ).then((response) => {
-        if (response.headers['content-type'].includes('application/json')) {
-          // 处理多页预览图像 (JSON)
-          if (response.data && response.data.status === 'success') {
-            this.previewImages = response.data.images.map(img => 'data:image/png;base64,' + img);
-            this.currentPreviewIndex = 0; // 重置为第一页
-            if (this.previewImages.length > 0) {
-              this.previewImage = this.previewImages[0]; // 兼容显示第一页
-            }
-            this.message = '预览图像已加载。';
-            this.uploadMessage = '';
-            this.errorMessage = '';
-          }
-        } else if (response.headers['content-type'] === 'image/png') {
-          // 兼容旧的单张图片返回逻辑
-          const blobUrl = URL.createObjectURL(response.data);
-          // 将预览图像的 URL 保存到数据属性中
-          this.previewImage = blobUrl;
-          this.previewImages = [blobUrl];
-          // 设置提示信息
-          this.message = '预览图像已加载。';//显示message时，隐藏其他提示信息
-          this.uploadMessage = '';
-          this.errorMessage = '';
+      const taskId = taskCreateResponse.data?.task_id;
+      if (!taskId) {
+        throw new Error('未获取到任务ID');
+      }
 
-        } else if (response.headers['content-type'] === 'application/zip') {
-          // 处理.zip文件
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'images.zip'); // 或任何其他文件名
-          document.body.appendChild(link);
-          link.click();
-          // 下载完成后，将链接删除，7.5
-          document.body.removeChild(link);
-          // 设置提示信息
-          this.message = '文件已下载。';
-          this.uploadMessage = '';
-          this.errorMessage = '';
+      this.uploadMessage = `任务已提交，正在生成中（Task ID: ${taskId}）…`;
+      try {
+        await this.waitForTaskViaWebSocket(taskId);
+      } catch (wsError) {
+        console.warn('WebSocket不可用，降级为轮询模式', wsError);
+        await this.pollGenerationTask(taskId);
+      }
 
-        } else if (response.headers['content-type'] === 'application/pdf') {
-          // 处理.pdf文件
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'images.pdf'); // 或任何其他文件名
-          document.body.appendChild(link);
-          link.click();
-          // 下载完成后，将链接删除
-          document.body.removeChild(link);
-          // 设置提示信息
-          this.message = '文件已下载。';
-          this.uploadMessage = '';
-          this.errorMessage = '';
+      const resultResponse = await this.$http.get(
+        `/api/generate_handwriting/task/${taskId}/result`,
+        {
+          // 预览模式下：开发环境使用json接收多页图片，生产环境使用blob接收单页图片
+          responseType: preview ? (allowFullPreview ? 'json' : 'blob') : 'blob',
+          withCredentials: true,
         }
-        else {
-          response.text().then(text => {
-            // console.log(text);
-            // 设置错误消息
-            this.errorMessage = text;
-            this.message = '';
-            this.uploadMessage = '';
-          });
-          console.error(`Unexpected response type: ${response.headers['content-type']}, ${response.data}`);
-        }
-      }).catch(error => {
-        // console.error(error);
+      );
+      this.handleGenerationResultResponse(resultResponse);
+      } catch (error) {
         if (error.response) {
           // console.log('已进入报错处理程序')
           // 如果服务器返回了一个JSON错误消息
-          let reader = new FileReader();
-          reader.onload = (e) => {
-            try {
-              let errorData = JSON.parse(e.target.result);
-              this.errorMessage = errorData.message;
-            } catch (parseError) {
-              // 如果解析失败，直接显示原始信息
-              this.errorMessage = e.target.result;
-              console.log('非JSON格式的错误数据：', e.target.result);
-            }
+          if (error.response.data instanceof Blob) {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                let errorData = JSON.parse(e.target.result);
+                this.errorMessage = errorData.message;
+              } catch (parseError) {
+                // 如果解析失败，直接显示原始信息
+                this.errorMessage = e.target.result;
+                console.log('非JSON格式的错误数据：', e.target.result);
+              }
+              this.message = '';
+              this.uploadMessage = '';
+              console.log('错误信息：', this.errorMessage);
+              console.log(error);
+            };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
+            reader.readAsText(error.response.data);
+          } else {
+            this.errorMessage = error.response.data?.message || '生成失败，请稍后重试';
+            // this.errorMessage = error.response.data.message;
             this.message = '';
             this.uploadMessage = '';
-            console.log('错误信息：', this.errorMessage);
-            console.log(error);
-          };//注意，这里只能使用箭头函数，不然this指向全局对象window，6.30
-          reader.readAsText(error.response.data);
-          console.log(error.response.data);
-          // this.errorMessage = error.response.data.message;
-
+          }
         } else {
           // 如果没有从服务器收到响应
-          this.errorMessage = '网络错误，请稍后再试';
+          this.errorMessage = error.message || '网络错误，请稍后再试';
           this.message = '';
           this.uploadMessage = '';
         }
-      });
-      } catch (error) {
-        console.error('生成过程中发生错误:', error);
-        alert('生成失败，请稍后重试');
       } finally {
         // 重置生成状态，但保持冷却状态
         this.isGenerating = false;
