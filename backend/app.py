@@ -6,7 +6,10 @@ from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, D
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from typing import Union, Optional, Any
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.concurrency import run_in_threadpool
+# run_in_threadpool 已移除：handwrite() 返回惰性生成器（map 对象），
+# 真正的 CPU 密集渲染在后续 for 循环消费生成器时才发生，
+# 而 generate_handwriting_impl 整体运行在 BackgroundTask 里，HTTP 请求已秒回，
+# 所以 run_in_threadpool 在此场景下无法真正释放事件循环。
 from handright import Template, handwrite
 # from threading import Thread
 from PIL import Image, ImageFont, ImageDraw
@@ -511,16 +514,6 @@ async def push_task_status_update(task_id):
                 task_websocket_connections.pop(task_id, None)
 
 
-
-
-
-
-
-
-
-
-
-
 def model_to_dict(model):
     if hasattr(model, "model_dump"):
         return model.model_dump(exclude_none=True)
@@ -788,7 +781,9 @@ async def generate_handwriting_impl(
     logger.info(f"data[pdf_save]: {data['pdf_save']}")
     if not data["pdf_save"] == "true":
         report_progress("rendering", "正在生成手写图像", 45)
-        images = await run_in_threadpool(handwrite, text_to_generate, template)
+        # handwrite() 返回惰性 map 对象，只做文本排版（毫秒级），
+        # 真正的 CPU 密集渲染在下方 for 循环消费 images 时才触发
+        images = handwrite(text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
         # 创建项目内的临时目录，避免使用系统临时目录
         project_temp_base = "./temp"
@@ -901,10 +896,12 @@ async def generate_handwriting_impl(
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
         report_progress("rendering", "正在生成手写图像", 45)
-        images = await run_in_threadpool(handwrite, text_to_generate, template)
+        # handwrite() 返回惰性 map 对象，CPU 密集渲染在 generate_pdf 内部消费时才触发
+        images = handwrite(text_to_generate, template)
         try:
             report_progress("packaging", "正在导出PDF文件", 92)
-            temp_pdf_file_path = await run_in_threadpool(generate_pdf, images=images)
+            # generate_pdf 会消费惰性 images，渲染在此函数内完成
+            temp_pdf_file_path = generate_pdf(images=images)
             # 将文件路径存储在请求上下文中，以便稍后可以访问它
             # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
             with open(temp_pdf_file_path, "rb") as f:
