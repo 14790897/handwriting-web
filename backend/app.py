@@ -230,8 +230,11 @@ from slowapi.errors import RateLimitExceeded
 
 # 装饰器 7.15
 from functools import wraps
-from pydantic import BaseModel
-from task_types import GenerationTask
+from task_types import (
+    GenerationTask,
+    GenerateHandwritingParams,
+    form_dependency_from_model,
+)
 from task_store import (
     set_task as set_generation_task,
     get_task as get_generation_task,
@@ -508,101 +511,14 @@ async def push_task_status_update(task_id):
                 task_websocket_connections.pop(task_id, None)
 
 
-class GenerateHandwritingParams(BaseModel):
-    text: str
-    font_size: str
-    line_spacing: str
-    fill: str
-    left_margin: str
-    top_margin: str
-    right_margin: str
-    bottom_margin: str
-    word_spacing: str
-    line_spacing_sigma: str
-    font_size_sigma: str
-    word_spacing_sigma: str
-    perturb_x_sigma: str
-    perturb_y_sigma: str
-    perturb_theta_sigma: str
-    preview: str
-    strikethrough_probability: str = "0"
-    strikethrough_length_sigma: str = "0"
-    strikethrough_width_sigma: str = "0"
-    strikethrough_angle_sigma: str = "0"
-    strikethrough_width: str = "0"
-    ink_depth_sigma: str = "0"
-    width: Union[str, None] = None
-    height: Union[str, None] = None
-    isUnderlined: str = "false"
-    enableEnglishSpacing: str = "false"
-    font_option: Union[str, None] = None
-    pdf_save: str = "false"
-    full_preview: str = "true"
 
-    @classmethod
-    def as_form(
-        cls,
-        text: str = Form(...),
-        font_size: str = Form(...),
-        line_spacing: str = Form(...),
-        fill: str = Form(...),
-        left_margin: str = Form(...),
-        top_margin: str = Form(...),
-        right_margin: str = Form(...),
-        bottom_margin: str = Form(...),
-        word_spacing: str = Form(...),
-        line_spacing_sigma: str = Form(...),
-        font_size_sigma: str = Form(...),
-        word_spacing_sigma: str = Form(...),
-        perturb_x_sigma: str = Form(...),
-        perturb_y_sigma: str = Form(...),
-        perturb_theta_sigma: str = Form(...),
-        preview: str = Form(...),
-        strikethrough_probability: str = Form("0"),
-        strikethrough_length_sigma: str = Form("0"),
-        strikethrough_width_sigma: str = Form("0"),
-        strikethrough_angle_sigma: str = Form("0"),
-        strikethrough_width: str = Form("0"),
-        ink_depth_sigma: str = Form("0"),
-        width: str = Form(None),
-        height: str = Form(None),
-        isUnderlined: str = Form("false"),
-        enableEnglishSpacing: str = Form("false"),
-        font_option: str = Form(None),
-        pdf_save: str = Form("false"),
-        full_preview: str = Form("true"),
-    ):
-        return cls(
-            text=text,
-            font_size=font_size,
-            line_spacing=line_spacing,
-            fill=fill,
-            left_margin=left_margin,
-            top_margin=top_margin,
-            right_margin=right_margin,
-            bottom_margin=bottom_margin,
-            word_spacing=word_spacing,
-            line_spacing_sigma=line_spacing_sigma,
-            font_size_sigma=font_size_sigma,
-            word_spacing_sigma=word_spacing_sigma,
-            perturb_x_sigma=perturb_x_sigma,
-            perturb_y_sigma=perturb_y_sigma,
-            perturb_theta_sigma=perturb_theta_sigma,
-            preview=preview,
-            strikethrough_probability=strikethrough_probability,
-            strikethrough_length_sigma=strikethrough_length_sigma,
-            strikethrough_width_sigma=strikethrough_width_sigma,
-            strikethrough_angle_sigma=strikethrough_angle_sigma,
-            strikethrough_width=strikethrough_width,
-            ink_depth_sigma=ink_depth_sigma,
-            width=width,
-            height=height,
-            isUnderlined=isUnderlined,
-            enableEnglishSpacing=enableEnglishSpacing,
-            font_option=font_option,
-            pdf_save=pdf_save,
-            full_preview=full_preview,
-        )
+
+
+
+
+
+
+
 
 
 def model_to_dict(model):
@@ -1090,7 +1006,7 @@ async def run_generation_task(task_id, base_url, payload):
 async def generate_handwriting(
     request: Request,
     background_tasks: BackgroundTasks,
-    params: GenerateHandwritingParams = Depends(GenerateHandwritingParams.as_form),
+    params: GenerateHandwritingParams = Depends(form_dependency_from_model(GenerateHandwritingParams)),
     background_image: Union[UploadFile, str] = File(None),
     font_file: Union[UploadFile, str] = File(None),
 ):
