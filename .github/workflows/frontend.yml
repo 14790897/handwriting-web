@@ -15,9 +15,6 @@ jobs:
           - arch: amd64
             runner: ubuntu-latest
             platform: linux/amd64
-          - arch: arm64
-            runner: ubuntu-24.04-arm64
-            platform: linux/arm64
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -59,8 +56,7 @@ jobs:
         run: |
           docker buildx imagetools create \
             -t 14790897/frontend-handwriting:latest \
-            14790897/frontend-handwriting:amd64 \
-            14790897/frontend-handwriting:arm64
+            14790897/frontend-handwriting:amd64
 
   # release-please-frontend:
   #   runs-on: ubuntu-latest
