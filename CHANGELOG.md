@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/14790897/handwriting-web/compare/v1.20.0...v1.20.1) (2026-04-17)
+
+
+### Bug Fixes
+
+* update Sentry integration to use ASGI middleware type ([8ab319f](https://github.com/14790897/handwriting-web/commit/8ab319f74403de08301943dcd0fcb633a433a731))
+
 # [1.20.0](https://github.com/14790897/handwriting-web/compare/v1.19.0...v1.20.0) (2026-04-17)
 
 
