@@ -1,3 +1,10 @@
+## [1.20.2](https://github.com/14790897/handwriting-web/compare/v1.20.1...v1.20.2) (2026-04-17)
+
+
+### Bug Fixes
+
+* update Sentry integration to remove middleware type specification ([ad9dc1a](https://github.com/14790897/handwriting-web/commit/ad9dc1afdb1be11082b5c3a8382e9150412dbf4b))
+
 ## [1.20.1](https://github.com/14790897/handwriting-web/compare/v1.20.0...v1.20.1) (2026-04-17)
 
 
