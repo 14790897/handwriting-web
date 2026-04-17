@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/14790897/handwriting-web/compare/v1.19.0...v1.20.0) (2026-04-17)
+
+
+### Features
+
+* refactor GenerateHandwritingParams and add form dependency generator ([20991ad](https://github.com/14790897/handwriting-web/commit/20991ad8975f6915f6b744115b19d951cc5a09e6))
+
 # [1.19.0](https://github.com/14790897/handwriting-web/compare/v1.18.4...v1.19.0) (2026-04-17)
 
 
