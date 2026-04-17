@@ -292,7 +292,7 @@ font_file_names = [
 sentry_sdk.init(
     dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
     integrations=[
-        StarletteIntegration(),
+        StarletteIntegration(middleware_type="asgi"),
         FastApiIntegration(),
     ],
     # Set traces_sample_rate to 1.0 to capture 100%
