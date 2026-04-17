@@ -109,6 +109,27 @@ npm run serve
 
 4. 打开浏览器，输入 http://localhost:8080 ，即可访问网站
 
+## 后端架构
+
+### 整体流程
+
+```
+用户请求 → Nginx（前端容器） → 反向代理 → FastAPI（后端容器）
+                                          │
+                                          ▼
+                              提交任务 → 写入 SQLite → 立即返回 task_id
+                                          │
+                              后台协程排队执行 → Semaphore(2) 控制并发
+                                          │
+                              handwrite() 渲染 → 保存结果到磁盘
+                                          │
+                              用户通过轮询 或 WebSocket 获取结果
+```
+
+请求提交后立即返回 `task_id`（HTTP 200），实际的手写图像渲染在后台 `BackgroundTask` 中异步执行，用户通过轮询 `/task/{task_id}` 接口或 WebSocket 连接获取实时进度。
+
+
+
 ## 结语
 
 我希望你喜欢使用我的手写文字生成网站来创建你的个性化手写文字图片！
