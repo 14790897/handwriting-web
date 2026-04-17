@@ -1,3 +1,18 @@
+# [1.19.0](https://github.com/14790897/handwriting-web/compare/v1.18.4...v1.19.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* use run_in_threadpool for handwrite and generate_pdf to improve concurrency ([26ab988](https://github.com/14790897/handwriting-web/commit/26ab988475be0caab17182c74e92e02b378a45d9))
+* 格式验证错误 ([96ab634](https://github.com/14790897/handwriting-web/commit/96ab634811267223303914aa7ee988e74e836bca))
+
+
+### Features
+
+* add queue management for handwriting generation with active task count and user feedback and semaphore ([f93ee91](https://github.com/14790897/handwriting-web/commit/f93ee91e2f8f4d47a12debecfc4ea14be6dc45b4))
+* implement SQLite task storage for cross-process task management ([f02e50b](https://github.com/14790897/handwriting-web/commit/f02e50b11177cae5de075a565d4aa04b862b138b))
+* implement task management for handwriting generation with WebSocket support ([b4a8259](https://github.com/14790897/handwriting-web/commit/b4a82591ec4493becb1efa93308a22482cd8f618))
+
 ## [1.18.4](https://github.com/14790897/handwriting-web/compare/v1.18.3...v1.18.4) (2026-03-11)
 
 
