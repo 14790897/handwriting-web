@@ -1,3 +1,10 @@
+## [1.20.3](https://github.com/14790897/handwriting-web/compare/v1.20.2...v1.20.3) (2026-04-17)
+
+
+### Bug Fixes
+
+* enhance PWA install prompt handling to remember user dismissal ([17a100f](https://github.com/14790897/handwriting-web/commit/17a100f9f3dac991256c75448ff996177c4a75d1))
+
 ## [1.20.2](https://github.com/14790897/handwriting-web/compare/v1.20.1...v1.20.2) (2026-04-17)
 
 
