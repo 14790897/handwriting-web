@@ -66,7 +66,7 @@ export default {
       // 显示安装提示
       this.deferredPrompt.prompt();
       
-      // 等待用户响应
+      // 等待用户响应 deferredPrompt是之前保存的浏览器事件
       const { outcome } = await this.deferredPrompt.userChoice;
       console.log(`PWA: User response to the install prompt: ${outcome}`);
 
