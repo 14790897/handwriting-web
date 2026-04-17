@@ -238,6 +238,7 @@ from task_store import (
     pop_task as pop_generation_task,
     cleanup_expired as cleanup_expired_generation_tasks,
     get_queue_metrics as get_generation_queue_metrics,
+    get_active_task_count as get_generation_active_task_count,
     read_result_file,
     generation_task_ttl_seconds,
 )
@@ -427,11 +428,14 @@ def handle_exceptions(f):
     return decorated_function
 
 
-
 # WebSocket 推送（仍需内存存储，仅同进程有效）
 task_websocket_connections: dict[str, set[WebSocket]] = {}
 task_websocket_connections_lock = asyncio.Lock()
 
+# 同时执行的上限——控制 generate_handwriting_impl 的真正并发数
+# 超出部分在 semaphore 处排队等待，避免 CPU 密集任务互相挤占
+MAX_CONCURRENT_EXECUTIONS = 2
+_generation_semaphore = asyncio.Semaphore(MAX_CONCURRENT_EXECUTIONS)
 
 
 def build_task_status_payload(
@@ -1038,11 +1042,16 @@ async def run_generation_task(task_id, base_url, payload):
             set_generation_task(task_id, **kwargs)
             asyncio.create_task(push_task_status_update(task_id))
 
-        response = await generate_handwriting_impl(
-            base_url=base_url,
-            progress_hook=progress_notify,
-            **payload,
-        )
+        async with _generation_semaphore:
+            # 拿到信号量后，将阶段更新为"正在执行" 由于这里是协程，所以并不会占据很多资源 4.17.2026
+            set_generation_task(task_id, stage="executing", message="正在生成中")
+            await push_task_status_update(task_id)
+
+            response = await generate_handwriting_impl(
+                base_url=base_url,
+                progress_hook=progress_notify,
+                **payload,
+            )
         response_body = response.body if response.body is not None else b""
         response_headers = {}
         if "content-disposition" in response.headers:
@@ -1086,6 +1095,25 @@ async def generate_handwriting(
     font_file: Union[UploadFile, str] = File(None),
 ):
     cleanup_expired_generation_tasks()
+
+    # ── 并发上限检查 ────────────────────────────────────────────────────
+    MAX_ACTIVE_TASKS = 8  # pending + processing 总数上限，根据服务器配置调整
+    # 队列满时给用户的建议等待时间（秒），固定值比瞎算可靠
+    ESTIMATED_WAIT_SECONDS = 60
+
+    active_count = get_generation_active_task_count()
+    if active_count >= MAX_ACTIVE_TASKS:
+        return JSONResponse(
+            {
+                "status": "queue_full",
+                "message": "当前服务器队列已满，请稍后再试",
+                "active_task_count": active_count,
+                "max_active_tasks": MAX_ACTIVE_TASKS,
+                "estimated_wait_seconds": ESTIMATED_WAIT_SECONDS,
+            },
+            status_code=503,
+        )
+    # ────────────────────────────────────────────────────────────────────
 
     background_image_bytes = None
     if isinstance(background_image, UploadFile):

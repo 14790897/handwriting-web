@@ -292,6 +292,18 @@ def get_queue_metrics(task_id: str) -> dict[str, int]:
         conn.close()
 
 
+def get_active_task_count() -> int:
+    """返回当前 pending + processing 的任务总数（不依赖 task_id）。"""
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM generation_tasks WHERE status IN ('pending', 'processing')"
+        ).fetchone()
+        return row[0] if row else 0
+    finally:
+        conn.close()
+
+
 def read_result_file(file_path: str) -> bytes | None:
     """供路由层调用的磁盘读取接口。"""
     return _read_result_file(file_path)

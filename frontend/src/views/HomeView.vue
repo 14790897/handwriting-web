@@ -5,6 +5,17 @@
       <div v-if="errorMessage" class="alert alert-danger" role="alert">
         {{ errorMessage }}
       </div>
+      <!-- 队列已满提示 -->
+      <div v-if="queueFullCountdown > 0" class="alert alert-queue-full" role="alert">
+        <span class="queue-full-icon">⚠️</span>
+        <span class="queue-full-text">服务器当前繁忙，队列已满</span>
+        <span class="queue-full-timer">
+          预计 <strong>{{ queueFullCountdown }}</strong> 秒后可重试
+        </span>
+        <div class="queue-full-bar-wrap">
+          <div class="queue-full-bar" :style="{ width: queueFullBarPercent + '%' }"></div>
+        </div>
+      </div>
       <div v-if="message" class="alert alert-info" role="alert">
         {{ message }}
       </div>
@@ -362,6 +373,10 @@ export default {
       cooldownTimer: null,
       remainingCooldown: 0,
       isInCooldownPeriod: false,
+      // 队列满倒计时
+      queueFullCountdown: 0,        // 当前剩余秒数，>0 时展示提示
+      queueFullTotal: 0,            // 初始等待秒数，用于计算进度条
+      queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
     };
@@ -413,7 +428,13 @@ export default {
 
     // 按钮是否应该被禁用
     shouldDisableButtons() {
-      return this.isGenerating || this.isInCooldownPeriod;
+      return this.isGenerating || this.isInCooldownPeriod || this.queueFullCountdown > 0;
+    },
+
+    // 队列满进度条（从100%倒减到0%）
+    queueFullBarPercent() {
+      if (this.queueFullTotal <= 0) return 0;
+      return Math.max(0, (this.queueFullCountdown / this.queueFullTotal) * 100);
     },
 
     // 按钮显示文本
@@ -639,6 +660,23 @@ export default {
     },
     toggleFullPreview() {
       this.enableFullPreview = !this.enableFullPreview;
+    },
+    startQueueFullCountdown(seconds) {
+      // 清掉旧计时器
+      if (this.queueFullTimer) {
+        clearInterval(this.queueFullTimer);
+        this.queueFullTimer = null;
+      }
+      this.queueFullTotal = seconds;
+      this.queueFullCountdown = seconds;
+      this.queueFullTimer = setInterval(() => {
+        this.queueFullCountdown -= 1;
+        if (this.queueFullCountdown <= 0) {
+          this.queueFullCountdown = 0;
+          clearInterval(this.queueFullTimer);
+          this.queueFullTimer = null;
+        }
+      }, 1000);
     },
     updateTaskUploadMessage(taskData, taskId) {
       const taskStatus = taskData?.task_status;
@@ -994,6 +1032,20 @@ export default {
       this.handleGenerationResultResponse(resultResponse);
       } catch (error) {
         if (error.response) {
+          // ── 队列已满：503 queue_full ────────────────────────────────
+          const errData = error.response.data;
+          if (
+            error.response.status === 503 &&
+            errData?.status === 'queue_full'
+          ) {
+            const waitSec = errData.estimated_wait_seconds || 30;
+            this.startQueueFullCountdown(waitSec);
+            this.message = '';
+            this.uploadMessage = '';
+            this.errorMessage = '';
+            return; // 不走通用错误展示
+          }
+          // ────────────────────────────────────────────────────────────
           // console.log('已进入报错处理程序')
           // 如果服务器返回了一个JSON错误消息
           if (error.response.data instanceof Blob) {
@@ -1742,6 +1794,62 @@ input[type="file"]:hover {
   color: #f57c00;
   border: 1px solid #ffcc02;
 }
+
+/* 队列已满提示 */
+.alert-queue-full {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+  border: 1px solid #ffc107;
+  color: #7b5800;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.queue-full-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.queue-full-text {
+  font-weight: 600;
+  flex: 1;
+  min-width: 120px;
+}
+
+.queue-full-timer {
+  font-size: 13px;
+  color: #9e6800;
+  flex-shrink: 0;
+}
+
+.queue-full-timer strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e65100;
+  margin: 0 2px;
+}
+
+.queue-full-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: #ffe082;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.queue-full-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffa000, #ff6d00);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+
 
 @keyframes pulse {
   0% { opacity: 1; }
