@@ -26,11 +26,19 @@ export default {
     };
   },
   mounted() {
+    const dismissed = this.getCookie('pwa-install-dismissed') === '1';
+
     // 监听 beforeinstallprompt 事件
     window.addEventListener('beforeinstallprompt', (e) => {
       console.log('PWA: beforeinstallprompt event fired');
       // 阻止默认的安装提示
       e.preventDefault();
+
+      // 用户明确拒绝后，不再显示
+      if (dismissed || this.getCookie('pwa-install-dismissed') === '1') {
+        return;
+      }
+
       // 保存事件，稍后使用
       this.deferredPrompt = e;
       // 显示自定义安装提示
@@ -61,6 +69,11 @@ export default {
       // 等待用户响应
       const { outcome } = await this.deferredPrompt.userChoice;
       console.log(`PWA: User response to the install prompt: ${outcome}`);
+
+      // 用户在原生提示中拒绝后，记忆选择并不再弹出
+      if (outcome === 'dismissed') {
+        this.setCookie('pwa-install-dismissed', '1', 3650);
+      }
       
       // 清理
       this.deferredPrompt = null;
@@ -68,8 +81,22 @@ export default {
     },
     dismissPrompt() {
       this.showInstallPrompt = false;
-      // 24小时后再次显示
-      localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+      // 用户选择“稍后”视为拒绝，后续不再弹出
+      this.setCookie('pwa-install-dismissed', '1', 3650);
+    },
+    setCookie(name, value, days) {
+      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+    },
+    getCookie(name) {
+      const target = `${name}=`;
+      const cookies = document.cookie ? document.cookie.split('; ') : [];
+      for (const item of cookies) {
+        if (item.startsWith(target)) {
+          return decodeURIComponent(item.substring(target.length));
+        }
+      }
+      return null;
     }
   }
 }
