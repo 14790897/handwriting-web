@@ -1,6 +1,12 @@
 import base64
 import time
-from flask import Flask, request, jsonify, send_file, session, current_app
+import asyncio
+from pathlib import Path
+from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from typing import Union, Optional, Any
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from handright import Template, handwrite
 # from threading import Thread
 from PIL import Image, ImageFont, ImageDraw
@@ -13,10 +19,10 @@ import gc
 
 import io
 import logging
-from flask_cors import CORS
 from datetime import timedelta
-from flask_session import Session  # 导入扩展
 from werkzeug.utils import secure_filename
+from threading import Lock
+from uuid import uuid4
 
 # 文件模块
 from docx import Document
@@ -214,14 +220,28 @@ def cleanup_marked_directories():
 
 # sentry 错误报告7.7
 import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 # 限制请求速率 7.9
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # 装饰器 7.15
 from functools import wraps
+from pydantic import BaseModel
+from task_types import GenerationTask
+from task_store import (
+    set_task as set_generation_task,
+    get_task as get_generation_task,
+    pop_task as pop_generation_task,
+    cleanup_expired as cleanup_expired_generation_tasks,
+    get_queue_metrics as get_generation_queue_metrics,
+    get_active_task_count as get_generation_active_task_count,
+    read_result_file,
+    generation_task_ttl_seconds,
+)
 
 # 定时清理文件 10.28
 import schedule_clean
@@ -269,7 +289,8 @@ font_file_names = [
 sentry_sdk.init(
     dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
     integrations=[
-        FlaskIntegration(),
+        StarletteIntegration(),
+        FastApiIntegration(),
     ],
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
@@ -305,24 +326,30 @@ fh.setFormatter(formatter)
 logger.addHandler(ch)
 logger.addHandler(fh)
 
-app = Flask(__name__)
-CORS(app)  # , origins='*', supports_credentials=True)
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 设置Flask app的logger级别
-app.logger.setLevel(logging.DEBUG)
+# app.logger.setLevel(logging.DEBUG)
 
 
 SECRET_KEY = "437d75c5af744b76607fe862cf8a5a368519aca486d62c5fa69ba42c16809z88"
-app.config["SECRET_KEY"] = SECRET_KEY
+# app.config["SECRET_KEY"] = SECRET_KEY
 # app.config["SESSION_COOKIE_SECURE"] = True
 # app.config["SESSION_COOKIE_SAMESITE"] = "None"
-app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
-app.permanent_session_lifetime = timedelta(minutes=5000000)
-app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
-Session(app)  # 初始化扩展，传入应用程序实例
-limiter = Limiter(
-    app=app, key_func=get_remote_address, default_limits=["1000 per 5 minute"]
-)
+# app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
+# app.permanent_session_lifetime = timedelta(minutes=5000000)
+# app.config["SESSION_TYPE"] = "filesystem"  # 设置session存储方式为文件
+# Session(app)  # 初始化扩展，传入应用程序实例
+limiter = Limiter(key_func=get_remote_address, default_limits=["1000 per 5 minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # 创建一个新的白色图片，并添加间隔的线条作为背景
@@ -391,52 +418,247 @@ def read_pdf(file_path):
 
 def handle_exceptions(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
         except Exception as e:
             logger.info("An error occurred during the request: %s", e)
-            return jsonify({"status": "error", "message": str(e)}), 500
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
     return decorated_function
 
 
-@app.route("/api/generate_handwriting", methods=["POST"])
-@limiter.limit("200 per 5 minute")
-@handle_exceptions  # 错误捕获的装饰器7.15
-def generate_handwriting():
+# WebSocket 推送（仍需内存存储，仅同进程有效）
+task_websocket_connections: dict[str, set[WebSocket]] = {}
+task_websocket_connections_lock = asyncio.Lock()
+
+# 同时执行的上限——控制 generate_handwriting_impl 的真正并发数
+# 超出部分在 semaphore 处排队等待，避免 CPU 密集任务互相挤占
+MAX_CONCURRENT_EXECUTIONS = 2
+_generation_semaphore = asyncio.Semaphore(MAX_CONCURRENT_EXECUTIONS)
+
+
+def build_task_status_payload(
+    task_id: str, task: Optional[GenerationTask] = None
+) -> Optional[dict[str, Any]]:
+    if task is None:
+        task = get_generation_task(task_id)
+    if task is None:
+        return None
+    queue_metrics = get_generation_queue_metrics(task_id)
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "task_status": task.get("status"),
+        "task_stage": task.get("stage"),
+        "task_message": task.get("message"),
+        "task_progress": task.get("progress"),
+        "created_at": task.get("created_at"),
+        "updated_at": task.get("updated_at"),
+        "error_message": task.get("error_message"),
+        "queue_pending_count": queue_metrics.get("queue_pending_count"),
+        "queue_ahead_count": queue_metrics.get("queue_ahead_count"),
+        "processing_count": queue_metrics.get("processing_count"),
+        "active_task_count": queue_metrics.get("active_task_count"),
+    }
+
+
+async def register_task_websocket(task_id, websocket):
+    async with task_websocket_connections_lock:
+        if task_id not in task_websocket_connections:
+            task_websocket_connections[task_id] = set()
+        task_websocket_connections[task_id].add(websocket)
+
+
+async def unregister_task_websocket(task_id, websocket):
+    async with task_websocket_connections_lock:
+        sockets = task_websocket_connections.get(task_id)
+        if sockets is None:
+            return
+        sockets.discard(websocket)
+        if len(sockets) == 0:
+            task_websocket_connections.pop(task_id, None)
+
+
+async def push_task_status_update(task_id):
+    task = get_generation_task(task_id)
+    if task is None:
+        return
+    payload = build_task_status_payload(task_id, task=task)
+    if payload is None:
+        return
+    async with task_websocket_connections_lock:
+        sockets = list(task_websocket_connections.get(task_id, set()))
+    if len(sockets) == 0:
+        return
+
+    dead_sockets = []
+    for socket in sockets:
+        try:
+            await socket.send_json(payload)
+        except Exception:
+            dead_sockets.append(socket)
+
+    if dead_sockets:
+        async with task_websocket_connections_lock:
+            current_sockets = task_websocket_connections.get(task_id, set())
+            for socket in dead_sockets:
+                current_sockets.discard(socket)
+            if len(current_sockets) == 0 and task_id in task_websocket_connections:
+                task_websocket_connections.pop(task_id, None)
+
+
+class GenerateHandwritingParams(BaseModel):
+    text: str
+    font_size: str
+    line_spacing: str
+    fill: str
+    left_margin: str
+    top_margin: str
+    right_margin: str
+    bottom_margin: str
+    word_spacing: str
+    line_spacing_sigma: str
+    font_size_sigma: str
+    word_spacing_sigma: str
+    perturb_x_sigma: str
+    perturb_y_sigma: str
+    perturb_theta_sigma: str
+    preview: str
+    strikethrough_probability: str = "0"
+    strikethrough_length_sigma: str = "0"
+    strikethrough_width_sigma: str = "0"
+    strikethrough_angle_sigma: str = "0"
+    strikethrough_width: str = "0"
+    ink_depth_sigma: str = "0"
+    width: Union[str, None] = None
+    height: Union[str, None] = None
+    isUnderlined: str = "false"
+    enableEnglishSpacing: str = "false"
+    font_option: Union[str, None] = None
+    pdf_save: str = "false"
+    full_preview: str = "true"
+
+    @classmethod
+    def as_form(
+        cls,
+        text: str = Form(...),
+        font_size: str = Form(...),
+        line_spacing: str = Form(...),
+        fill: str = Form(...),
+        left_margin: str = Form(...),
+        top_margin: str = Form(...),
+        right_margin: str = Form(...),
+        bottom_margin: str = Form(...),
+        word_spacing: str = Form(...),
+        line_spacing_sigma: str = Form(...),
+        font_size_sigma: str = Form(...),
+        word_spacing_sigma: str = Form(...),
+        perturb_x_sigma: str = Form(...),
+        perturb_y_sigma: str = Form(...),
+        perturb_theta_sigma: str = Form(...),
+        preview: str = Form(...),
+        strikethrough_probability: str = Form("0"),
+        strikethrough_length_sigma: str = Form("0"),
+        strikethrough_width_sigma: str = Form("0"),
+        strikethrough_angle_sigma: str = Form("0"),
+        strikethrough_width: str = Form("0"),
+        ink_depth_sigma: str = Form("0"),
+        width: str = Form(None),
+        height: str = Form(None),
+        isUnderlined: str = Form("false"),
+        enableEnglishSpacing: str = Form("false"),
+        font_option: str = Form(None),
+        pdf_save: str = Form("false"),
+        full_preview: str = Form("true"),
+    ):
+        return cls(
+            text=text,
+            font_size=font_size,
+            line_spacing=line_spacing,
+            fill=fill,
+            left_margin=left_margin,
+            top_margin=top_margin,
+            right_margin=right_margin,
+            bottom_margin=bottom_margin,
+            word_spacing=word_spacing,
+            line_spacing_sigma=line_spacing_sigma,
+            font_size_sigma=font_size_sigma,
+            word_spacing_sigma=word_spacing_sigma,
+            perturb_x_sigma=perturb_x_sigma,
+            perturb_y_sigma=perturb_y_sigma,
+            perturb_theta_sigma=perturb_theta_sigma,
+            preview=preview,
+            strikethrough_probability=strikethrough_probability,
+            strikethrough_length_sigma=strikethrough_length_sigma,
+            strikethrough_width_sigma=strikethrough_width_sigma,
+            strikethrough_angle_sigma=strikethrough_angle_sigma,
+            strikethrough_width=strikethrough_width,
+            ink_depth_sigma=ink_depth_sigma,
+            width=width,
+            height=height,
+            isUnderlined=isUnderlined,
+            enableEnglishSpacing=enableEnglishSpacing,
+            font_option=font_option,
+            pdf_save=pdf_save,
+            full_preview=full_preview,
+        )
+
+
+def model_to_dict(model):
+    if hasattr(model, "model_dump"):
+        return model.model_dump(exclude_none=True)
+    return model.dict(exclude_none=True)
+
+
+async def generate_handwriting_impl(
+    base_url: str,
+    params: GenerateHandwritingParams,
+    background_image: Union[UploadFile, str, bytes] = File(None),
+    font_file: Union[UploadFile, str, bytes] = File(None),
+    progress_hook=None,
+):
+    def report_progress(stage, message, progress):
+        if progress_hook is not None:
+            progress_hook(stage=stage, message=message, progress=progress)
+
+    report_progress("validating", "正在校验参数", 5)
+    # 归一化：前端可能发字符串 "null"，需要转成 Python None
+    if isinstance(background_image, str):
+        background_image = None
+    if isinstance(font_file, str):
+        font_file = None
+    # 把所有 form 字段收拢成 data dict，方便后续代码不大改
+    data = model_to_dict(params)
+
+    report_progress("system_check", "正在检查服务器负载", 10)
     cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
     if cpu_usage > 90:
         # 如果 CPU 使用率超过 90%，返回提醒
-        return (
-            jsonify(
-                {
-                    "status": "waiting",
-                    "message": f"CPU usage is too high. Please wait and try again. current cpu_usage: {cpu_usage}%",
-                }
-            ),
-            429,
+        return JSONResponse(
+            {
+                "status": "waiting",
+                "message": f"CPU usage is too high. Please wait and try again. current cpu_usage: {cpu_usage}%",
+            },
+            status_code=429,
         )  # HTTP 429: Too Many Requests
     # logger.info("已经进入generate_handwriting")
     if enable_user_auth.lower() == "true":
-        if "username" not in session:
-            return jsonify({"status": "error", "message": "You haven't login."}), 500
+        # session auth 已移除，如需恢复请使用 JWT 或 cookie
+        pass
     # try:
     # 先获取 form 数据
-    data = request.form
     if len(data["text"]) > 10000 and (
-        request.base_url == "https://handwrite.14790897.xyz"
-        or request.base_url == "https://handwrite.paperai.life"
+        base_url == "https://handwrite.14790897.xyz/"
+        or base_url == "https://handwrite.sixiangjia.de/"
     ):
         # 请自己构建应用来运行而不是使用这个网页
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "The text is too long to process. If you want to use this service, please build your own application.",
-                }
-            ),  
-            500,
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "The text is too long to process. If you want to use this service, please build your own application.",
+            },
+            status_code=500,
         )
     required_form_fields = [
         "text",
@@ -460,14 +682,12 @@ def generate_handwriting():
 
     for field in required_form_fields:
         if field not in data:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": f"Missing required field: {field}",
-                    }
-                ),
-                400,
+            return JSONResponse(
+                {
+                    "status": "fail",
+                    "message": f"Missing required field: {field}",
+                },
+                status_code=400,
             )
         else:
             logger.info(f"{field}: {data[field]}")  # 打印具体的 form 字段值
@@ -477,6 +697,7 @@ def generate_handwriting():
 
     # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if "width" in data and "height" in data:
+        report_progress("prepare_background", "正在创建背景图", 20)
         line_spacing = int(data.get("line_spacing", 30))
         top_margin = int(data.get("top_margin", 0))
         bottom_margin = int(data.get("bottom_margin", 0))
@@ -486,7 +707,7 @@ def generate_handwriting():
         height = int(data["height"])
         font_size = int(data.get("font_size", 0))
         isUnderlined = data.get("isUnderlined", False)
-        background_image = create_notebook_image(
+        background_image_obj = create_notebook_image(
             width,
             height,
             line_spacing,
@@ -500,30 +721,33 @@ def generate_handwriting():
 
     else:
         # 否则使用用户上传的背景图像
-        background_image = request.files.get("background_image")
+        report_progress("prepare_background", "正在读取背景图", 20)
         if background_image is None:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": "Missing required field: background_image",
-                    }
-                ),
-                400,
+            return JSONResponse(
+                {
+                    "status": "fail",
+                    "message": "Missing required field: background_image",
+                },
+                status_code=400,
             )
-        image_data = io.BytesIO(background_image.read())
+        if isinstance(background_image, (bytes, bytearray)):
+            image_data = io.BytesIO(background_image)
+        else:
+            image_data = io.BytesIO(await background_image.read())
 
         # 使用 PIL 打开图像
         try:
-            background_image = Image.open(image_data)
+            background_image_obj = Image.open(image_data)
 
             # 如果图像包含 Alpha 通道（模式为 'RGBA' 或 'LA'），则去除 Alpha 通道
-            if background_image.mode in ("RGBA", "LA"):
+            if background_image_obj.mode in ("RGBA", "LA"):
                 # 将图像转换为 'RGB' 模式
-                background_image = background_image.convert("RGB")
+                background_image_obj = background_image_obj.convert("RGB")
 
         except IOError:
-            return jsonify({"status": "error", "message": "Invalid image format"}), 400
+            return JSONResponse(
+                {"status": "error", "message": "Invalid image format"}, status_code=400
+            )
 
     text_to_generate = data["text"]
 
@@ -578,10 +802,15 @@ def generate_handwriting():
     #     text_to_generate = text_to_generate[:preview_length]
 
     # 从表单中获取字体文件并处理 7.4
-    if "font_file" in request.files:
-        font = request.files["font_file"].read()
-        font = ImageFont.truetype(io.BytesIO(font), size=int(data["font_size"]))
+    if font_file is not None:
+        report_progress("prepare_font", "正在加载字体文件", 30)
+        if isinstance(font_file, (bytes, bytearray)):
+            font_bytes = font_file
+        else:
+            font_bytes = await font_file.read()
+        font = ImageFont.truetype(io.BytesIO(font_bytes), size=int(data["font_size"]))
     else:
+        report_progress("prepare_font", "正在读取系统字体", 30)
         font_option = data["font_option"]
         logger.info(f"font_option: {font_option}")
         logger.info(f"font_file_names: {font_file_names}")
@@ -597,18 +826,16 @@ def generate_handwriting():
                 io.BytesIO(font_content), size=int(data["font_size"])
             )
         else:
-            return (
-                jsonify(
-                    {
-                        "status": "fail",
-                        "message": "Missing  fontfile.",
-                    }
-                ),
-                400,
+            return JSONResponse(
+                {
+                    "status": "fail",
+                    "message": "Missing  fontfile.",
+                },
+                status_code=400,
             )
 
     template = Template(
-        background=background_image,
+        background=background_image_obj,
         font=font,
         line_spacing=int(data["line_spacing"]),  # + int(data["font_size"])
         # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
@@ -644,7 +871,8 @@ def generate_handwriting():
     # 创建一个BytesIO对象，用于保存.zip文件的内容
     logger.info(f"data[pdf_save]: {data['pdf_save']}")
     if not data["pdf_save"] == "true":
-        images = handwrite(text_to_generate, template)
+        report_progress("rendering", "正在生成手写图像", 45)
+        images = await run_in_threadpool(handwrite, text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
         # 创建项目内的临时目录，避免使用系统临时目录
         project_temp_base = "./temp"
@@ -660,7 +888,20 @@ def generate_handwriting():
 
         try:
             preview_images_base64 = []
+            try:
+                total_images = len(images)
+                if total_images <= 0:
+                    total_images = 1
+            except TypeError:
+                total_images = None
             for i, im in enumerate(images):
+                if total_images is None:
+                    # 兼容 handwrite 返回 map/generator 等无长度可迭代对象
+                    dynamic_progress = min(90, 60 + min(i, 30))
+                    report_progress("rendering", f"正在处理第 {i + 1} 页", dynamic_progress)
+                else:
+                    dynamic_progress = min(90, 60 + int((i / total_images) * 25))
+                    report_progress("rendering", f"正在处理第 {i + 1}/{total_images} 页", dynamic_progress)
                 # 保存每张图像到临时目录
                 image_path = os.path.join(temp_dir, f"{i}.png")
 
@@ -680,10 +921,10 @@ def generate_handwriting():
                     if full_preview == "false":
                         # 单页预览模式（生产环境）：只返回第一张图片，立即返回
                         safe_remove_directory(temp_dir)
-                        return send_file(
-                            io.BytesIO(image_data),
-                            mimetype="image/png",
-                            as_attachment=False,
+                        report_progress("finalizing", "正在返回预览结果", 100)
+                        return Response(
+                            content=image_data,
+                            media_type="image/png",
                         )
 
                     # 完整预览模式（本地开发）：将图片转换为Base64字符串
@@ -694,13 +935,14 @@ def generate_handwriting():
                 # 完整预览模式：返回包含所有图片Base64字符串的JSON
                 # 立即清理整个临时目录
                 safe_remove_directory(temp_dir)
+                report_progress("finalizing", "正在返回预览结果", 100)
 
-                return jsonify({
-                    "status": "success",
-                    "images": preview_images_base64
-                })
+                return JSONResponse(
+                    {"status": "success", "images": preview_images_base64}
+                )
 
             if not is_preview:
+                report_progress("packaging", "正在打包ZIP文件", 92)
                 # 创建ZIP文件
                 shutil.make_archive(zip_path[:-4], "zip", temp_dir)
 
@@ -713,20 +955,26 @@ def generate_handwriting():
                     safe_remove_file(zip_path)
 
                     # 从内存发送文件
-                    response = send_file(
-                        io.BytesIO(zip_data),
-                        download_name="images.zip",
-                        mimetype="application/zip",
-                        as_attachment=True,
+                    report_progress("finalizing", "正在返回ZIP结果", 100)
+                    response = Response(
+                        content=zip_data,
+                        media_type="application/zip",
+                        headers={
+                            "Content-Disposition": "attachment; filename=images.zip"
+                        },
                     )
                 except Exception as e:
                     logger.error(f"Failed to read ZIP file: {e}")
-                    # 降级到直接发送文件
-                    response = send_file(
-                        zip_path,
-                        download_name="images.zip",
-                        mimetype="application/zip",
-                        as_attachment=True,
+                    # 降级到直接读文件发送
+                    with open(zip_path, "rb") as f:
+                        zip_data = f.read()
+                    report_progress("finalizing", "正在返回ZIP结果", 100)
+                    response = Response(
+                        content=zip_data,
+                        media_type="application/zip",
+                        headers={
+                            "Content-Disposition": "attachment; filename=images.zip"
+                        },
                     )
             return response
         finally:
@@ -736,17 +984,20 @@ def generate_handwriting():
     else:
         logger.info("PDF generate")
         temp_pdf_file_path = None  # 初始化变量
-        images = handwrite(text_to_generate, template)
+        report_progress("rendering", "正在生成手写图像", 45)
+        images = await run_in_threadpool(handwrite, text_to_generate, template)
         try:
-            temp_pdf_file_path = generate_pdf(images=images)
+            report_progress("packaging", "正在导出PDF文件", 92)
+            temp_pdf_file_path = await run_in_threadpool(generate_pdf, images=images)
             # 将文件路径存储在请求上下文中，以便稍后可以访问它
-            request.temp_file_path = temp_pdf_file_path
-            return send_file(
-                temp_pdf_file_path,
-                download_name="images.pdf",
-                mimetype="application/pdf",
-                as_attachment=True,
-                conditional=True,
+            # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
+            with open(temp_pdf_file_path, "rb") as f:
+                pdf_data = f.read()
+            report_progress("finalizing", "正在返回PDF结果", 100)
+            return Response(
+                content=pdf_data,
+                media_type="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=images.pdf"},
             )
         finally:
             # 清理生成的临时 PDF 文件
@@ -777,6 +1028,203 @@ def generate_handwriting():
         # )
 
 
+async def run_generation_task(task_id, base_url, payload):
+    set_generation_task(
+        task_id,
+        status="processing",
+        stage="started",
+        message="任务已开始",
+        progress=1,
+    )
+    await push_task_status_update(task_id)
+    try:
+        def progress_notify(**kwargs):
+            set_generation_task(task_id, **kwargs)
+            asyncio.create_task(push_task_status_update(task_id))
+
+        async with _generation_semaphore:
+            # 拿到信号量后，将阶段更新为"正在执行" 由于这里是协程，所以并不会占据很多资源 4.17.2026
+            set_generation_task(task_id, stage="executing", message="正在生成中")
+            await push_task_status_update(task_id)
+
+            response = await generate_handwriting_impl(
+                base_url=base_url,
+                progress_hook=progress_notify,
+                **payload,
+            )
+        response_body = response.body if response.body is not None else b""
+        response_headers = {}
+        if "content-disposition" in response.headers:
+            response_headers["Content-Disposition"] = response.headers[
+                "content-disposition"
+            ]
+        set_generation_task(
+            task_id,
+            status="completed",
+            response_status_code=response.status_code,
+            response_content_type=response.headers.get("content-type")
+            or response.media_type
+            or "application/octet-stream",
+            response_headers=response_headers,
+            response_body=response_body,
+            stage="completed",
+            message="任务处理完成",
+            progress=100,
+        )
+        await push_task_status_update(task_id)
+    except Exception as e:
+        logger.exception("Generation task failed, task_id=%s", task_id)
+        set_generation_task(
+            task_id,
+            status="failed",
+            error_message=str(e),
+            stage="failed",
+            message="任务处理失败",
+        )
+        await push_task_status_update(task_id)
+
+
+@app.post("/api/generate_handwriting")
+@limiter.limit("200 per 5 minute")
+@handle_exceptions  # 错误捕获的装饰器7.15
+async def generate_handwriting(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    params: GenerateHandwritingParams = Depends(GenerateHandwritingParams.as_form),
+    background_image: Union[UploadFile, str] = File(None),
+    font_file: Union[UploadFile, str] = File(None),
+):
+    cleanup_expired_generation_tasks()
+
+    # ── 并发上限检查 ────────────────────────────────────────────────────
+    MAX_ACTIVE_TASKS = 8  # pending + processing 总数上限，根据服务器配置调整
+    # 队列满时给用户的建议等待时间（秒），固定值比瞎算可靠
+    ESTIMATED_WAIT_SECONDS = 60
+
+    active_count = get_generation_active_task_count()
+    if active_count >= MAX_ACTIVE_TASKS:
+        return JSONResponse(
+            {
+                "status": "queue_full",
+                "message": "当前服务器队列已满，请稍后再试",
+                "active_task_count": active_count,
+                "max_active_tasks": MAX_ACTIVE_TASKS,
+                "estimated_wait_seconds": ESTIMATED_WAIT_SECONDS,
+            },
+            status_code=503,
+        )
+    # ────────────────────────────────────────────────────────────────────
+
+    background_image_bytes = None
+    if isinstance(background_image, UploadFile):
+        background_image_bytes = await background_image.read()
+
+    font_file_bytes = None
+    if isinstance(font_file, UploadFile):
+        font_file_bytes = await font_file.read()
+
+    payload = {
+        "params": params,
+        "background_image": background_image_bytes,
+        "font_file": font_file_bytes,
+    }
+
+    task_id = uuid4().hex
+    now = time.time()
+    set_generation_task(
+        task_id,
+        status="pending",
+        stage="queued",
+        message="任务排队中",
+        progress=0,
+        created_at=now,
+        updated_at=now,
+        response_status_code=None,
+        response_content_type=None,
+        response_headers={},
+        error_message=None,
+    )
+    background_tasks.add_task(run_generation_task, task_id, str(request.base_url), payload)
+
+    return JSONResponse({"status": "accepted", "task_id": task_id})
+
+
+@app.websocket("/api/generate_handwriting/ws/{task_id}")
+async def generate_handwriting_task_websocket(websocket: WebSocket, task_id: str):
+    await websocket.accept()
+    await register_task_websocket(task_id, websocket)
+    try:
+        task = get_generation_task(task_id)
+        if task is None:
+            await websocket.send_json(
+                {"status": "error", "message": "Task not found", "task_id": task_id}
+            )
+            return
+        await websocket.send_json(build_task_status_payload(task_id, task=task))
+
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await unregister_task_websocket(task_id, websocket)
+
+
+@app.get("/api/generate_handwriting/task/{task_id}")
+@limiter.limit("600 per 5 minute")
+@handle_exceptions
+async def get_generate_handwriting_task_status(request: Request, task_id: str):
+    cleanup_expired_generation_tasks()
+    task = get_generation_task(task_id)
+    if task is None:
+        return JSONResponse(
+            {"status": "error", "message": "Task not found"},
+            status_code=404,
+        )
+    return JSONResponse(build_task_status_payload(task_id, task=task))
+
+
+@app.get("/api/generate_handwriting/task/{task_id}/result")
+@limiter.limit("600 per 5 minute")
+@handle_exceptions
+async def get_generate_handwriting_task_result(request: Request, task_id: str):
+    cleanup_expired_generation_tasks()
+    task = get_generation_task(task_id)
+    if task is None:
+        return JSONResponse(
+            {"status": "error", "message": "Task not found"},
+            status_code=404,
+        )
+
+    task_status = task.get("status")
+    if task_status in ("pending", "processing"):
+        return JSONResponse(
+            {"status": "processing", "message": "Task is still running"},
+            status_code=409,
+        )
+    if task_status == "failed":
+        pop_generation_task(task_id)
+        return JSONResponse(
+            {"status": "error", "message": task.get("error_message", "Task failed")},
+            status_code=500,
+        )
+
+    # 从磁盘文件读取响应体
+    result_file_path = task.get("result_file_path")
+    response_body = read_result_file(result_file_path) if result_file_path else b""
+    if response_body is None:
+        response_body = b""
+
+    response = Response(
+        content=response_body,
+        media_type=task.get("response_content_type") or "application/octet-stream",
+        status_code=task.get("response_status_code") or 200,
+        headers=task.get("response_headers") or {},
+    )
+    pop_generation_task(task_id)
+    return response
+
+
 # @app.after_request
 # def cleanup(response):
 #     # 从请求上下文中获取文件路径
@@ -791,15 +1239,11 @@ def generate_handwriting():
 #     return response
 
 
-@app.route("/api/textfileprocess", methods=["POST"])
+@app.post("/api/textfileprocess")
 @limiter.limit("200 per 5 minute")
-def textfileprocess():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No file part in the request"}), 400
+async def textfileprocess(request: Request, file: UploadFile = File(...)):
+    if file is None or file.filename == "":
+        return JSONResponse({"error": "No file part in the request"}, status_code=400)
 
     if file and (
         file.filename.endswith(".docx")
@@ -810,7 +1254,9 @@ def textfileprocess():
     ):
         filename = secure_filename(file.filename)
         filepath = os.path.join(".", "textfileprocess", filename)  # 临时目录
-        file.save(filepath)
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
         text = "读取失败"  # Default value for text
         try:
             if file.filename.endswith(".docx"):
@@ -823,25 +1269,23 @@ def textfileprocess():
             elif file.filename.endswith(".doc"):
                 text = "doc文件暂不支持"
         except Exception as e:
-            return jsonify({"error": f"Error reading file: {str(e)}"}), 500
+            return JSONResponse(
+                {"error": f"Error reading file: {str(e)}"}, status_code=500
+            )
 
         # 删除临时文件
         safe_remove_file(filepath)
 
-        return jsonify({"text": text})
+        return JSONResponse({"text": text})
 
-    return jsonify({"error": "Invalid file type"}), 400
+    return JSONResponse({"error": "Invalid file type"}, status_code=400)
 
 
-@app.route("/api/imagefileprocess", methods=["POST"])
+@app.post("/api/imagefileprocess")
 @limiter.limit("200 per 5 minute")
-def imagefileprocess():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No file part in the request"}), 400
+async def imagefileprocess(request: Request, file: UploadFile = File(...)):
+    if file is None or file.filename == "":
+        return JSONResponse({"error": "No file part in the request"}, status_code=400)
 
     if file and (
         file.filename.endswith(".jpf")
@@ -851,7 +1295,9 @@ def imagefileprocess():
     ):
         filename = secure_filename(file.filename)
         filepath = os.path.join("./imagefileprocess", filename)
-        file.save(filepath)
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
         (
             avg_l_whitespace,
             avg_r_whitespace,
@@ -860,7 +1306,7 @@ def imagefileprocess():
             avg_distance,
         ) = identify_distance(filepath)
         safe_remove_file(filepath)
-        return jsonify(
+        return JSONResponse(
             {
                 "marginLeft": avg_l_whitespace,
                 "marginRight": avg_r_whitespace,
@@ -870,7 +1316,7 @@ def imagefileprocess():
             }
         )
     else:
-        return jsonify({"error": "Invalid file type"}), 400
+        return JSONResponse({"error": "Invalid file type"}, status_code=400)
 
 
 def get_filenames_in_dir(directory):
@@ -881,40 +1327,41 @@ def get_filenames_in_dir(directory):
     ]
 
 
-@app.route("/api/fonts_info", methods=["GET"])
+@app.get("/api/fonts_info")
 def get_fonts_info():
     filenames = get_filenames_in_dir(font_assets_dir)
     logger.info(f"filenames: {filenames}")
     if filenames == []:
-        return jsonify({"error": "fontfile not found"}), 400
-    return jsonify(filenames)
+        return JSONResponse({"error": "fontfile not found"}, status_code=400)
+    return JSONResponse(filenames)
 
 
 def mysql_operation(image_data):
-    cursor = current_app.cnx.cursor()
-    username = session["username"]
+    # cursor = current_app.cnx.cursor()
+    # username = session["username"]
+    username = None  # session 已移除
     # 先检查用户是否已存在
-    cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
-    result = cursor.fetchone()
+    # cursor.execute("SELECT * FROM user_images WHERE username=%s", (username,))
+    # result = cursor.fetchone()
 
     # 根据查询结果来判断应该插入新纪录还是更新旧纪录
-    if result is None:
-        # 如果用户不存在，插入新纪录
-        sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
-        params = (username, image_data)
-    else:
-        # 如果用户已存在，更新旧纪录
-        sql = "UPDATE user_images SET image=%s WHERE username=%s"
-        params = (image_data, username)
+    # if result is None:
+    #     # 如果用户不存在，插入新纪录
+    #     sql = "INSERT INTO user_images (username, image) VALUES (%s, %s)"
+    #     params = (username, image_data)
+    # else:
+    #     # 如果用户已存在，更新旧纪录
+    #     sql = "UPDATE user_images SET image=%s WHERE username=%s"
+    #     params = (image_data, username)
     try:
         pass
         # 执行 SQL 语句
         # 提交到数据库执行
-        cursor.execute(sql, params)
-        current_app.cnx.commit()
+        # cursor.execute(sql, params)
+        # current_app.cnx.commit()
     except Exception as e:
         # 发生错误时回滚
-        current_app.cnx.rollback()
+        # current_app.cnx.rollback()
         logger.info(f"An error occurred: {e}")
 
 
@@ -1024,11 +1471,12 @@ def mysql_operation(image_data):
 #         pass
 
 
-@app.after_request
-def after_request(response):
+@app.middleware("http")
+async def after_request(request: Request, call_next):
+    response = await call_next(request)
     if enable_user_auth.lower() == "true":
-        if hasattr(current_app, "cnx"):
-            current_app.cnx.close()
+        # if hasattr(current_app, "cnx"):
+        #     current_app.cnx.close()
         # 仅用于调试 7.13
         # session.clear()
         return response
@@ -1038,14 +1486,18 @@ def after_request(response):
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     # 启动时清理之前标记的目录
     cleanup_marked_directories()
-    app.run(debug=True, host="0.0.0.0", port=5005)
+    uvicorn.run(app, host="0.0.0.0", port=5005)
 
 
 # poetry
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5005)
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=5005)
 
     # good luck 6/16/2023
     # thank you 2/14/2025

@@ -23,7 +23,7 @@ export default {
   },
   setup() {
     const route = useRoute();
-    const site = 'https://handwrite.14790897.xyz';
+    const site = 'https://handwrite.sixiangjia.de';
     const defaultTitle = '手写文字生成网站 - 在线生成手写图片与 PDF';
     const defaultDesc = '手写文字生成网站，支持多种字体和背景，在线生成高质量手写文字图片与 PDF。适合作业、论文、信件等场景，支持自定义字体、背景与参数调节。';
 
