@@ -145,6 +145,24 @@ npm run serve
 2026.4.18
 Service worker缓存处理不好就会导致用户无法更新新的页面
 
+### 随笔其四
+2026.4.18
+**上传背景图片报错 `Missing required field: background_image`**
+
+**问题根因**：FastAPI 内部使用 `starlette.datastructures.UploadFile`，但代码中 `isinstance(background_image, UploadFile)` 导入的是 `fastapi.UploadFile`。两者在运行时不是同一个类，导致类型检查失败，`background_image_bytes` 被设为 `None`。
+
+**修复方案**：用 `hasattr` 检查对象的特征属性（`read` 和 `filename` 方法），而不是依赖 `isinstance`：
+
+```python
+# ❌ 错误
+if isinstance(background_image, UploadFile):
+    background_image_bytes = await background_image.read()
+
+# ✅ 正确
+if hasattr(background_image, 'read') and hasattr(background_image, 'filename'):
+    background_image_bytes = await background_image.read()
+```
+
 ## 待做
 
 使用 websocket 保持连接，避免 cf 超时，并通知客户端目前生成进度

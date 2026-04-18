@@ -717,7 +717,7 @@ async def generate_handwriting_impl(
     #     # 截短字符，只生成一面
     #     preview_length = 300  # 可以调整为所需的预览长度
     #     text_to_generate = text_to_generate[:preview_length]
-
+    logger.info(f"text_to_generate: {text_to_generate}")
     # 从表单中获取字体文件并处理 7.4
     if font_file is not None:
         report_progress("prepare_font", "正在加载字体文件", 30)
@@ -1037,11 +1037,14 @@ async def generate_handwriting(
     # ────────────────────────────────────────────────────────────────────
 
     background_image_bytes = None
-    if isinstance(background_image, UploadFile):
+    # 注意：starlette.datastructures.UploadFile 可能是 fastapi.UploadFile 的运行时类型
+    # 用 hasattr 兼容两者：检查是否有 read 方法（UploadFile 特征）
+    if hasattr(background_image, "read") and hasattr(background_image, "filename"):
         background_image_bytes = await background_image.read()
 
     font_file_bytes = None
-    if isinstance(font_file, UploadFile):
+    # 同样用 hasattr 兼容 starlette 和 fastapi 的 UploadFile
+    if hasattr(font_file, "read") and hasattr(font_file, "filename"):
         font_file_bytes = await font_file.read()
 
     payload = {
