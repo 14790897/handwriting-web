@@ -1,41 +1,51 @@
+import asyncio
 import base64
 import time
-import asyncio
-from pathlib import Path
-from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect, RequestValidationError
-from fastapi.responses import JSONResponse, Response, StreamingResponse
-from typing import Union, Optional, Any
+from typing import Any, Optional, Union
+
+import psutil
+from dotenv import load_dotenv
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+
 # run_in_threadpool 已移除：handwrite() 返回惰性生成器（map 对象），
 # 真正的 CPU 密集渲染在后续 for 循环消费生成器时才发生，
 # 而 generate_handwriting_impl 整体运行在 BackgroundTask 里，HTTP 请求已秒回，
 # 所以 run_in_threadpool 在此场景下无法真正释放事件循环。
 from handright import Template, handwrite
+
 # from threading import Thread
-from PIL import Image, ImageFont, ImageDraw
-from dotenv import load_dotenv
-import psutil
+from PIL import Image, ImageDraw, ImageFont
 
 load_dotenv()
-import os
 import gc
-
 import io
 import logging
-from datetime import timedelta
-from werkzeug.utils import secure_filename
-from threading import Lock
+import os
+import shutil
+import tempfile
 from uuid import uuid4
+
+import PyPDF2
 
 # 文件模块
 from docx import Document
-import PyPDF2
-import tempfile
-import shutil
-from pdf import generate_pdf
 
 # 图片处理模块
 from identify import identify_distance
+from pdf import generate_pdf
+from werkzeug.utils import secure_filename
 
 
 # 安全文件删除函数
@@ -221,36 +231,33 @@ def cleanup_marked_directories():
         logger.warning(f"Error during cleanup of marked directories: {e}")
 
 
-# sentry 错误报告7.7
-import sentry_sdk
-from sentry_sdk.integrations.starlette import StarletteIntegration
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-
-# 限制请求速率 7.9
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-
 # 装饰器 7.15
 from functools import wraps
-from task_types import (
-    GenerationTask,
-    GenerateHandwritingParams,
-    form_dependency_from_model,
-)
-from task_store import (
-    set_task as set_generation_task,
-    get_task as get_generation_task,
-    pop_task as pop_generation_task,
-    cleanup_expired as cleanup_expired_generation_tasks,
-    get_queue_metrics as get_generation_queue_metrics,
-    get_active_task_count as get_generation_active_task_count,
-    read_result_file,
-    generation_task_ttl_seconds,
-)
 
 # 定时清理文件 10.28
 import schedule_clean
+
+# sentry 错误报告7.7
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+
+# 限制请求速率 7.9
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from task_store import cleanup_expired as cleanup_expired_generation_tasks
+from task_store import get_active_task_count as get_generation_active_task_count
+from task_store import get_queue_metrics as get_generation_queue_metrics
+from task_store import get_task as get_generation_task
+from task_store import pop_task as pop_generation_task
+from task_store import read_result_file
+from task_store import set_task as set_generation_task
+from task_types import (
+    GenerateHandwritingParams,
+    GenerationTask,
+    form_dependency_from_model,
+)
 
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
@@ -424,6 +431,7 @@ def read_docx(file_path):
 
 
 import pypandoc
+
 try:
     # 1. 尝试获取 Pandoc 版本
     # 如果系统里已经安装了（比如你在 Dockerfile 里用 apt-get 装了），这里会成功
@@ -600,40 +608,9 @@ async def generate_handwriting_impl(
             },
             status_code=500,
         )
-    required_form_fields = [
-        "text",
-        "font_size",
-        "line_spacing",
-        "fill",
-        "left_margin",
-        "top_margin",
-        "right_margin",
-        "bottom_margin",
-        "word_spacing",
-        "line_spacing_sigma",
-        "font_size_sigma",
-        "word_spacing_sigma",
-        "perturb_x_sigma",
-        "perturb_y_sigma",
-        "perturb_theta_sigma",
-        "preview",
-    ]
-    # "height","width",
-
-    for field in required_form_fields:
-        if field not in data:
-            return JSONResponse(
-                {
-                    "status": "fail",
-                    "message": f"Missing required field: {field}",
-                },
-                status_code=400,
-            )
-        else:
-            logger.info(f"{field}: {data[field]}")  # 打印具体的 form 字段值
-            # 如果存在height和width，就创建一个新的背景图     todo
-            # height=int(data["height"]),
-            # width=int(data["width"]),
+    # 如果存在height和width，就创建一个新的背景图     todo
+    # height=int(data["height"]),
+    # width=int(data["width"]),
 
     # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if "width" in data and "height" in data:
