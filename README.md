@@ -162,8 +162,8 @@ if isinstance(background_image, UploadFile):
 if hasattr(background_image, 'read') and hasattr(background_image, 'filename'):
     background_image_bytes = await background_image.read()
 ```
-
-## 待做
+最后一定要记住一点点，不要相信VSCode或者任何值得相信的程序，它有时候会出错，导致我的fast API服务器无法输出日志，最好的方法就是重启
+## 待做(已完成)
 
 使用 websocket 保持连接，避免 cf 超时，并通知客户端目前生成进度
 socketio.emit('image_generated', {'image_index': i, 'image_path': image_path})
