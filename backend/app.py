@@ -2,7 +2,7 @@ import base64
 import time
 import asyncio
 from pathlib import Path
-from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, Form, File, UploadFile, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect, RequestValidationError
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from typing import Union, Optional, Any
 from fastapi.middleware.cors import CORSMiddleware
@@ -340,6 +340,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# 自定义 422 错误响应，把字段名提取出来让前端更易读
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    missing_fields = []
+    invalid_fields = []
+    for err in exc.errors():
+        loc = ".".join(str(l) for l in err["loc"] if l not in ("body", "query", "path"))
+        if err["type"] in ("missing", "value_error.missing"):
+            missing_fields.append(loc)
+        else:
+            invalid_fields.append(f"{loc}: {err['msg']}")
+
+    if missing_fields:
+        message = f"缺少必填字段: {', '.join(missing_fields)}"
+    else:
+        message = f"字段验证失败: {', '.join(invalid_fields)}"
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "fail",
+            "message": message,
+            "errors": [
+                {"field": ".".join(str(l) for l in e["loc"] if l not in ("body", "query", "path")),
+                 "message": e["msg"]}
+                for e in exc.errors()
+            ],
+        },
+    )
 
 # 设置Flask app的logger级别
 # app.logger.setLevel(logging.DEBUG)
