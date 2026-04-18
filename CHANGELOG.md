@@ -1,3 +1,10 @@
+## [1.20.4](https://github.com/14790897/handwriting-web/compare/v1.20.3...v1.20.4) (2026-04-18)
+
+
+### Bug Fixes
+
+* sw 有网 → 用最新代码，同时写入缓存 → 离线 → 用缓存兜底 , 解决了更新后用户无法使用新页面的问题 ([5368cd4](https://github.com/14790897/handwriting-web/commit/5368cd489805cc512518da26e92ab1c9458eea50))
+
 ## [1.20.3](https://github.com/14790897/handwriting-web/compare/v1.20.2...v1.20.3) (2026-04-17)
 
 
