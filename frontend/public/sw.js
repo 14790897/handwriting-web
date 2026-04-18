@@ -1,35 +1,14 @@
 // Service Worker for PWA
-const CACHE_NAME = 'handwrite-v1.0.0';
-const urlsToCache = [
-  '/',
-  '/static/css/app.css',
-  '/static/js/app.js',
-  '/static/js/chunk-vendors.js',
-  '/icon.svg',
-  '/favicon.ico',
-  '/manifest.json',
-  // 添加其他重要资源
-  '/default.png',
-  '/default1.png',
-  '/writing.png'
-];
+// Network First 策略：优先从网络获取最新资源，网络不可用时回退到缓存
+const CACHE_NAME = 'handwrite-cache-v1';
 
-// 安装事件
+// 安装：新 SW 直接激活，不等待旧 SW 释放控制权
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Install');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Service Worker: Caching files');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.log('Service Worker: Cache failed', error);
-      })
-  );
+  self.skipWaiting();
 });
 
-// 激活事件
+// 激活：立即控制所有页面，清理旧版本缓存
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activate');
   event.waitUntil(
@@ -42,76 +21,34 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// 拦截请求
+// 拦截请求：Network First（网络优先，缓存兜底）
 self.addEventListener('fetch', (event) => {
-  // 过滤掉非 GET 请求
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // 过滤掉不支持的请求协议
-  if (!event.request.url.startsWith("http")) {
-    return;
-  }
-
-  // 过滤掉 Chrome 扩展请求
-  if (event.request.url.startsWith("chrome-extension://")) {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith("http")) return;
+  if (event.request.url.startsWith("chrome-extension://")) return;
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // 如果缓存中有，返回缓存
-      if (response) {
-        return response;
-      }
-
-      // 否则发起网络请求
-      return fetch(event.request)
-        .then((response) => {
-          // 检查是否是有效响应
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type !== "basic"
-          ) {
-            return response;
-          }
-
-          // 克隆响应
+    fetch(event.request)
+      .then((response) => {
+        // 网络成功，克隆并存入缓存供离线使用
+        if (response && response.status === 200 && response.type === "basic") {
           const responseToCache = response.clone();
-
-          // 添加到缓存（使用 try-catch 避免不支持的请求）
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => {
-              try {
-                cache.put(event.request, responseToCache);
-              } catch (error) {
-                console.warn(
-                  "Failed to cache request:",
-                  event.request.url,
-                  error
-                );
-              }
-            })
-            .catch((error) => {
-              console.warn("Failed to open cache:", error);
-            });
-
-          return response;
-        })
-        .catch(() => {
-          // 网络失败时的后备方案
-          if (event.request.destination === "document") {
-            return caches.match("/");
-          }
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // 网络失败，尝试返回缓存
+        return caches.match(event.request).then((cachedResponse) => {
+          return cachedResponse || (event.request.destination === "document" ? caches.match("/") : undefined);
         });
-    })
+      })
   );
 });
 
