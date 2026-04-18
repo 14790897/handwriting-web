@@ -20,7 +20,8 @@ class GenerationTask(TypedDict, total=False):
 
 
 class GenerateHandwritingParams(BaseModel):
-    """手写生成请求的表单参数（字段全是 str，因为 FormData 天然传字符串）。"""
+    """手写生成请求参数，文件和表单字段合一。"""
+    # 表单字段
     text: str
     font_size: str
     line_spacing: str
@@ -50,6 +51,10 @@ class GenerateHandwritingParams(BaseModel):
     font_option: Union[str, None] = None
     pdf_save: str = "false"
     full_preview: str = "true"
+
+    # 文件字段（非 Pydantic 验证，走 FastAPI File 绑定）
+    # 注意：FastAPI 端点中仍需单独声明 File 参数，
+    # 此字段仅作类型提示和文档用途
 
 
 def form_dependency_from_model(model_cls: type[BaseModel]):
