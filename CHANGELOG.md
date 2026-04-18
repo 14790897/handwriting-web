@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/14790897/handwriting-web/compare/v1.20.4...v1.21.0) (2026-04-18)
+
+
+### Features
+
+* add custom 422 error response for improved field validation feedback ([7e073d3](https://github.com/14790897/handwriting-web/commit/7e073d31c51184890e82691effda2ccbde31c4de))
+
 ## [1.20.4](https://github.com/14790897/handwriting-web/compare/v1.20.3...v1.20.4) (2026-04-18)
 
 
