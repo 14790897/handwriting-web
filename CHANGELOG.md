@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/14790897/handwriting-web/compare/v1.21.0...v1.21.1) (2026-04-18)
+
+
+### Bug Fixes
+
+* 类型判断错误，导致图片参数无法识别 ([1b35ce8](https://github.com/14790897/handwriting-web/commit/1b35ce8498178cae25e090dde01d88a24a15e86b))
+
 # [1.21.0](https://github.com/14790897/handwriting-web/compare/v1.20.4...v1.21.0) (2026-04-18)
 
 
