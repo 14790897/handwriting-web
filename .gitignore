@@ -35,3 +35,4 @@ transparent_image.png
 backend/pandoc-*-macOS.pkg
 *.pkg
 *.db
+*.bin
