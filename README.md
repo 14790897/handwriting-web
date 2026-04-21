@@ -163,7 +163,10 @@ if hasattr(background_image, 'read') and hasattr(background_image, 'filename'):
     background_image_bytes = await background_image.read()
 ```
 最后一定要记住一点点，不要相信VSCode或者任何值得相信的程序，它有时候会出错，导致我的fast API服务器无法输出日志，最好的方法就是重启
-
+### 随笔其五
+2026.4.21
+将原先首屏的大图片替换成小的webp，大大优化FCP
+![lighthouse](lighthouse.png)
 ## 待做(已完成)
 
 使用 websocket 保持连接，避免 cf 超时，并通知客户端目前生成进度
