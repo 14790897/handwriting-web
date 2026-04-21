@@ -1,6 +1,8 @@
 services:
   frontend:
     image: 14790897/frontend-handwriting:latest
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     ports:
       - "2345:80"
     depends_on:
@@ -14,6 +16,8 @@ services:
 
   backend:
     image: 14790897/backend-handwriting:latest
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     ports:
       - "127.0.0.1:5005:5005"
     # 启动时同步字体文件到指定文件夹，如果直接将字体文件夹挂载到容器中，会默认同步宿主机的空文件导致被覆盖
@@ -28,5 +32,14 @@ services:
     cpu_period: 100000
     mem_limit: 1500m
     memswap_limit: 4000m
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --cleanup --rolling-restart --schedule "0 0 */6 * * *"
  
 
