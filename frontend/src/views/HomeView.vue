@@ -2,20 +2,6 @@
   <div class="container">
     <!-- 错误消息以及提示信息 -->
     <div id="message">
-      <div v-if="errorMessage" class="alert alert-danger" role="alert">
-        {{ errorMessage }}
-      </div>
-      <!-- 队列已满提示 -->
-      <div v-if="queueFullCountdown > 0" class="alert alert-queue-full" role="alert">
-        <span class="queue-full-icon">⚠️</span>
-        <span class="queue-full-text">服务器当前繁忙，队列已满</span>
-        <span class="queue-full-timer">
-          预计 <strong>{{ queueFullCountdown }}</strong> 秒后可重试
-        </span>
-        <div class="queue-full-bar-wrap">
-          <div class="queue-full-bar" :style="{ width: queueFullBarPercent + '%' }"></div>
-        </div>
-      </div>
       <div v-if="message" class="alert alert-info" role="alert">
         {{ message }}
       </div>
@@ -456,10 +442,76 @@ export default {
   watch: {
     login_delete_message(newVal) {
       if (newVal) {
-        this.errorMessage = '';
         // this.message = '';
         // this.uploadMessage = '';
         console.log('已进入watch，错误消息已经清空');
+      }
+    },
+    errorMessage(newVal) {
+      if (newVal) {
+        this.$swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: newVal,
+          showConfirmButton: false,
+          timer: 5000,
+          timerProgressBar: true,
+        });
+      }
+    },
+    message(newVal) {
+      if (newVal) {
+        this.$swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: newVal,
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+      }
+    },
+    uploadMessage(newVal) {
+      if (newVal) {
+        this.$swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'info',
+          title: newVal,
+          showConfirmButton: false,
+          timer: false, // 上传提示保持显示
+          showClass: { popup: 'swal2-show' },
+          hideClass: { popup: 'swal2-hide' },
+        });
+      }
+    },
+    queueFullCountdown(newVal) {
+      if (newVal > 0) {
+        this.$swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'warning',
+          title: `服务器繁忙，队列已满，预计 ${newVal} 秒后可重试`,
+          showConfirmButton: false,
+          timer: newVal * 1000,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            const progressBar = toast.querySelector('.swal2-timer-progress-bar');
+            if (progressBar && this.queueFullTotal > 0) {
+              // 更新进度条
+              const updateProgress = () => {
+                if (this.queueFullCountdown > 0 && progressBar) {
+                  const percent = (this.queueFullCountdown / this.queueFullTotal) * 100;
+                  progressBar.style.width = percent + '%';
+                  requestAnimationFrame(updateProgress);
+                }
+              };
+              requestAnimationFrame(updateProgress);
+            }
+          },
+        });
       }
     },
     text: {
@@ -841,7 +893,12 @@ export default {
 
       // 检查是否正在生成
       if (this.isGenerating) {
-        alert('正在生成中，请稍候...');
+        this.$swal.fire({
+          icon: 'warning',
+          title: '正在生成中，请稍候...',
+          showConfirmButton: false,
+          timer: 2000,
+        });
         return;
       }
 
@@ -850,7 +907,12 @@ export default {
       const timeSinceLastGenerate = currentTime - this.lastGenerateTime;
       if (timeSinceLastGenerate < this.generateCooldown) {
         const remainingTime = Math.ceil((this.generateCooldown - timeSinceLastGenerate) / 1000);
-        alert(`请等待 ${remainingTime} 秒后再次生成`);
+        this.$swal.fire({
+          icon: 'warning',
+          title: `请等待 ${remainingTime} 秒后再次生成`,
+          showConfirmButton: false,
+          timer: 2000,
+        });
         return;
       }
 
@@ -1095,10 +1157,18 @@ export default {
         // 将字符串存储到 localStorage 中
         localStorage.setItem('myPreset', dataString);
 
-        alert('预设设置保存成功！');
+        this.$swal.fire({
+          icon: 'success',
+          title: '预设设置保存成功！',
+          timer: 2000,
+          showConfirmButton: false,
+        });
       } catch (error) {
         console.error('保存预设设置失败:', error);
-        alert('保存预设设置失败');
+        this.$swal.fire({
+          icon: 'error',
+          title: '保存预设设置失败',
+        });
       }
     },
     resetSettings() {
@@ -1143,7 +1213,10 @@ export default {
         let dataString = localStorage.getItem('myPreset');
 
         if (dataString === null || dataString === "undefined") {
-          alert('没有找到保存的预设设置');
+          this.$swal.fire({
+            icon: 'info',
+            title: '没有找到保存的预设设置',
+          });
           return;
         }
 
@@ -1153,10 +1226,18 @@ export default {
           this[item] = data[item];
         });
 
-        alert('预设设置加载成功！');
+        this.$swal.fire({
+          icon: 'success',
+          title: '预设设置加载成功！',
+          timer: 2000,
+          showConfirmButton: false,
+        });
       } catch (error) {
         console.error('加载预设设置失败:', error);
-        alert('加载预设设置失败，请检查保存的数据是否有效');
+        this.$swal.fire({
+          icon: 'error',
+          title: '加载预设设置失败，请检查保存的数据是否有效',
+        });
       }
     },
     onBackgroundImageChange(event) {
@@ -1795,66 +1876,6 @@ input[type="file"]:hover {
   border: 1px solid #ffcc02;
 }
 
-/* 队列已满提示 */
-.alert-queue-full {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
-  border: 1px solid #ffc107;
-  color: #7b5800;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.queue-full-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.queue-full-text {
-  font-weight: 600;
-  flex: 1;
-  min-width: 120px;
-}
-
-.queue-full-timer {
-  font-size: 13px;
-  color: #9e6800;
-  flex-shrink: 0;
-}
-
-.queue-full-timer strong {
-  font-size: 18px;
-  font-weight: 700;
-  color: #e65100;
-  margin: 0 2px;
-}
-
-.queue-full-bar-wrap {
-  width: 100%;
-  height: 4px;
-  background: #ffe082;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.queue-full-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #ffa000, #ff6d00);
-  border-radius: 2px;
-  transition: width 1s linear;
-}
-
-
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
+/* 队列已满提示 - 已迁移到 Swal Toast */
 
 </style>
