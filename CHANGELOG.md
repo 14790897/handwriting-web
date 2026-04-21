@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/14790897/handwriting-web/compare/v1.23.0...v1.24.0) (2026-04-21)
+
+
+### Features
+
+* add conditional rendering for preview header based on image availability ([fc83555](https://github.com/14790897/handwriting-web/commit/fc83555ddac9068019568d458756b55107cd6ab9))
+
 # [1.23.0](https://github.com/14790897/handwriting-web/compare/v1.22.0...v1.23.0) (2026-04-21)
 
 
