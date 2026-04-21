@@ -9,7 +9,7 @@
       <div v-if="uploadMessage" class="alert alert-info" role="alert">
         {{ uploadMessage }}
       </div>
-    </div>
+    </div> 
 
     <div id="form">
       <div class="container_file row">
