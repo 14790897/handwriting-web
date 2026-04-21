@@ -1,5 +1,8 @@
 <template>
-  <UserLayout>
+  <transition name="splash-fade">
+    <BookSplash v-if="showSplash" @complete="showSplash = false" />
+  </transition>
+  <UserLayout v-show="!showSplash">
       <router-view ref="myComponentRef"/>
       <!-- <HomeView /> -->
   </UserLayout>
@@ -9,6 +12,7 @@
 <script>
 import UserLayout from './views/UserLayout.vue';
 import PWAInstallPrompt from './components/PWAInstallPrompt.vue';
+import BookSplash from './components/BookSplash.vue';
 // import HomeView from './views/HomeView.vue';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
@@ -19,7 +23,13 @@ export default {
   components: {
     UserLayout,
     PWAInstallPrompt,
+    BookSplash,
     // HomeView
+  },
+  data() {
+    return {
+      showSplash: !localStorage.getItem('bookSplashShown'),
+    };
   },
   setup() {
     const route = useRoute();
