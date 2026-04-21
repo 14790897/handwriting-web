@@ -323,7 +323,7 @@ export default {
       marginBottom: 50,
       marginLeft: 50,
       marginRight: 50,
-      previewImage: "/default1.png", // 添加一个新的数据属性来保存预览图片的 URL
+      previewImage: "/default1.webp", // 添加一个新的数据属性来保存预览图片的 URL
       previewImages: [], // 用于存储多页预览图片的数组
       currentPreviewIndex: 0, // 当前预览的图片索引
       preview: false,
@@ -1206,7 +1206,7 @@ export default {
       this.selectedFontFileName = '';
       this.selectedImageFileName = '';
       this.selectedOption = '1';
-      this.previewImage = "/default1.png";
+      this.previewImage = "/default1.webp";
     },
     loadPreset() {
       try {
