@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/14790897/handwriting-web/compare/v1.21.1...v1.22.0) (2026-04-21)
+
+
+### Features
+
+* add BookSplash component with splash animation and user interaction ([2aebc96](https://github.com/14790897/handwriting-web/commit/2aebc966f12fe168c56207fe67dc6e88d226ed9f))
+
 ## [1.21.1](https://github.com/14790897/handwriting-web/compare/v1.21.0...v1.21.1) (2026-04-18)
 
 
