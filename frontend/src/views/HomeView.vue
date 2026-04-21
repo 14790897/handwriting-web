@@ -1,4 +1,5 @@
 <template>
+  <div style="height: 20px;"></div>
   <div class="container">
     <!-- 错误消息以及提示信息 -->
     <div id="message">
@@ -1560,7 +1561,7 @@ export default {
   margin: 0 auto;
   box-sizing: border-box;
   overflow: auto;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
 }
 
 #form label {
@@ -1584,7 +1585,9 @@ export default {
   /* justify-content: center; */
   align-items: center;
 }
-
+.buttons{
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
 .buttons button {
   grid-area: button;
   padding: 10px 10px;

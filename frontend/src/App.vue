@@ -2,15 +2,15 @@
   <transition name="splash-fade">
     <BookSplash v-if="showSplash" @complete="showSplash = false" />
   </transition>
-  <UserLayout v-show="!showSplash">
+  <!-- <UserLayout v-show="!showSplash"> -->
       <router-view ref="myComponentRef"/>
       <!-- <HomeView /> -->
-  </UserLayout>
+  <!-- </UserLayout> -->
   <PWAInstallPrompt />
 </template>
 
 <script>
-import UserLayout from './views/UserLayout.vue';
+// import UserLayout from './views/UserLayout.vue';
 import PWAInstallPrompt from './components/PWAInstallPrompt.vue';
 import BookSplash from './components/BookSplash.vue';
 // import HomeView from './views/HomeView.vue';
@@ -21,7 +21,7 @@ import { useHead } from '@vueuse/head';
 export default {
   name: 'App',
   components: {
-    UserLayout,
+    // UserLayout,
     PWAInstallPrompt,
     BookSplash,
     // HomeView
