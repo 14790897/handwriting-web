@@ -252,7 +252,7 @@
     </div>
     <!-- 预览区 -->
     <div class="preview">
-      <h2>{{ $t('message.preview') }}:</h2>
+      <h2 v-if="!previewImages || previewImages.length === 0">{{ $t('message.preview') }}:</h2>
 
       <div class="preview-container text-center">
         <!-- 导航按钮 -->
