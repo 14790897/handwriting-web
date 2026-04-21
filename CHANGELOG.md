@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/14790897/handwriting-web/compare/v1.22.0...v1.23.0) (2026-04-21)
+
+
+### Features
+
+* replace alert messages with Swal toast notifications for improved user experience ([23f3427](https://github.com/14790897/handwriting-web/commit/23f34279cf0f0329ba45a2d328a9e31f0e69a7a5))
+
 # [1.22.0](https://github.com/14790897/handwriting-web/compare/v1.21.1...v1.22.0) (2026-04-21)
 
 
