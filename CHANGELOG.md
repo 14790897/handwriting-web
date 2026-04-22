@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/14790897/handwriting-web/compare/v1.24.0...v1.25.0) (2026-04-22)
+
+
+### Features
+
+* add axios-retry for automatic request retries on network errors ([6298968](https://github.com/14790897/handwriting-web/commit/6298968593935f8a0fbdc81524893e5e18fef214))
+
 # [1.24.0](https://github.com/14790897/handwriting-web/compare/v1.23.0...v1.24.0) (2026-04-21)
 
 
