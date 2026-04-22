@@ -7,6 +7,7 @@ import router from "./router";
 import store from "./store";
 import i18n from "./i18n";
 import axios from "axios";
+import axiosRetry from "axios-retry";
 import Clarity from "@microsoft/clarity";
 // eslint-disable-next-line no-unused-vars
 import Swal from "sweetalert2";
@@ -101,6 +102,29 @@ app.use(store);
 app.use(router);
 app.use(i18n);
 app.use(head);
+
+// 配置自动重试：网络错误 或 5xx 响应自动重试，最多 3 次，指数退避
+axiosRetry(axios, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay, // 1s → 2s → 4s
+  retryCondition: (error) => {
+    // 503 queue_full 是业务状态，不需要重试
+    if (
+      error.response?.status === 503 &&
+      error.response?.data?.status === "queue_full"
+    ) {
+      return false;
+    }
+    // 网络错误 或 5xx 服务端错误时重试
+    return (
+      axiosRetry.isNetworkError(error) ||
+      axiosRetry.isRetryableError(error)
+    );
+  },
+  onRetry: (retryCount, error) => {
+    console.warn(`请求重试第 ${retryCount} 次，原因：${error.message}`);
+  },
+});
 
 app.config.globalProperties.$http = axios;
 app.config.globalProperties.$swal = Swal;
