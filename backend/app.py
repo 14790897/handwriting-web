@@ -597,7 +597,7 @@ async def generate_handwriting_impl(
     # try:
     # 先获取 form 数据
     if len(data["text"]) > 10000 and (
-        base_url == "https://handwrite.14790897.xyz/"
+        base_url == "https://handwrite.sixiangjia.de/"
         or base_url == "https://handwrite.sixiangjia.de/"
     ):
         # 请自己构建应用来运行而不是使用这个网页

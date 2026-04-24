@@ -9,7 +9,7 @@ Disallow: /.git/
 Disallow: /node_modules/
 
 # 网站地图位置
-Sitemap: https://handwrite.14790897.xyz/sitemap.xml
+Sitemap: https://handwrite.sixiangjia.de/sitemap.xml
 
 # 爬取延迟（可选）
 Crawl-delay: 1
