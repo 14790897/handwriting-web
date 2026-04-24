@@ -1,3 +1,10 @@
+## [1.25.2](https://github.com/14790897/handwriting-web/compare/v1.25.1...v1.25.2) (2026-04-24)
+
+
+### Bug Fixes
+
+* update URLs to point to the new domain for the handwriting generation site ([e761196](https://github.com/14790897/handwriting-web/commit/e7611969ec86a0bbf86c2ec2c15ea37cb9814634))
+
 ## [1.25.1](https://github.com/14790897/handwriting-web/compare/v1.25.0...v1.25.1) (2026-04-22)
 
 
