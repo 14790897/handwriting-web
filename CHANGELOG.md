@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/14790897/handwriting-web/compare/v1.25.2...v1.26.0) (2026-04-25)
+
+
+### Features
+
+* integrate PWA support with Workbox and remove legacy service worker ([fc83a58](https://github.com/14790897/handwriting-web/commit/fc83a58261337622e558a33818e5877401381414))
+
 ## [1.25.2](https://github.com/14790897/handwriting-web/compare/v1.25.1...v1.25.2) (2026-04-24)
 
 
