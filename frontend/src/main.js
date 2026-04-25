@@ -137,3 +137,14 @@ app.config.globalProperties.$swal = Swal;
 // app.use(Viewer);
 
 app.mount("#app");
+
+// 注销旧版 /sw.js，迁移到 workbox 生成的 service-worker.js
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      if (registration.active?.scriptURL?.includes("sw.js")) {
+        registration.unregister();
+      }
+    }
+  });
+}
