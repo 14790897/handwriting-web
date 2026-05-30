@@ -138,13 +138,26 @@ app.config.globalProperties.$swal = Swal;
 
 app.mount("#app");
 
-// 注销旧版 /sw.js，迁移到 workbox 生成的 service-worker.js
+// Service Worker 版本更新提示
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      if (registration.active?.scriptURL?.includes("sw.js")) {
-        registration.unregister();
+  window.addEventListener("load", async () => {
+    try {
+      // 注销旧版 /sw.js
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        if (reg.active?.scriptURL?.includes("sw.js")) {
+          await reg.unregister();
+        }
       }
+
+      // 监听新版本激活，提示用户刷新
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (confirm("网站已更新到新版本，点击确定刷新页面以加载最新内容。")) {
+          window.location.reload();
+        }
+      });
+    } catch (error) {
+      console.error("[SW] 初始化失败:", error);
     }
   });
 }

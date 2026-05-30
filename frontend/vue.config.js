@@ -34,27 +34,18 @@ module.exports = defineConfig({
     workboxOptions: {
       skipWaiting: true,
       clientsClaim: true,
+      // 清理旧版 precache 缓存
+      cleanupOutdatedCaches: true,
+      // 静态资源（JS/CSS/字体/图片）由 precache 自动管理版本，不需要 runtimeCaching
       runtimeCaching: [
-        // StaleWhileRevalidate - 返回缓存同时更新（适用于静态资源）
+        // API - 网络优先，离线时回退缓存
         {
-          urlPattern: /\.(js|css|woff2?)$/,
-          handler: "StaleWhileRevalidate",
+          urlPattern: /\/api\//,
+          handler: "NetworkFirst",
           options: {
-            cacheName: "static-resources",
+            cacheName: "api-cache",
             cacheableResponse: { statuses: [0, 200] },
-          },
-        },
-        // CacheFirst - 缓存优先（适用于图片等不常变更的资源）
-        {
-          urlPattern: /\.(png|jpg|jpeg|gif|svg|ico|webp)$/,
-          handler: "CacheFirst",
-          options: {
-            cacheName: "image-cache",
-            expiration: {
-              maxEntries: 100,
-              maxAgeSeconds: 30 * 24 * 60 * 60, // 30 天
-            },
-            cacheableResponse: { statuses: [0, 200] },
+            networkTimeoutSeconds: 10,
           },
         },
       ],
