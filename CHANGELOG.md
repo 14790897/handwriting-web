@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/14790897/handwriting-web/compare/v1.26.0...v1.27.0) (2026-05-30)
+
+
+### Features
+
+* add SW update prompt and optimize caching strategy ([6a0feab](https://github.com/14790897/handwriting-web/commit/6a0feab456d1c7e53d37b4e9925a6619b16b22ec))
+
 # [1.26.0](https://github.com/14790897/handwriting-web/compare/v1.25.2...v1.26.0) (2026-04-25)
 
 
