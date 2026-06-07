@@ -1,9 +1,5 @@
 import io
-import sys
 import zipfile
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from pdf import build_pdf_zip_bytes
 

@@ -913,11 +913,11 @@ async def generate_handwriting_impl(
             with open(temp_pdf_file_path, "rb") as f:
                 pdf_data = f.read()
             zip_data = build_pdf_zip_bytes(pdf_data)
-            report_progress("finalizing", "正在返回PDF压缩包结果", 100)
+            report_progress("finalizing", "正在返回PDF ZIP压缩包结果", 100)
             return Response(
                 content=zip_data,
                 media_type="application/zip",
-                headers={"Content-Disposition": "attachment; filename=images_pdf.zip"},
+                headers={"Content-Disposition": "attachment; filename=images.zip"},
             )
         finally:
             # 清理生成的临时 PDF 文件
