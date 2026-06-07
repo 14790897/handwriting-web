@@ -44,7 +44,7 @@ from docx import Document
 
 # 图片处理模块
 from identify import identify_distance
-from pdf import generate_pdf
+from pdf import build_pdf_zip_bytes, generate_pdf
 from werkzeug.utils import secure_filename
 
 
@@ -910,15 +910,14 @@ async def generate_handwriting_impl(
             report_progress("packaging", "正在导出PDF文件", 92)
             # generate_pdf 会消费惰性 images，渲染在此函数内完成
             temp_pdf_file_path = generate_pdf(images=images)
-            # 将文件路径存储在请求上下文中，以便稍后可以访问它
-            # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
             with open(temp_pdf_file_path, "rb") as f:
                 pdf_data = f.read()
-            report_progress("finalizing", "正在返回PDF结果", 100)
+            zip_data = build_pdf_zip_bytes(pdf_data)
+            report_progress("finalizing", "正在返回PDF压缩包结果", 100)
             return Response(
-                content=pdf_data,
-                media_type="application/pdf",
-                headers={"Content-Disposition": "attachment; filename=images.pdf"},
+                content=zip_data,
+                media_type="application/zip",
+                headers={"Content-Disposition": "attachment; filename=images_pdf.zip"},
             )
         finally:
             # 清理生成的临时 PDF 文件
