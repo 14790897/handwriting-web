@@ -12,7 +12,7 @@ def build_pdf_zip_bytes(pdf_data: bytes, inner_filename: str = "images.pdf") -> 
         zip_buffer,
         mode="w",
         compression=zipfile.ZIP_DEFLATED,
-        compresslevel=9,
+        compresslevel=6,
     ) as zip_file:
         zip_file.writestr(inner_filename, pdf_data)
     return zip_buffer.getvalue()
