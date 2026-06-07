@@ -42,3 +42,13 @@ To add fonts, font files are placed in ttf_files in the project root directory
 ## Conclusion
 
 I hope you enjoy using my handwriting generator site to create your personalized handwriting pictures!
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=14790897%2Fhandwriting-web&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&legend=top-left" />
+ </picture>
+</a>

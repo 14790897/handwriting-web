@@ -178,3 +178,13 @@ if hasattr(background_image, 'read') and hasattr(background_image, 'filename'):
 使用 websocket 保持连接，避免 cf 超时，并通知客户端目前生成进度
 socketio.emit('image_generated', {'image_index': i, 'image_path': image_path})
 使用队列，通知客户端目前有多少人等待，暂存请求（目前好像是直接抛弃）
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=14790897%2Fhandwriting-web&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&legend=top-left" />
+ </picture>
+</a>
