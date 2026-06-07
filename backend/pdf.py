@@ -2,6 +2,20 @@ import fitz  # PyMuPDF
 from PIL import Image
 import tempfile
 import os, shutil
+import io
+import zipfile
+
+
+def build_pdf_zip_bytes(pdf_data: bytes, inner_filename: str = "images.pdf") -> bytes:
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(
+        zip_buffer,
+        mode="w",
+        compression=zipfile.ZIP_DEFLATED,
+        compresslevel=6,
+    ) as zip_file:
+        zip_file.writestr(inner_filename, pdf_data)
+    return zip_buffer.getvalue()
 
 def generate_pdf(images):
     # 创建项目内的临时目录，避免使用系统临时目录
