@@ -85,12 +85,12 @@ mounted() {
     this.leftLines = this.generateLines(6, 10);
     this.rightLines = this.generateLines(6, 10);
     setTimeout(() => { this.bookOpen = true; }, 400);
-    setTimeout(() => { this.showBrand = true; }, 1000);
+    setTimeout(() => { this.showBrand = true; }, 700);
     setTimeout(() => {
       localStorage.setItem('bookSplashShown', '1');
       this.visible = false;
       this.$emit('complete');
-    }, 3200);
+    }, 1200);
   },
   methods: {
     skipAnimation() {
