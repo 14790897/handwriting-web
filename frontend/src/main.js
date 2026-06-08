@@ -25,9 +25,7 @@ const initThirdPartyServices = async () => {
   script.src = "https://www.googletagmanager.com/gtag/js?id=G-GB1XG89B6Z";
   document.head.appendChild(script);
 
-  script.onload = async () => {
-    const { default: Clarity } = await import("@microsoft/clarity");
-    Clarity.init("ounxp8da5s");
+  script.onload = () => {
     window.dataLayer = window.dataLayer || [];
 
     function gtag() {
@@ -130,38 +128,43 @@ app.config.globalProperties.$swal = Swal;
 
 app.mount("#app");
 
+const initServiceWorkerUpdatePrompt = async () => {
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const reg of registrations) {
+      if (reg.active?.scriptURL?.includes("sw.js")) {
+        await reg.unregister();
+      }
+    }
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (confirm("网站已更新到新版本，点击确定刷新页面以加载最新内容。")) {
+        window.location.reload();
+      }
+    });
+  } catch (error) {
+    console.error("[SW] 初始化失败:", error);
+  }
+};
+
 window.addEventListener("load", () => {
+  const runThirdPartyInit = () => {
+    initThirdPartyServices().catch((error) => {
+      console.error("[3P] 初始化失败:", error);
+    });
+  };
+
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(() => {
-      void initThirdPartyServices();
+      runThirdPartyInit();
     });
-    return;
+  } else {
+    setTimeout(() => {
+      runThirdPartyInit();
+    }, 150);
   }
-  setTimeout(() => {
-    void initThirdPartyServices();
-  }, 0);
+
+  if ("serviceWorker" in navigator) {
+    void initServiceWorkerUpdatePrompt();
+  }
 });
-
-// Service Worker 版本更新提示
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      // 注销旧版 /sw.js
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of registrations) {
-        if (reg.active?.scriptURL?.includes("sw.js")) {
-          await reg.unregister();
-        }
-      }
-
-      // 监听新版本激活，提示用户刷新
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (confirm("网站已更新到新版本，点击确定刷新页面以加载最新内容。")) {
-          window.location.reload();
-        }
-      });
-    } catch (error) {
-      console.error("[SW] 初始化失败:", error);
-    }
-  });
-}
