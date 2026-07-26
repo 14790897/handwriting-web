@@ -222,7 +222,8 @@
 
     <div class="preset-row">
       <label for="builtinPreset">{{ $t('message.presetLabel') }}:</label>
-      <select id="builtinPreset" v-model="selectedPreset" @change="applyPreset" class="styled-select">
+      <select id="builtinPreset" v-model="selectedPreset" @change="applyPreset" class="styled-select"
+        :disabled="!presetOptionsReady">
         <option value="">{{ $t('message.presetNone') }}</option>
         <option value="smallUnderlined">{{ $t('message.presetSmallUnderlined') }}</option>
       </select>
@@ -303,6 +304,37 @@ import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import Swal from 'sweetalert2';
 
+const BUILTIN_PRESETS = {
+  smallUnderlined: {
+    fontName: '云烟体.ttf',
+    values: {
+      fontSize: 70,
+      lineSpacing: 100,
+      width: 2481,
+      height: 3507,
+      marginTop: 150,
+      marginBottom: 150,
+      marginLeft: 150,
+      marginRight: 150,
+      lineSpacingSigma: 1,
+      fontSizeSigma: 1,
+      wordSpacingSigma: 2,
+      perturbXSigma: 1,
+      perturbYSigma: 1,
+      perturbThetaSigma: 0.05,
+      wordSpacing: 2,
+      strikethrough_length_sigma: 2,
+      strikethrough_angle_sigma: 2,
+      strikethrough_width_sigma: 2,
+      strikethrough_probability: 0,
+      strikethrough_width: 8,
+      ink_depth_sigma: 30,
+      isUnderlined: true,
+      enableEnglishSpacing: false,
+    },
+  },
+};
+
 
 
 export default {
@@ -350,6 +382,8 @@ export default {
       selectedImageFileName: '',
       //字体下拉选框
       selectedOption: '1',  // 当前选中的选项
+      selectedPreset: '',
+      builtinPresets: BUILTIN_PRESETS,
       options: '',  // 下拉选项
       isLoading: false, //7.6
       strikethrough_length_sigma: 2,
@@ -374,40 +408,24 @@ export default {
       queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
-      selectedPreset: '',
-      builtinPresets: {
-        smallUnderlined: {
-          fontName: '云烟体.ttf',
-          values: {
-            fontSize: 70,
-            lineSpacing: 100,
-            width: 2481,
-            height: 3507,
-            marginTop: 150,
-            marginBottom: 150,
-            marginLeft: 150,
-            marginRight: 150,
-            lineSpacingSigma: 1,
-            fontSizeSigma: 1,
-            wordSpacingSigma: 2,
-            perturbXSigma: 1,
-            perturbYSigma: 1,
-            perturbThetaSigma: 0.05,
-            wordSpacing: 2,
-            strikethrough_length_sigma: 2,
-            strikethrough_angle_sigma: 2,
-            strikethrough_width_sigma: 2,
-            strikethrough_probability: 0,
-            strikethrough_width: 8,
-            ink_depth_sigma: 30,
-            isUnderlined: true,
-            enableEnglishSpacing: false,
-          },
-        },
-      },
     };
   },
   created() {
+
+    const savedPreset = localStorage.getItem('selectedPreset');
+    if (savedPreset !== null && savedPreset !== "undefined") {
+      try {
+        const presetKey = JSON.parse(savedPreset);
+        if (typeof presetKey === 'string' && (!presetKey || this.builtinPresets[presetKey])) {
+          this.selectedPreset = presetKey;
+        } else {
+          localStorage.removeItem('selectedPreset');
+        }
+      } catch (error) {
+        console.error('解析内置预设失败:', error);
+        localStorage.removeItem('selectedPreset');
+      }
+    }
 
     // const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
 
@@ -425,25 +443,13 @@ export default {
       }
     });
 
-    const savedPreset = localStorage.getItem('selectedPreset');
-    if (savedPreset !== null && savedPreset !== "undefined") {
-      try {
-        const presetKey = JSON.parse(savedPreset);
-        if (typeof presetKey === 'string' && (!presetKey || this.builtinPresets[presetKey])) {
-          this.selectedPreset = presetKey;
-        }
-      } catch (error) {
-        console.error('解析内置预设失败:', error);
-      }
-    }
-
     this.$http.get('/api/fonts_info').then(response => {
       this.options = response.data.map((font, index) => {
         return { value: String(index + 1), text: font };
       });
       const selected = this.builtinPresets[this.selectedPreset];
-      if (selected) {
-        this.applyPresetFont(selected.fontName);
+      if (selected && !this.applyPresetFont(selected.fontName)) {
+        this.clearSelectedPreset();
       }
     }).catch(error => {
       if (error.response && error.response.data) {
@@ -490,6 +496,10 @@ export default {
     },
     isDevEnv() {
       return process.env.NODE_ENV === 'development';
+    },
+    presetOptionsReady() {
+      const preset = this.builtinPresets.smallUnderlined;
+      return Array.isArray(this.options) && this.options.some(option => option.text === preset.fontName);
     },
 
     //vuex中的login_delete_message，下面使用watch监控这个值  7.13
@@ -750,17 +760,18 @@ export default {
       },
       deep: true
     },
-    selectedPreset(newVal) {
-      localStorage.setItem('selectedPreset', JSON.stringify(newVal));
-    },
   },
 
   methods: {
+    clearSelectedPreset() {
+      this.selectedPreset = '';
+      localStorage.removeItem('selectedPreset');
+    },
     applyPresetFont(fontName) {
-      if (!fontName || !Array.isArray(this.options)) return;
+      if (!fontName || !Array.isArray(this.options)) return false;
 
       const match = this.options.find(option => option.text === fontName);
-      if (!match) return;
+      if (!match) return false;
 
       this.selectedOption = match.value;
       this.fontFile = null;
@@ -768,16 +779,29 @@ export default {
       localStorage.setItem('selectedOption', JSON.stringify(match.value));
       localStorage.setItem('fontFile', JSON.stringify(null));
       localStorage.setItem('selectedFontFileName', JSON.stringify(''));
+      return true;
     },
     applyPreset() {
       const preset = this.builtinPresets[this.selectedPreset];
-      if (!preset) return;
+      if (!preset) {
+        this.clearSelectedPreset();
+        return;
+      }
+
+      if (!this.applyPresetFont(preset.fontName)) {
+        this.clearSelectedPreset();
+        this.$swal.fire({
+          icon: 'error',
+          title: this.$t('message.presetUnavailable'),
+        });
+        return;
+      }
 
       Object.entries(preset.values).forEach(([key, value]) => {
         this[key] = value;
         localStorage.setItem(key, JSON.stringify(value));
       });
-      this.applyPresetFont(preset.fontName);
+      localStorage.setItem('selectedPreset', JSON.stringify(this.selectedPreset));
 
       this.$swal.fire({
         icon: 'success',
@@ -1294,7 +1318,7 @@ export default {
       this.selectedFontFileName = '';
       this.selectedImageFileName = '';
       this.selectedOption = '1';
-      this.selectedPreset = '';
+      this.clearSelectedPreset();
       this.previewImage = "/default1.webp";
     },
     loadPreset() {
@@ -1315,7 +1339,7 @@ export default {
         Object.keys(data).forEach(item => {
           this[item] = data[item];
         });
-        this.selectedPreset = '';
+        this.clearSelectedPreset();
 
         this.$swal.fire({
           icon: 'success',
