@@ -63,7 +63,7 @@ class TypographyTest(unittest.TestCase):
                 )
             )
 
-        expected_end_chars = "，。》？；：’”】｝、！％）,.>?;:]}!%)′″℃℉"
+        expected_end_chars = "，。》？；：’”】｝、！％）,.>?;:]}!%)′″℃℉"  # noqa: RUF001
         self.assertTrue(
             set(expected_end_chars).issubset(captured_template.get_end_chars())
         )
