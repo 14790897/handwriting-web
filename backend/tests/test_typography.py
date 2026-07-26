@@ -43,7 +43,7 @@ def _draft_lines(text):
 
 class TypographyTest(unittest.TestCase):
     def test_closing_punctuation_does_not_start_a_line(self):
-        for punctuation in "，。！？；：、）》】’”":
+        for punctuation in "，。！？；：、）》】’”,.>?;:]}!%)′″℃℉":
             with self.subTest(punctuation=punctuation):
                 self.assertEqual(
                     _draft_lines(f"丁。{punctuation}后文"),
