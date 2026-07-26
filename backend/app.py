@@ -505,10 +505,15 @@ def apply_right_align(text, template):
             continue
 
         # Handright decides whether to wrap before drawing each glyph. Its
-        # threshold reserves one nominal font-size cell at the right edge, so
-        # only the advances before the final glyph belong in this calculation.
-        content_prefix_width = sum(advance(char) for char in content[:-1])
-        available_padding = last_glyph_start_limit - content_prefix_width
+        # threshold reserves one nominal font-size cell at the right edge.
+        # Negative word spacing can make an advance negative, so the furthest
+        # glyph start is not necessarily the final glyph's start.
+        prefix_width = 0
+        max_prefix_width = 0
+        for char in content:
+            max_prefix_width = max(max_prefix_width, prefix_width)
+            prefix_width += advance(char)
+        available_padding = last_glyph_start_limit - max_prefix_width
 
         if pad_unit > 0 and available_padding > 0:
             # Handright perturbs glyph sizes and spacing during rendering. Keep

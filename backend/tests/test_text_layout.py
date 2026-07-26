@@ -110,6 +110,31 @@ class TextLayoutTest(unittest.TestCase):
 
         self.assertEqual([line.lstrip("　") for line in lines], [content])
 
+    def test_right_align_handles_negative_character_advances(self):
+        font = FakeFont(size=50, glyph_width=20)
+        template = Template(
+            background=Image.new("RGB", (218, 160), "white"),
+            font=font,
+            line_spacing=60,
+            left_margin=20,
+            top_margin=10,
+            right_margin=20,
+            bottom_margin=10,
+            word_spacing=-24,
+            line_spacing_sigma=0,
+            font_size_sigma=0,
+            word_spacing_sigma=0,
+            perturb_x_sigma=0,
+            perturb_y_sigma=0,
+            perturb_theta_sigma=0,
+            ink_depth_sigma=0,
+        )
+        content = "iiiiiiiiii"
+
+        lines = draft_lines(apply_right_align(">>>" + content, template), template)
+
+        self.assertEqual([line.lstrip("　") for line in lines], [content])
+
     @patch("app.handwrite")
     def test_manual_page_breaks_render_each_chunk(self, handwrite_mock):
         template = FakeTemplate()
