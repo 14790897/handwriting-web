@@ -220,6 +220,14 @@
       </div>
     </div>
 
+    <div class="preset-row">
+      <label for="builtinPreset">{{ $t('message.presetLabel') }}:</label>
+      <select id="builtinPreset" v-model="selectedPreset" @change="applyPreset" class="styled-select">
+        <option value="">{{ $t('message.presetNone') }}</option>
+        <option value="smallUnderlined">{{ $t('message.presetSmallUnderlined') }}</option>
+      </select>
+    </div>
+
     <div class="buttons">
       <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
       <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
@@ -366,6 +374,37 @@ export default {
       queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
+      selectedPreset: '',
+      builtinPresets: {
+        smallUnderlined: {
+          fontName: '云烟体.ttf',
+          values: {
+            fontSize: 70,
+            lineSpacing: 100,
+            width: 2481,
+            height: 3507,
+            marginTop: 150,
+            marginBottom: 150,
+            marginLeft: 150,
+            marginRight: 150,
+            lineSpacingSigma: 1,
+            fontSizeSigma: 1,
+            wordSpacingSigma: 2,
+            perturbXSigma: 1,
+            perturbYSigma: 1,
+            perturbThetaSigma: 0.05,
+            wordSpacing: 2,
+            strikethrough_length_sigma: 2,
+            strikethrough_angle_sigma: 2,
+            strikethrough_width_sigma: 2,
+            strikethrough_probability: 0,
+            strikethrough_width: 8,
+            ink_depth_sigma: 30,
+            isUnderlined: true,
+            enableEnglishSpacing: false,
+          },
+        },
+      },
     };
   },
   created() {
@@ -386,10 +425,26 @@ export default {
       }
     });
 
+    const savedPreset = localStorage.getItem('selectedPreset');
+    if (savedPreset !== null && savedPreset !== "undefined") {
+      try {
+        const presetKey = JSON.parse(savedPreset);
+        if (typeof presetKey === 'string' && (!presetKey || this.builtinPresets[presetKey])) {
+          this.selectedPreset = presetKey;
+        }
+      } catch (error) {
+        console.error('解析内置预设失败:', error);
+      }
+    }
+
     this.$http.get('/api/fonts_info').then(response => {
       this.options = response.data.map((font, index) => {
         return { value: String(index + 1), text: font };
       });
+      const selected = this.builtinPresets[this.selectedPreset];
+      if (selected) {
+        this.applyPresetFont(selected.fontName);
+      }
     }).catch(error => {
       if (error.response && error.response.data) {
         this.errorMessage = error.response.data.error;
@@ -695,9 +750,42 @@ export default {
       },
       deep: true
     },
+    selectedPreset(newVal) {
+      localStorage.setItem('selectedPreset', JSON.stringify(newVal));
+    },
   },
 
   methods: {
+    applyPresetFont(fontName) {
+      if (!fontName || !Array.isArray(this.options)) return;
+
+      const match = this.options.find(option => option.text === fontName);
+      if (!match) return;
+
+      this.selectedOption = match.value;
+      this.fontFile = null;
+      this.selectedFontFileName = '';
+      localStorage.setItem('selectedOption', JSON.stringify(match.value));
+      localStorage.setItem('fontFile', JSON.stringify(null));
+      localStorage.setItem('selectedFontFileName', JSON.stringify(''));
+    },
+    applyPreset() {
+      const preset = this.builtinPresets[this.selectedPreset];
+      if (!preset) return;
+
+      Object.entries(preset.values).forEach(([key, value]) => {
+        this[key] = value;
+        localStorage.setItem(key, JSON.stringify(value));
+      });
+      this.applyPresetFont(preset.fontName);
+
+      this.$swal.fire({
+        icon: 'success',
+        title: this.$t('message.presetApplied'),
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    },
     prevPage() {
       if (this.currentPreviewIndex > 0) {
         this.currentPreviewIndex--;
@@ -1206,6 +1294,7 @@ export default {
       this.selectedFontFileName = '';
       this.selectedImageFileName = '';
       this.selectedOption = '1';
+      this.selectedPreset = '';
       this.previewImage = "/default1.webp";
     },
     loadPreset() {
@@ -1226,6 +1315,7 @@ export default {
         Object.keys(data).forEach(item => {
           this[item] = data[item];
         });
+        this.selectedPreset = '';
 
         this.$swal.fire({
           icon: 'success',
@@ -1726,6 +1816,23 @@ input[type="file"]:hover {
 
 .styled-select:focus {
   outline: none;
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.preset-row label {
+  margin: 0;
+}
+
+.preset-row .styled-select {
+  min-width: 220px;
 }
 
 .button-container {
