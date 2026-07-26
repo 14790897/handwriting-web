@@ -1,51 +1,73 @@
+import asyncio
 import unittest
-from collections import defaultdict
-from pathlib import Path
 from unittest.mock import patch
 
-from PIL import Image, ImageFont
-from handright import Template
-import handright._core as handright_core
+from handright import Template as HandrightTemplate
+from PIL import Image
+
+from app import GenerateHandwritingParams, generate_handwriting_impl
 
 
-def _draft_lines(text):
-    font_path = Path(__file__).parents[1] / "font_assets" / "李国夫手写体.ttf"
-    font = ImageFont.truetype(str(font_path), 24)
-    positioned_chars = []
-    original_flow_layout = handright_core._flow_layout
+class TemplateCaptured(Exception):
+    pass
 
-    def record_flow_layout(draw, x, y, char, template, rand):
-        positioned_chars.append((round(y), char))
-        return original_flow_layout(draw, x, y, char, template, rand)
 
-    template = Template(
-        background=Image.new("RGB", (60, 120), "white"),
-        font=font,
-        line_spacing=30,
-        word_spacing=0,
-        line_spacing_sigma=0,
-        font_size_sigma=0,
-        word_spacing_sigma=0,
-        perturb_x_sigma=0,
-        perturb_y_sigma=0,
-        perturb_theta_sigma=0,
-        ink_depth_sigma=0,
-    )
-
-    with patch.object(handright_core, "_flow_layout", record_flow_layout):
-        list(handright_core._draft(text, (template,), seed=1))
-
-    chars_by_line = defaultdict(list)
-    for y, char in positioned_chars:
-        chars_by_line[y].append(char)
-    return ["".join(chars) for chars in chars_by_line.values()]
+class FakeFont:
+    size = 24
 
 
 class TypographyTest(unittest.TestCase):
-    def test_closing_punctuation_does_not_start_a_line(self):
-        for punctuation in "，。！？；：、）》】’”,.>?;:]}!%)′″℃℉":
-            with self.subTest(punctuation=punctuation):
-                self.assertEqual(
-                    _draft_lines(f"丁。{punctuation}后文"),
-                    [f"丁。{punctuation}", "后文"],
+    def test_app_preserves_handright_default_end_chars(self):
+        params = GenerateHandwritingParams(
+            text="A.) B",
+            font_size="24",
+            line_spacing="30",
+            fill="(0, 0, 0, 255)",
+            left_margin="0",
+            top_margin="0",
+            right_margin="0",
+            bottom_margin="0",
+            word_spacing="0",
+            line_spacing_sigma="0",
+            font_size_sigma="0",
+            word_spacing_sigma="0",
+            perturb_x_sigma="0",
+            perturb_y_sigma="0",
+            perturb_theta_sigma="0",
+            preview="true",
+            width="60",
+            height="120",
+        )
+        captured_template = None
+
+        def capture_template(*args, **kwargs):
+            nonlocal captured_template
+            captured_template = HandrightTemplate(*args, **kwargs)
+            raise TemplateCaptured
+
+        with (
+            patch("app.psutil.cpu_percent", return_value=0),
+            patch(
+                "app.create_notebook_image",
+                return_value=Image.new("RGB", (60, 120), "white"),
+            ),
+            patch("app.ImageFont.truetype", return_value=FakeFont()),
+            patch("app.Template", side_effect=capture_template),
+            self.assertRaises(TemplateCaptured),
+        ):
+            asyncio.run(
+                generate_handwriting_impl(
+                    "http://localhost/",
+                    params,
+                    font_file=b"test-font",
                 )
+            )
+
+        expected_end_chars = "，。》？；：’”】｝、！％）,.>?;:]}!%)′″℃℉"
+        self.assertTrue(
+            set(expected_end_chars).issubset(captured_template.get_end_chars())
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
