@@ -222,7 +222,7 @@
 
     <div class="preset-row">
       <label for="builtinPreset">{{ $t('message.presetLabel') }}:</label>
-      <select id="builtinPreset" v-model="selectedPreset" @change="applyPreset" class="styled-select"
+      <select id="builtinPreset" :value="selectedPreset" @change="applyPreset" class="styled-select"
         :disabled="!presetOptionsReady">
         <option value="">{{ $t('message.presetNone') }}</option>
         <option value="smallUnderlined">{{ $t('message.presetSmallUnderlined') }}</option>
@@ -776,20 +776,33 @@ export default {
       this.selectedOption = match.value;
       this.fontFile = null;
       this.selectedFontFileName = '';
+      if (this.$refs.fontFileInput) {
+        this.$refs.fontFileInput.value = '';
+      }
       localStorage.setItem('selectedOption', JSON.stringify(match.value));
       localStorage.setItem('fontFile', JSON.stringify(null));
       localStorage.setItem('selectedFontFileName', JSON.stringify(''));
       return true;
     },
-    applyPreset() {
-      const preset = this.builtinPresets[this.selectedPreset];
+    applyPreset(event) {
+      const presetKey = event.target.value;
+      const preset = this.builtinPresets[presetKey];
       if (!preset) {
         this.clearSelectedPreset();
         return;
       }
 
+      if (this.backgroundImage && ('width' in preset.values || 'height' in preset.values)) {
+        event.target.value = this.selectedPreset;
+        this.$swal.fire({
+          icon: 'info',
+          title: this.$t('message.presetBackgroundImageActive'),
+        });
+        return;
+      }
+
       if (!this.applyPresetFont(preset.fontName)) {
-        this.clearSelectedPreset();
+        event.target.value = this.selectedPreset;
         this.$swal.fire({
           icon: 'error',
           title: this.$t('message.presetUnavailable'),
@@ -801,6 +814,7 @@ export default {
         this[key] = value;
         localStorage.setItem(key, JSON.stringify(value));
       });
+      this.selectedPreset = presetKey;
       localStorage.setItem('selectedPreset', JSON.stringify(this.selectedPreset));
 
       this.$swal.fire({
@@ -1356,6 +1370,7 @@ export default {
       }
     },
     onBackgroundImageChange(event) {
+      this.clearSelectedPreset();
       // 当用户选择了一个新的背景图片文件时，更新 selectedImageFileName，由于这边直接触发函数了，所以localstorage可以在这里修改，
       //之前因为文字不能触发函数，所以要放在watch里面
       this.selectedImageFileName = event.target.files[0].name;
@@ -1409,6 +1424,7 @@ export default {
       })
     },
     onFontChange(event) {
+      this.clearSelectedPreset();
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
       this.selectedFontFileName = event.target.files[0].name;
       this.fontFile = event.target.files[0];
