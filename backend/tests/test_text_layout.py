@@ -1,14 +1,22 @@
 import unittest
+from collections import defaultdict
 from unittest.mock import call, patch
+
+from PIL import Image
+from handright import Template
+import handright._core as handright_core
 
 from app import apply_right_align, handwrite_with_page_breaks
 
 
 class FakeFont:
-    size = 20
+    def __init__(self, size=20, glyph_width=20):
+        self.size = size
+        self.glyph_width = glyph_width
 
     def getbbox(self, char):
-        return (0, 0, 20, 20)
+        width = self.size if char == "　" else self.glyph_width
+        return (0, 0, width, self.size)
 
 
 class FakeTemplate:
@@ -29,6 +37,23 @@ class FakeTemplate:
 
     def get_right_margin(self):
         return 20
+
+
+def draft_lines(text, template):
+    positioned_chars = []
+
+    def record_flow_layout(draw, x, y, char, tpl, rand):
+        positioned_chars.append((round(y), char))
+        left, _, right, _ = tpl.get_font().getbbox(char)
+        return x + (right - left) + tpl.get_word_spacing()
+
+    with patch.object(handright_core, "_flow_layout", record_flow_layout):
+        list(handright_core._draft(text, (template,), seed=1))
+
+    chars_by_line = defaultdict(list)
+    for y, char in positioned_chars:
+        chars_by_line[y].append(char)
+    return ["".join(chars_by_line[y]) for y in sorted(chars_by_line)]
 
 
 class TextLayoutTest(unittest.TestCase):
@@ -59,6 +84,31 @@ class TextLayoutTest(unittest.TestCase):
             apply_right_align(">>> 签名", FakeTemplate(ZeroSpaceFont())),
             "签名",
         )
+
+    def test_right_align_does_not_wrap_with_negative_word_spacing(self):
+        font = FakeFont(size=50, glyph_width=20)
+        template = Template(
+            background=Image.new("RGB", (218, 160), "white"),
+            font=font,
+            line_spacing=60,
+            left_margin=20,
+            top_margin=10,
+            right_margin=20,
+            bottom_margin=10,
+            word_spacing=-15,
+            line_spacing_sigma=0,
+            font_size_sigma=0,
+            word_spacing_sigma=0,
+            perturb_x_sigma=0,
+            perturb_y_sigma=0,
+            perturb_theta_sigma=0,
+            ink_depth_sigma=0,
+        )
+        content = "July 27, 2026"
+
+        lines = draft_lines(apply_right_align(">>>" + content, template), template)
+
+        self.assertEqual([line.lstrip("　") for line in lines], [content])
 
     @patch("app.handwrite")
     def test_manual_page_breaks_render_each_chunk(self, handwrite_mock):
@@ -91,6 +141,27 @@ class TextLayoutTest(unittest.TestCase):
 
         self.assertEqual(pages, ["正文"])
         handwrite_mock.assert_called_once_with("正文", template)
+
+    @patch("app.handwrite")
+    def test_page_break_preserves_additional_blank_lines(self, handwrite_mock):
+        template = FakeTemplate()
+        handwrite_mock.side_effect = lambda text, _: [text]
+
+        pages = list(
+            handwrite_with_page_breaks(
+                "第一页尾部\n\n---\n\n第二页顶部",
+                template,
+            )
+        )
+
+        self.assertEqual(pages, ["第一页尾部\n", "\n第二页顶部"])
+        self.assertEqual(
+            handwrite_mock.call_args_list,
+            [
+                call("第一页尾部\n", template),
+                call("\n第二页顶部", template),
+            ],
+        )
 
     @patch("app.handwrite")
     def test_inline_dashes_remain_plain_text(self, handwrite_mock):

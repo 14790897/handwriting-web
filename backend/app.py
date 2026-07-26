@@ -482,6 +482,7 @@ def apply_right_align(text, template):
     usable_width = (
         width - template.get_left_margin() - template.get_right_margin()
     )
+    last_glyph_start_limit = usable_width - font.size
 
     def advance(char):
         left, _, right, _ = font.getbbox(char)
@@ -498,8 +499,16 @@ def apply_right_align(text, template):
             continue
 
         content = line[marker.end():]
-        content_width = sum(advance(char) for char in content)
-        available_padding = usable_width - content_width
+        if not content:
+            output.append("")
+            aligned_count += 1
+            continue
+
+        # Handright decides whether to wrap before drawing each glyph. Its
+        # threshold reserves one nominal font-size cell at the right edge, so
+        # only the advances before the final glyph belong in this calculation.
+        content_prefix_width = sum(advance(char) for char in content[:-1])
+        available_padding = last_glyph_start_limit - content_prefix_width
 
         if pad_unit > 0 and available_padding > 0:
             # Handright perturbs glyph sizes and spacing during rendering. Keep
@@ -525,11 +534,18 @@ def handwrite_with_page_breaks(text, template):
     if not _PAGE_BREAK_RE.search(aligned):
         return handwrite(aligned, template)
 
-    chunks = [
-        chunk.strip("\n")
-        for chunk in _PAGE_BREAK_RE.split(aligned)
-        if chunk.strip("\n").strip()
-    ]
+    raw_chunks = _PAGE_BREAK_RE.split(aligned)
+    chunks = []
+    for index, chunk in enumerate(raw_chunks):
+        # Splitting a marker-only line leaves one delimiter newline on each
+        # side. Remove exactly those two newlines, preserving any additional
+        # blank lines the user intentionally placed around the page break.
+        if index > 0 and chunk.startswith("\n"):
+            chunk = chunk[1:]
+        if index < len(raw_chunks) - 1 and chunk.endswith("\n"):
+            chunk = chunk[:-1]
+        if chunk.strip():
+            chunks.append(chunk)
     logger.info("manual page break detected: %s chunk(s)", len(chunks))
 
     if not chunks:
