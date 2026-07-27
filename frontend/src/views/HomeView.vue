@@ -366,13 +366,14 @@ export default {
       queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
+      persistentUiItems: ['enableFullPreview'],
     };
   },
   created() {
 
     // const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
 
-    this.localStorageItems.forEach(item => {
+    [...this.localStorageItems, ...this.persistentUiItems].forEach(item => {
       const value = localStorage.getItem(item);
       if (value !== null && value !== "undefined") {
         try {
@@ -385,6 +386,10 @@ export default {
         console.log('localstorage缺失item:' + item)
       }
     });
+
+    if (typeof this.enableFullPreview !== 'boolean') {
+      this.enableFullPreview = false;
+    }
 
     this.$http.get('/api/fonts_info').then(response => {
       this.options = response.data.map((font, index) => {
@@ -694,6 +699,9 @@ export default {
         localStorage.setItem('enableEnglishSpacing', JSON.stringify(newVal));
       },
       deep: true
+    },
+    enableFullPreview(newVal) {
+      localStorage.setItem('enableFullPreview', JSON.stringify(newVal));
     },
   },
 
