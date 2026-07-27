@@ -1,3 +1,10 @@
+## [1.27.2](https://github.com/14790897/handwriting-web/compare/v1.27.1...v1.27.2) (2026-07-27)
+
+
+### Bug Fixes
+
+* remember full preview preference ([#65](https://github.com/14790897/handwriting-web/issues/65)) ([90b79dd](https://github.com/14790897/handwriting-web/commit/90b79dd89a69eaf2d96332a5aa06ad9dd5c495ea))
+
 ## [1.27.1](https://github.com/14790897/handwriting-web/compare/v1.27.0...v1.27.1) (2026-07-27)
 
 
