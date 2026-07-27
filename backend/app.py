@@ -765,7 +765,8 @@ async def generate_handwriting_impl(
         line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
         font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
         word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
-        end_chars="，。",  # 防止特定字符因排版算法的自动换行而出现在行首
+        # Keep handright's full default end_chars set so closing punctuation,
+        # such as right quotes, stays on the previous line.
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
