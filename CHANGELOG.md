@@ -1,3 +1,10 @@
+## [1.27.1](https://github.com/14790897/handwriting-web/compare/v1.27.0...v1.27.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* prevent closing punctuation from starting a line ([#64](https://github.com/14790897/handwriting-web/issues/64)) ([0aaff84](https://github.com/14790897/handwriting-web/commit/0aaff84fecc6904a5d0c5acc96615e8a249cf0bd))
+
 # [1.27.0](https://github.com/14790897/handwriting-web/compare/v1.26.0...v1.27.0) (2026-05-30)
 
 
