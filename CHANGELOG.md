@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/14790897/handwriting-web/compare/v1.27.2...v1.28.0) (2026-07-28)
+
+
+### Features
+
+* add manual page breaks and right-aligned lines ([#66](https://github.com/14790897/handwriting-web/issues/66)) ([3bcc098](https://github.com/14790897/handwriting-web/commit/3bcc098e770efb30a7b756ce29c2192983f7e3b0))
+
 ## [1.27.2](https://github.com/14790897/handwriting-web/compare/v1.27.1...v1.27.2) (2026-07-27)
 
 
