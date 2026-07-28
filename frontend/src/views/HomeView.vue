@@ -15,7 +15,18 @@
       <div class="container_file row">
 
         <div class="col justify-content-between">
-          <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
+          <TextInput ref="textInputComp" @childEvent="(eventData) => { this.text = eventData }"
+            @manual-input="clearLetterFormatBackup"></TextInput>
+          <div class="letter-format-actions">
+            <button type="button" class="letter-format-button" @click="openLetterFormatter">
+              <span class="letter-format-mark" aria-hidden="true">信</span>
+              {{ $t('message.formatChineseLetter') }}
+            </button>
+            <button v-if="letterFormatBackup !== null" type="button" class="letter-format-undo"
+              @click="undoLetterFormatting">
+              {{ $t('message.letterUndo') }}
+            </button>
+          </div>
         </div>
 
         <div class="col">
@@ -210,6 +221,9 @@
       </div>
     </div>
 
+    <ChineseLetterFormatter v-if="showLetterFormatter" :source-text="text"
+      @close="showLetterFormatter = false" @apply="applyLetterFormatting" />
+
     <!-- 生成状态提示 -->
     <div v-if="isGenerating || isInCooldownPeriod" class="generation-status">
       <div v-if="isGenerating" class="status-generating">
@@ -293,6 +307,7 @@
 <script>
 import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
+import ChineseLetterFormatter from '../components/ChineseLetterFormatter.vue';
 import Swal from 'sweetalert2';
 
 
@@ -306,6 +321,7 @@ export default {
   // },
   components: {
     TextInput,
+    ChineseLetterFormatter,
 
   },
 
@@ -365,6 +381,8 @@ export default {
       queueFullTotal: 0,            // 初始等待秒数，用于计算进度条
       queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
+      showLetterFormatter: false,
+      letterFormatBackup: null,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
       persistentUiItems: ['enableFullPreview'],
     };
@@ -706,6 +724,42 @@ export default {
   },
 
   methods: {
+    openLetterFormatter() {
+      if (!this.text || !this.text.trim()) {
+        this.$swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'info',
+          title: this.$t('message.letterTextRequired'),
+          showConfirmButton: false,
+          timer: 2200,
+        });
+        return;
+      }
+      this.showLetterFormatter = true;
+    },
+    applyLetterFormatting(formattedText) {
+      const textInput = this.$refs.textInputComp;
+      if (!textInput || typeof textInput.replaceText !== 'function') return;
+
+      if (this.letterFormatBackup === null) {
+        this.letterFormatBackup = this.text;
+      }
+      textInput.replaceText(formattedText);
+      this.showLetterFormatter = false;
+      this.message = this.$t('message.letterFormatApplied');
+    },
+    undoLetterFormatting() {
+      const textInput = this.$refs.textInputComp;
+      if (!textInput || typeof textInput.replaceText !== 'function' || this.letterFormatBackup === null) return;
+
+      const previousText = this.letterFormatBackup;
+      this.letterFormatBackup = null;
+      textInput.replaceText(previousText);
+    },
+    clearLetterFormatBackup() {
+      this.letterFormatBackup = null;
+    },
     prevPage() {
       if (this.currentPreviewIndex > 0) {
         this.currentPreviewIndex--;
@@ -1675,6 +1729,57 @@ input[type="file"]:hover {
   /* 放大输入框 */
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
   /* 添加阴影效果 */
+}
+
+.letter-format-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 400px;
+  margin: 10px auto 0;
+}
+
+.container_file .letter-format-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+}
+
+.container_file .letter-format-button {
+  color: #fffaf0;
+  background: #963b32;
+  border-color: #7f3029;
+}
+
+.container_file .letter-format-button:hover {
+  background: #7f3029;
+}
+
+.container_file .letter-format-undo {
+  color: #514942;
+  background: #f1ece4;
+  border-color: #c8baaa;
+}
+
+.container_file .letter-format-undo:hover {
+  background: #e5dbcf;
+}
+
+.container_file .letter-format-mark {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  color: #963b32;
+  background: #fffaf0;
+  border-radius: 3px;
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 12px;
+  line-height: 1;
+  margin-top: 0;
 }
 
 /* >>> .TextInput{ */
