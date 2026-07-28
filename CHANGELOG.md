@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/14790897/handwriting-web/compare/v1.28.0...v1.29.0) (2026-07-28)
+
+
+### Features
+
+* add a persistent built-in letter preset ([#68](https://github.com/14790897/handwriting-web/issues/68)) ([af7f063](https://github.com/14790897/handwriting-web/commit/af7f063b37b43f2116e646a6a2e5e0ff6ce8f78d))
+
 # [1.28.0](https://github.com/14790897/handwriting-web/compare/v1.27.2...v1.28.0) (2026-07-28)
 
 
