@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import itertools
+import re
 import time
 from typing import Any, Optional, Union
 
@@ -461,6 +463,103 @@ def read_pdf(file_path):
     return text
 
 
+# A line containing only three or more dashes forces a new page.
+_PAGE_BREAK_RE = re.compile(r"(?m)^[ \t]*-{3,}[ \t]*$")
+
+# A line prefixed with ">>>" is right-aligned. One optional following space is
+# part of the marker and is removed before rendering.
+_RIGHT_ALIGN_RE = re.compile(r"^[ \t]*>>>[ \t]?")
+
+
+def apply_right_align(text, template):
+    """Replace right-align markers with full-width-space padding."""
+    if ">>>" not in text:
+        return text
+
+    font = template.get_font()
+    word_spacing = template.get_word_spacing()
+    width = template.get_size()[0]
+    usable_width = (
+        width - template.get_left_margin() - template.get_right_margin()
+    )
+    last_glyph_start_limit = usable_width - font.size
+
+    def advance(char):
+        left, _, right, _ = font.getbbox(char)
+        return (right - left) + word_spacing
+
+    pad_unit = advance("　")
+    output = []
+    aligned_count = 0
+
+    for line in text.split("\n"):
+        marker = _RIGHT_ALIGN_RE.match(line)
+        if not marker:
+            output.append(line)
+            continue
+
+        content = line[marker.end():]
+        if not content:
+            output.append("")
+            aligned_count += 1
+            continue
+
+        # Handright decides whether to wrap before drawing each glyph. Its
+        # threshold reserves one nominal font-size cell at the right edge.
+        # Negative word spacing can make an advance negative, so the furthest
+        # glyph start is not necessarily the final glyph's start.
+        prefix_width = 0
+        max_prefix_width = 0
+        for char in content:
+            max_prefix_width = max(max_prefix_width, prefix_width)
+            prefix_width += advance(char)
+        available_padding = last_glyph_start_limit - max_prefix_width
+
+        if pad_unit > 0 and available_padding > 0:
+            # Handright perturbs glyph sizes and spacing during rendering. Keep
+            # one full-width cell free so small variations do not wrap the last
+            # character onto a new line.
+            pad_count = max(0, int(available_padding // pad_unit) - 1)
+        else:
+            pad_count = 0
+
+        output.append("　" * pad_count + content)
+        aligned_count += 1
+
+    if aligned_count:
+        logger.info("right-align applied to %s line(s)", aligned_count)
+    return "\n".join(output)
+
+
+def handwrite_with_page_breaks(text, template):
+    """Render text while honoring manual page-break and alignment markers."""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    aligned = apply_right_align(normalized, template)
+
+    if not _PAGE_BREAK_RE.search(aligned):
+        return handwrite(aligned, template)
+
+    raw_chunks = _PAGE_BREAK_RE.split(aligned)
+    chunks = []
+    for index, chunk in enumerate(raw_chunks):
+        # Splitting a marker-only line leaves one delimiter newline on each
+        # side. Remove exactly those two newlines, preserving any additional
+        # blank lines the user intentionally placed around the page break.
+        if index > 0 and chunk.startswith("\n"):
+            chunk = chunk[1:]
+        if index < len(raw_chunks) - 1 and chunk.endswith("\n"):
+            chunk = chunk[:-1]
+        if chunk.strip():
+            chunks.append(chunk)
+    logger.info("manual page break detected: %s chunk(s)", len(chunks))
+
+    if not chunks:
+        return handwrite("", template)
+    return itertools.chain.from_iterable(
+        handwrite(chunk, template) for chunk in chunks
+    )
+
+
 def handle_exceptions(f):
     @wraps(f)
     async def decorated_function(*args, **kwargs):
@@ -792,7 +891,7 @@ async def generate_handwriting_impl(
         report_progress("rendering", "正在生成手写图像", 45)
         # handwrite() 返回惰性 map 对象，只做文本排版（毫秒级），
         # 真正的 CPU 密集渲染在下方 for 循环消费 images 时才触发
-        images = handwrite(text_to_generate, template)
+        images = handwrite_with_page_breaks(text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
         # 创建项目内的临时目录，避免使用系统临时目录
         project_temp_base = "./temp"
@@ -906,7 +1005,7 @@ async def generate_handwriting_impl(
         temp_pdf_file_path = None  # 初始化变量
         report_progress("rendering", "正在生成手写图像", 45)
         # handwrite() 返回惰性 map 对象，CPU 密集渲染在 generate_pdf 内部消费时才触发
-        images = handwrite(text_to_generate, template)
+        images = handwrite_with_page_breaks(text_to_generate, template)
         try:
             report_progress("packaging", "正在导出PDF文件", 92)
             # generate_pdf 会消费惰性 images，渲染在此函数内完成
