@@ -200,10 +200,10 @@ socketio.emit('image_generated', {'image_index': i, 'image_path': image_path})
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=14790897%2Fhandwriting-web&type=date&legend=top-left">
+<a href="https://star-history.dera.page/#14790897/handwriting-web&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=14790897/handwriting-web&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=14790897/handwriting-web&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=14790897/handwriting-web&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=14790897/handwriting-web&type=date&legend=top-left" />
  </picture>
 </a>
