@@ -223,8 +223,8 @@ export default {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(31, 35, 40, 0.58);
-  backdrop-filter: blur(3px);
+  background: rgba(44, 62, 80, 0.45);
+  backdrop-filter: blur(2px);
 }
 
 .letter-dialog {
@@ -233,11 +233,11 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  color: #2d2925;
-  background: #f9f5ec;
-  border: 1px solid rgba(111, 85, 62, 0.25);
-  border-radius: 12px;
-  box-shadow: 0 24px 70px rgba(24, 20, 17, 0.3);
+  color: #2c3e50;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1), 0 18px 48px rgba(44, 62, 80, 0.24);
   text-align: left;
 }
 
@@ -246,8 +246,8 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid rgba(111, 85, 62, 0.18);
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .letter-heading {
@@ -258,15 +258,15 @@ export default {
 
 .letter-heading h2 {
   margin: 0 0 4px;
-  font-family: "Songti SC", "STSong", serif;
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: bold;
+  color: #2c3e50;
 }
 
 .letter-heading p {
   margin: 0;
-  color: #71675e;
+  color: #6c757d;
   font-size: 13px;
 }
 
@@ -275,12 +275,12 @@ export default {
   height: 38px;
   display: grid;
   place-items: center;
-  color: #fff9ec;
-  background: #963b32;
-  border-radius: 4px;
-  font-family: "Songti SC", "STSong", serif;
-  font-size: 21px;
-  box-shadow: inset 0 0 0 2px rgba(255, 249, 236, 0.22);
+  color: #fff;
+  background: #007bff;
+  border-radius: 5px;
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .letter-close {
@@ -288,8 +288,8 @@ export default {
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  color: #776b61;
+  border-radius: 5px;
+  color: #6c757d;
   background: transparent;
   font-size: 22px;
   line-height: 1;
@@ -297,8 +297,8 @@ export default {
 }
 
 .letter-close:hover {
-  color: #963b32;
-  background: rgba(150, 59, 50, 0.08);
+  color: #0056b3;
+  background: #e3f2fd;
 }
 
 .letter-content {
@@ -321,16 +321,15 @@ export default {
   grid-template-columns: auto 1fr;
   gap: 9px 10px;
   padding-bottom: 18px;
-  border-bottom: 1px solid rgba(111, 85, 62, 0.18);
-  color: #514942;
+  border-bottom: 1px solid #e9ecef;
+  color: #2c3e50;
   font-size: 13px;
 }
 
 .letter-rule-number {
-  color: #963b32;
-  font-family: Georgia, serif;
+  color: #007bff;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: bold;
   letter-spacing: 0.08em;
 }
 
@@ -341,26 +340,26 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: #31593b;
-  background: #edf5ec;
-  border: 1px solid #c6ddc5;
-  border-radius: 6px;
+  color: #0056b3;
+  background: #e3f2fd;
+  border: 1px solid #b6d8fb;
+  border-radius: 5px;
   font-size: 12px;
 }
 
 .letter-detected button {
   flex: 0 0 auto;
   padding: 3px 7px;
-  color: #31593b;
-  background: transparent;
-  border: 1px solid #8eb28e;
-  border-radius: 4px;
+  color: #0056b3;
+  background: #fff;
+  border: 1px solid #b6d8fb;
+  border-radius: 5px;
   font-size: 11px;
   cursor: pointer;
 }
 
 .letter-detected button:hover {
-  background: #dcebdc;
+  background: #d3e8fd;
 }
 
 .letter-field {
@@ -370,26 +369,28 @@ export default {
 }
 
 .letter-field > span {
-  color: #39332e;
+  color: #2c3e50;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: bold;
 }
 
 .letter-field input,
 .letter-field textarea {
   width: 100%;
-  padding: 8px 11px;
-  color: #2d2925;
-  background: rgba(255, 253, 247, 0.9);
-  border: 1px solid #c9bcad;
-  border-radius: 6px;
+  padding: 10px;
+  color: #2c3e50;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
+  font-family: inherit;
   font-size: 14px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .letter-field input {
-  height: 38px;
+  height: 40px;
 }
 
 .letter-field textarea {
@@ -400,12 +401,12 @@ export default {
 
 .letter-field input:focus,
 .letter-field textarea:focus {
-  border-color: #963b32;
-  box-shadow: 0 0 0 3px rgba(150, 59, 50, 0.12);
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
 }
 
 .letter-field small {
-  color: #81766c;
+  color: #6c757d;
   font-size: 11px;
   line-height: 1.5;
 }
@@ -422,13 +423,13 @@ export default {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  color: #39332e;
+  color: #2c3e50;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: bold;
 }
 
 .letter-preview-heading span:last-child {
-  color: #8a7f74;
+  color: #6c757d;
   font-size: 11px;
   font-weight: 400;
 }
@@ -438,17 +439,17 @@ export default {
   min-height: 290px;
   padding: 28px 30px;
   overflow: hidden;
-  color: #292521;
-  background-color: #fffdf7;
+  color: #2c3e50;
+  background-color: #fff;
   background-image: linear-gradient(
     to bottom,
     transparent 31px,
-    rgba(126, 99, 73, 0.08) 32px
+    #eef1f4 32px
   );
   background-size: 100% 32px;
-  border: 1px solid #d8cbb9;
-  box-shadow: 0 10px 26px rgba(76, 57, 40, 0.1);
-  font-family: "Songti SC", "STSong", serif;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   font-size: 15px;
   line-height: 32px;
 }
@@ -464,7 +465,7 @@ export default {
 }
 
 .letter-paper-line.is-ellipsis {
-  color: #9a8f84;
+  color: #adb5bd;
   text-align: center;
   letter-spacing: 0.3em;
 }
@@ -474,37 +475,54 @@ export default {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 24px;
-  background: rgba(238, 230, 217, 0.65);
-  border-top: 1px solid rgba(111, 85, 62, 0.18);
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
 }
 
 .letter-button {
   height: 36px;
   padding: 0 17px;
-  border-radius: 6px;
+  border: none;
+  border-radius: 5px;
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: bold;
   cursor: pointer;
+  transition: all 0.3s ease-in-out;
 }
 
 .letter-button.is-secondary {
-  color: #554c44;
-  background: transparent;
-  border: 1px solid #bfb2a4;
+  color: #2c3e50;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.letter-button.is-secondary:hover {
+  color: #0056b3;
+  background: #e3f2fd;
+  border-color: #007bff;
 }
 
 .letter-button.is-primary {
-  color: #fffaf0;
-  background: #963b32;
-  border: 1px solid #963b32;
+  color: #fff;
+  background: #007bff;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .letter-button.is-primary:hover:not(:disabled) {
-  background: #7f3029;
+  background: #0056b3;
+  transform: scale(1.05);
+}
+
+.letter-button.is-primary:active:not(:disabled) {
+  background: #003d73;
+  transform: scale(0.95);
 }
 
 .letter-button:disabled {
-  opacity: 0.42;
+  color: #fff;
+  background: #cccccc;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -517,7 +535,7 @@ export default {
   .letter-dialog {
     max-height: 94vh;
     max-height: 94dvh;
-    border-radius: 14px 14px 0 0;
+    border-radius: 5px 5px 0 0;
   }
 
   .letter-header,

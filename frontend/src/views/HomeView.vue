@@ -1875,27 +1875,42 @@ input[type="file"]:hover {
   gap: 6px;
   margin: 0;
   padding: 8px 12px;
-  border: 1px solid transparent;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
 }
 
 .container_file .letter-format-button {
-  color: #fffaf0;
-  background: #963b32;
-  border-color: #7f3029;
+  color: white;
+  background: #007BFF;
+  border: 1px solid #007BFF;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .container_file .letter-format-button:hover {
-  background: #7f3029;
+  background: #0056b3;
+  border-color: #0056b3;
+  transform: scale(1.05);
+}
+
+.container_file .letter-format-button:active {
+  background: #003d73;
+  border-color: #003d73;
+  transform: scale(0.95);
 }
 
 .container_file .letter-format-undo {
-  color: #514942;
-  background: #f1ece4;
-  border-color: #c8baaa;
+  color: #2c3e50;
+  background: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .container_file .letter-format-undo:hover {
-  background: #e5dbcf;
+  color: #0056b3;
+  background: #e3f2fd;
+  border-color: #007BFF;
 }
 
 .container_file .letter-format-mark {
@@ -1903,11 +1918,11 @@ input[type="file"]:hover {
   height: 18px;
   display: inline-grid;
   place-items: center;
-  color: #963b32;
-  background: #fffaf0;
+  color: #007BFF;
+  background: white;
   border-radius: 3px;
-  font-family: "Songti SC", "STSong", serif;
   font-size: 12px;
+  font-weight: bold;
   line-height: 1;
   margin-top: 0;
 }
