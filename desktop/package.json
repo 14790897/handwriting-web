@@ -1,0 +1,65 @@
+{
+  "name": "handwriting-desktop",
+  "version": "1.31.0",
+  "private": true,
+  "description": "手写体生成器桌面版（Electron 外壳 + 内置后端）",
+  "author": "liuweiqing",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "bash build.sh",
+    "build:app": "bash build.sh --app-only",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "top.liuweiqing.handwriting",
+    "productName": "HandwritingWeb",
+    "directories": {
+      "output": "build/installer"
+    },
+    "files": [
+      "main.js",
+      "splash.html",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/backend/handwriting-backend",
+        "to": "backend"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "手写体生成器",
+      "artifactName": "HandwritingWeb-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "HandwritingWeb-portable-${version}.exe"
+    }
+  }
+}

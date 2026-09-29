@@ -42,6 +42,14 @@ handwriting-web/
 │   ├── pdf.py                # PyMuPDF 生成 PDF
 │   └── schedule_clean.py     # 每日午夜清理 temp/
 ├── e2e/                      # Playwright 端到端测试 (真实前后端 + 少量 mock 分支)
+├── desktop/                  # Windows 桌面版 (Electron 外壳 + PyInstaller 打包的后端)
+│   ├── main.js               # Electron 主进程: 拉起后端 exe + 端口握手 + 开窗
+│   ├── splash.html           # 后端冷启动期间的等待页
+│   ├── backend.spec          # PyInstaller onedir 配置 (打包 dist/、字体与 VERSION)
+│   ├── build.sh              # 一键构建脚本 (前端 dist → 后端 exe → 安装包)
+│   └── requirements-build.txt # 仅打包期依赖 (pyinstaller)
+├── scripts/
+│   └── sync-version.js       # 发版时把发版号同步到 desktop/ 与 backend/VERSION
 ├── serverless/               # Vercel 函数 (nodemailer 发邮件)
 ├── .github/workflows/        # CI/CD: frontend/backend docker 构建 + semantic-release + e2e
 ├── docker-compose.yml        # 3 服务: frontend + backend + watchtower
@@ -73,6 +81,76 @@ cd backend && ../venv/Scripts/python.exe -m uvicorn app:app --reload --host 0.0.
 # E2E 测试 (Playwright, 自动拉起前后端; 首次先 npm install && npx playwright install chromium)
 cd e2e && npm test
 ```
+
+## 桌面版 (Windows exe)
+
+Electron 外壳 + PyInstaller 打包的后端 exe。后端在 127.0.0.1 上随机端口同时提供
+SPA 与 `/api`（同源，前端无需跨域配置），Electron 只用 `BrowserWindow` 加载它。
+
+```bash
+# 一键构建 (前端 dist → 后端 exe → NSIS 安装包 + 便携版)
+bash desktop/build.sh
+
+# 只出 Electron 目录版（不生成 NSIS 安装包）/ 跳过依赖安装 / 指定解释器（CI 用）
+bash desktop/build.sh --app-only
+bash desktop/build.sh --skip-deps
+PYTHON=python bash desktop/build.sh
+
+# 开发调试: 先单独构建后端 exe, 再用 Electron 直接跑
+cd desktop && npx electron .
+```
+
+产物：`desktop/build/backend/handwriting-backend/`（后端 onedir）、
+`desktop/build/installer/`（安装包与便携版）。
+
+**发版自动构建**：`.github/workflows/desktop_release.yml` 在 Semantic Release 工作流成功后，
+在 `windows-latest` 上构建并把安装包/便携版挂到对应 Release 上（PyInstaller 不能交叉编译，
+所以必须是 Windows runner）。用 `workflow_run` 而不是 `release: published` / `push: tags`，
+是因为 token 触发的 release/tag 事件不会再触发新工作流；`workflow_run` 不受该限制，
+所以不依赖 `secrets.GH_TOKEN` 是不是 PAT。也可以用 workflow_dispatch 手动补传历史版本。
+
+### 版本号
+
+发版号的唯一来源是 semantic-release 的 `${nextRelease.version}`（仓库根的 `package.json`
+没有 version 字段）。`release.config.js` 用 `@semantic-release/exec` 在 prepare 阶段跑
+`scripts/sync-version.js`，把发版号同步到三处，再由 `@semantic-release/git` 一起提交：
+
+| 位置 | 谁读它 |
+|---|---|
+| `desktop/package.json` / `desktop/package-lock.json` | electron-builder 的产物名（`${version}`）、About 对话框 |
+| `backend/VERSION` | 后端 `/api/version` 的兜底；进后端镜像（`COPY backend /app`）与 PyInstaller 的 datas |
+
+展示路径：桌面版 Electron 通过 `HANDWRITING_APP_VERSION` 把 `app.getVersion()` 传给后端
+（拿到的是**真正安装的那个版本**，优先于 VERSION 文件）；Web 部署则读镜像里的
+`backend/VERSION`。前端在首页页脚显示 `/api/version` 的结果（`data-testid="app-version"`），
+取不到就整行不显示。
+
+**不要手改这三个文件里的版本号**，它们由发版流程维护。构建产物 `desktop/build/`、
+`desktop/node_modules/` 均已被 `.gitignore` 忽略。
+
+桌面版与线上差异（都靠 `DESKTOP_MODE` / 环境变量区分，Web 部署不受影响）：
+
+- 数据目录在 `%LOCALAPPDATA%\HandwritingWeb`（`tasks.db`、`temp/`、`logs/`、字体），
+  由 `backend/desktop_main.py` 在导入 `app` 之前设好环境变量并 `chdir`。
+  打包后 `__file__` 落在只读/临时的包内目录，不能再依赖它定位数据。
+- 前端 `frontend/src/desktop.js` 按 UA 判定 Electron，桌面版不加载 GA/Clarity/Chatwoot/Sentry。
+- 关掉上报上游 Sentry（`SENTRY_DSN=""`）、跳过 pandoc 自动下载（无 pandoc 时回退 python-docx）、
+  放开 CPU 占用守卫（`CPU_USAGE_LIMIT=100`）。
+- Electron 退出后后端自行退出：后端轮询 `HANDWRITING_PARENT_PID`。
+  **不要改成读 stdin 判断** —— 无控制台的 frozen 进程里阻塞读 stdin 会让后端卡死在启动阶段。
+
+### 桌面版安全与编码（改这块之前先读）
+
+- **跨站请求防护**：本地后端监听在 `127.0.0.1`，任何网页都能向它发请求，而同源策略只挡
+  「读响应」、不挡「发请求」。所以 `desktop_main.py` 会把端口提前定下来并设
+  `HANDWRITING_ALLOWED_ORIGIN`，`app.py` 据此把 CORS 白名单收紧到这一个来源，
+  并用 Origin/Referer 主动拒绝其它来源（HTTP 用中间件，WebSocket 不走中间件、单独校验）。
+  **不要退回 `allow_origins=["*"]`**，也不要去掉这个校验。
+- **Windows 编码**：打包后 stdout 是管道、日志是文件，Python 默认按 ANSI 代码页编码，
+  中文会抛 `UnicodeEncodeError`（`backend/identify.py` 里有中文 `print`，会让
+  `/api/imagefileprocess` 直接 500）或写成乱码。Electron 传 `PYTHONUTF8=1` +
+  `PYTHONIOENCODING=utf-8`，`desktop_main.py` 另有一层 `reconfigure` 兜底，
+  日志文件则显式用 `encoding="utf-8"`。新增往 stdout/文件写中文的代码时注意这条。
 
 ## 编码约定
 
