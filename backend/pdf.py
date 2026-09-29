@@ -2,20 +2,11 @@ import fitz  # PyMuPDF
 from PIL import Image
 import tempfile
 import os, shutil
-import io
-import zipfile
 
+# 每页整幅嵌入成 JPEG，画面是书写的笔画线条，质量 95 到 75 的体积差约 40%，
+# 两者肉眼几乎无差别，导出体积却直接决定下载耗时
+PDF_JPEG_QUALITY = 75
 
-def build_pdf_zip_bytes(pdf_data: bytes, inner_filename: str = "images.pdf") -> bytes:
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(
-        zip_buffer,
-        mode="w",
-        compression=zipfile.ZIP_DEFLATED,
-        compresslevel=6,
-    ) as zip_file:
-        zip_file.writestr(inner_filename, pdf_data)
-    return zip_buffer.getvalue()
 
 def generate_pdf(images):
     # 创建项目内的临时目录，避免使用系统临时目录
@@ -37,7 +28,7 @@ def generate_pdf(images):
             width, height = img.size  # 获取图片原始宽高（单位：像素）
             # 保存每张图像到临时目录
             temp_img_path = os.path.join(temp_dir, f'image{i}.jpg')
-            img.save(temp_img_path, format="JPEG", quality=95)
+            img.save(temp_img_path, format="JPEG", quality=PDF_JPEG_QUALITY)
 
             # 创建新页面
             pdf_page = pdf_document.new_page(width=width, height=height)

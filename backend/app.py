@@ -46,7 +46,7 @@ from docx import Document
 
 # 图片处理模块
 from identify import identify_distance
-from pdf import build_pdf_zip_bytes, generate_pdf
+from pdf import generate_pdf
 from werkzeug.utils import secure_filename
 
 
@@ -1015,12 +1015,11 @@ async def generate_handwriting_impl(
             temp_pdf_file_path = generate_pdf(images=images)
             with open(temp_pdf_file_path, "rb") as f:
                 pdf_data = f.read()
-            zip_data = build_pdf_zip_bytes(pdf_data)
-            report_progress("finalizing", "正在返回PDF ZIP压缩包结果", 100)
+            report_progress("finalizing", "正在返回PDF结果", 100)
             return Response(
-                content=zip_data,
-                media_type="application/zip",
-                headers={"Content-Disposition": "attachment; filename=images.zip"},
+                content=pdf_data,
+                media_type="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=images.pdf"},
             )
         finally:
             # 清理生成的临时 PDF 文件
