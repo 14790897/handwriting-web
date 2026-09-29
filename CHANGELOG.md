@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/14790897/handwriting-web/compare/v1.30.1...v1.31.0) (2026-09-29)
+
+
+### Features
+
+* restructure home page into a top action bar and three columns ([#77](https://github.com/14790897/handwriting-web/issues/77)) ([890eb98](https://github.com/14790897/handwriting-web/commit/890eb985c3e7a59db4cc4bd782604e394a9192ce)), closes [#0056b3](https://github.com/14790897/handwriting-web/issues/0056b3) [#003d73](https://github.com/14790897/handwriting-web/issues/003d73)
+
 ## [1.30.1](https://github.com/14790897/handwriting-web/compare/v1.30.0...v1.30.1) (2026-09-29)
 
 
