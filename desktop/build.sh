@@ -10,6 +10,13 @@
 #   desktop/build/installer/                     安装包 / 便携版 exe
 set -euo pipefail
 
+# Windows runner 的控制台代码页不是 UTF-8（英文 runner 是 cp1252），Python 往 stdout
+# 打中文会抛 UnicodeEncodeError —— 2026-09-29 的 Desktop Release Assets 就是栽在
+# 生成图标那步的一句中文 print 上。统一让本次构建里的所有 Python（图标脚本、
+# PyInstaller、spec 里的校验报错）都走 UTF-8，避免同一类问题再冒出来。
+export PYTHONUTF8=1
+export PYTHONIOENCODING=utf-8
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DESKTOP="$ROOT/desktop"
 
@@ -97,7 +104,9 @@ from PIL import Image
 source, target = sys.argv[1], sys.argv[2]
 base = Image.open(source).convert("RGBA").resize((256, 256), Image.LANCZOS)
 base.save(target, format="ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-print(f"图标已写入 {target}")
+# 这里刻意用 ASCII：上面的 PYTHONIOENCODING 已经兜住了，但这一步没有理由让
+# 构建栽在一条日志上（CI 上一版就是死在这句的中文上）
+print("icon written to %s" % target)
 PY
 
 echo "==> 打包 Electron 应用"
