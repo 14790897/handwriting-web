@@ -1353,13 +1353,17 @@ async def get_generate_handwriting_task_result(request: Request, task_id: str):
     if response_body is None:
         response_body = b""
 
+    # 这里**不能** pop 掉任务：GET 带销毁副作用的话，一个跨站的 <img>/<script>
+    # 只要 URL 里带对 task_id 就能把用户的结果吃掉（来源头齐全时会被 foreign_origin
+    # 挡掉，但老浏览器/WebView 可能三个头都不发）。读取保持幂等，回收交给 TTL ——
+    # 「取过但没删」和「压根没取过」走的是同一条 cleanup_expired 路径，磁盘不会多占用。
+    # 顺带也修了重试丢结果的问题：下载中途断线时 axios-retry 会重取，以前第二次必 404。
     response = Response(
         content=response_body,
         media_type=task.get("response_content_type") or "application/octet-stream",
         status_code=task.get("response_status_code") or 200,
         headers=task.get("response_headers") or {},
     )
-    pop_generation_task(task_id)
     return response
 
 
