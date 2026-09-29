@@ -97,7 +97,8 @@ GitHub 没有给 token 用的图片上传接口：网页版拖拽上传走的是
 
 - 图片推到某个公开分支，再用 `raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/<path>` 引用
 - 必须用 **commit SHA**，不要用分支名 —— 分支一改写，链接就失效
-- 贡献者 ejjcc 的 fork 上有 `pr-assets` 分支按 PR 分目录存图（`pr-assets/<slug>/<name>.png`），但维护者推不了它；维护者自己加图改用**主仓库**的 `pr-assets` 分支（孤儿提交，只含图片，不带整棵树）
+- **贡献者的图放自己的 fork，维护者别去代推** —— 推不了。例：ejjcc 的 fork 上有 `pr-assets` 分支按 PR 分目录存图（`pr-assets/<slug>/<name>.png`）
+- 维护者自己要加图时，用**主仓库**的 `pr-assets` 分支（孤儿提交，只含图片，不带整棵树）
 
 ## 重要注意事项
 
