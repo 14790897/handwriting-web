@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <title>手写体生成器</title>
+    <style>
+      /* 配色与圆角沿用站点既有设计语言（见 AGENTS.md） */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        font-family: Avenir, Helvetica, Arial, sans-serif;
+        background: #f8f9fa;
+        color: #333;
+        user-select: none;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0;
+      }
+      .hint {
+        font-size: 14px;
+        color: #6c757d;
+      }
+      .bar {
+        width: 240px;
+        height: 4px;
+        border-radius: 5px;
+        background: #e9ecef;
+        overflow: hidden;
+      }
+      .bar span {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: 5px;
+        background: #007bff;
+        animation: slide 1.2s ease-in-out infinite;
+      }
+      @keyframes slide {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(250%);
+        }
+      }
+      .error {
+        display: none;
+        max-width: 520px;
+        padding: 14px 18px;
+        border-radius: 5px;
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        color: #a33;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>手写体生成器</h1>
+    <div class="bar"><span></span></div>
+    <div class="hint" id="hint">正在启动手写引擎，首次启动约需 20 秒…</div>
+    <div class="error" id="error"></div>
+    <script>
+      // main.js 在启动失败时通过 executeJavaScript 调用
+      window.showError = (message) => {
+        document.getElementById("hint").textContent = "启动失败";
+        const box = document.getElementById("error");
+        box.textContent = message;
+        box.style.display = "block";
+        document.querySelector(".bar").style.display = "none";
+      };
+    </script>
+  </body>
+</html>

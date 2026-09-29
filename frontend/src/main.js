@@ -15,6 +15,8 @@ import { createHead } from "@vueuse/head";
 
 import * as Sentry from "@sentry/vue";
 
+import { isDesktop } from "./desktop";
+
 // import Viewer from "v-viewer";H
 // import "viewerjs/dist/viewer.css";
 
@@ -22,73 +24,87 @@ const app = createApp(App);
 const head = createHead();
 
 // 异步加载Google Analytics的JavaScript库
-const script = document.createElement("script");
-script.async = true;
-script.src = "https://www.googletagmanager.com/gtag/js?id=G-GB1XG89B6Z";
-document.head.appendChild(script);
+function initAnalytics() {
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = "https://www.googletagmanager.com/gtag/js?id=G-GB1XG89B6Z";
+  document.head.appendChild(script);
 
-// 当脚本加载完成后进行初始化
-script.onload = () => {
-  console.log("Clarity已经加载");
-  const projectId = "ounxp8da5s";
-  Clarity.init(projectId);
-  // 初始化window.dataLayer数组
-  window.dataLayer = window.dataLayer || [];
+  // 当脚本加载完成后进行初始化
+  script.onload = () => {
+    console.log("Clarity已经加载");
+    const projectId = "ounxp8da5s";
+    Clarity.init(projectId);
+    // 初始化window.dataLayer数组
+    window.dataLayer = window.dataLayer || [];
 
-  // 定义gtag函数
-  function gtag() {
-    window.dataLayer.push(arguments);
-  }
+    // 定义gtag函数
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
 
-  // 调用gtag函数进行配置
-  gtag("js", new Date());
-  gtag("config", "G-GB1XG89B6Z");
+    // 调用gtag函数进行配置
+    gtag("js", new Date());
+    gtag("config", "G-GB1XG89B6Z");
 
-  (function (c, l, a, r, i, t, y) {
-    c[a] =
-      c[a] ||
-      function () {
-        (c[a].q = c[a].q || []).push(arguments);
-      };
-    t = l.createElement(r);
-    t.async = 1;
-    t.src = "https://www.clarity.ms/tag/" + i;
-    y = l.getElementsByTagName(r)[0];
-    y.parentNode.insertBefore(t, y);
-  })(window, document, "clarity", "script", "ounxp8da5s");
-};
+    (function (c, l, a, r, i, t, y) {
+      c[a] =
+        c[a] ||
+        function () {
+          (c[a].q = c[a].q || []).push(arguments);
+        };
+      t = l.createElement(r);
+      t.async = 1;
+      t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0];
+      y.parentNode.insertBefore(t, y);
+    })(window, document, "clarity", "script", "ounxp8da5s");
+  };
+}
 
-const chatwootScript = document.createElement("script");
-chatwootScript.async = true;
-chatwootScript.defer = true;
-chatwootScript.src = "https://chatwoot.14790897.xyz/packs/js/sdk.js";
-chatwootScript.onload = () => {
-  if (window.chatwootSDK) {
-    window.chatwootSDK.run({
-      websiteToken: "LqgSJHw9boXsan69qwxSs8eg",
-      baseUrl: "https://chatwoot.14790897.xyz",
-    });
-  }
-};
-document.head.appendChild(chatwootScript);
+function initChatwoot() {
+  const chatwootScript = document.createElement("script");
+  chatwootScript.async = true;
+  chatwootScript.defer = true;
+  chatwootScript.src = "https://chatwoot.14790897.xyz/packs/js/sdk.js";
+  chatwootScript.onload = () => {
+    if (window.chatwootSDK) {
+      window.chatwootSDK.run({
+        websiteToken: "LqgSJHw9boXsan69qwxSs8eg",
+        baseUrl: "https://chatwoot.14790897.xyz",
+      });
+    }
+  };
+  document.head.appendChild(chatwootScript);
+}
 
-Sentry.init({
-  app,
-  dsn: "https://507b601bbd374cf58b7c5468cb434578@o4505255803551744.ingest.sentry.io/4505485557891072",
-  integrations: [
-    new Sentry.BrowserTracing({
-      // Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
-      tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
-      routingInstrumentation: Sentry.vueRouterInstrumentation(router),
-    }),
-    new Sentry.Replay(),
-  ],
-  // Performance Monitoring
-  tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!
-  // Session Replay
-  replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
-  replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
-});
+function initSentry() {
+  Sentry.init({
+    app,
+    dsn: "https://507b601bbd374cf58b7c5468cb434578@o4505255803551744.ingest.sentry.io/4505485557891072",
+    integrations: [
+      new Sentry.BrowserTracing({
+        // Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
+        tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
+        routingInstrumentation: Sentry.vueRouterInstrumentation(router),
+      }),
+      new Sentry.Replay(),
+    ],
+    // Performance Monitoring
+    tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!
+    // Session Replay
+    replaysSessionSampleRate: 0.1, // This sets the sample rate to 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+    replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
+  });
+}
+
+// 桌面版不加载第三方统计/客服/错误上报：离线环境下它们只会拖慢启动，
+// 还会把用户本地产生的错误混进线上项目的报表里
+if (!isDesktop()) {
+  initAnalytics();
+  initChatwoot();
+  initSentry();
+}
 
 // const DEFAULT_TITLE = "handwrite";
 

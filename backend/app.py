@@ -12,6 +12,7 @@ from fastapi import (
     Depends,
     FastAPI,
     File,
+    HTTPException,
     Request,
     UploadFile,
     WebSocket,
@@ -19,7 +20,7 @@ from fastapi import (
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 # run_in_threadpool 已移除：handwrite() 返回惰性生成器（map 对象），
 # 真正的 CPU 密集渲染在后续 for 循环消费生成器时才发生，
@@ -34,6 +35,7 @@ load_dotenv()
 import gc
 import io
 import logging
+import mimetypes
 import os
 import shutil
 import tempfile
@@ -264,6 +266,8 @@ from task_types import (
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
 enable_user_auth = os.getenv("ENABLE_USER_AUTH", "false")
+# 桌面版（Electron + PyInstaller 打包）标志，由 desktop_main.py 设置
+DESKTOP_MODE = os.getenv("DESKTOP_MODE", "false").lower() == "true"
 # 获取当前路径
 current_path = os.getcwd()
 # 创建一个子文件夹用于存储输出的图片
@@ -301,17 +305,23 @@ font_file_names = [
     if os.path.isfile(os.path.join(font_assets_dir, f)) and f.endswith(".ttf")
 ]
 # sentry部分 7.7
-sentry_sdk.init(
-    dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
-    integrations=[
-        StarletteIntegration(),
-        FastApiIntegration(),
-    ],
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
-    traces_sample_rate=1.0,
+# 桌面版由 desktop_main.py 设 SENTRY_DSN="" 关闭上报，避免把用户本地错误发到线上项目
+_sentry_dsn = os.getenv(
+    "SENTRY_DSN",
+    "https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
 )
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[
+            StarletteIntegration(),
+            FastApiIntegration(),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+    )
 
 # 启动计划任务线程, 定时清理
 schedule_clean.start_schedule_thread()
@@ -327,7 +337,10 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # 创建 file handler，并设置级别为 DEBUG
-fh = logging.FileHandler("logs/app.log")
+# LOG_DIR 供桌面版指向可写数据目录；仓库内运行时仍是 backend/logs
+log_dir = os.getenv("LOG_DIR", "logs")
+os.makedirs(log_dir, exist_ok=True)
+fh = logging.FileHandler(os.path.join(log_dir, "app.log"))
 fh.setLevel(logging.DEBUG)
 
 # 创建 formatter
@@ -434,20 +447,32 @@ def read_docx(file_path):
 
 import pypandoc
 
+# 桌面版不自动下载 pandoc（会联网拉 msi 并调 msiexec），改用 python-docx 兜底
+_pandoc_available = False
 try:
     # 1. 尝试获取 Pandoc 版本
     # 如果系统里已经安装了（比如你在 Dockerfile 里用 apt-get 装了），这里会成功
     version = pypandoc.get_pandoc_version()
     print(f"Pandoc found: {version}")
+    _pandoc_available = True
 
 except OSError:
-    # 2. 如果报错说找不到，说明没装，开始自动下载
-    print("Pandoc not found. Downloading...")
-    pypandoc.download_pandoc()
-    print("Pandoc downloaded successfully.")
+    if DESKTOP_MODE:
+        print("Pandoc not found. Falling back to python-docx.")
+    else:
+        # 2. 如果报错说找不到，说明没装，开始自动下载
+        print("Pandoc not found. Downloading...")
+        try:
+            pypandoc.download_pandoc()
+            print("Pandoc downloaded successfully.")
+            _pandoc_available = True
+        except Exception as exc:  # noqa: BLE001 下载失败不应阻断启动
+            print(f"Pandoc download failed: {exc}. Falling back to python-docx.")
 
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
+    if not _pandoc_available:
+        return read_docx(docx_file_path)
     text = pypandoc.convert_file(docx_file_path, 'plain')
     return text
     # return None
@@ -1505,9 +1530,50 @@ async def after_request(request: Request, call_next):
         # 仅用于调试 7.13
         # session.clear()
         return response
-    else:
+    # 桌面版没有控制台，跳过逐请求打印
+    if not DESKTOP_MODE:
         print(response)
-        return response
+    return response
+
+
+# ── 桌面版：托管打包进 exe 的前端构建产物 ────────────────────────────
+# 由 desktop_main.py 指向随包分发的 frontend/dist；仓库内运行时不设该变量，
+# 路由行为与改动前完全一致（仍是纯 API 服务，静态资源交给 nginx）。
+DIST_DIR = os.getenv("HANDWRITING_DIST_DIR", "")
+
+
+def _resolve_dist_file(rel_path):
+    """在 DIST_DIR 内解析相对路径并阻止路径穿越，非文件返回 None。"""
+    if not DIST_DIR:
+        return None
+    root = os.path.realpath(DIST_DIR)
+    target = os.path.realpath(os.path.join(root, rel_path))
+    if target != root and not target.startswith(root + os.sep):
+        return None
+    return target if os.path.isfile(target) else None
+
+
+if DIST_DIR and os.path.isdir(DIST_DIR):
+    _NO_STORE = {"Cache-Control": "no-store"}
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        # 未匹配的 /api 路径应返回 404，而不是回落到 index.html
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        file_path = _resolve_dist_file(full_path)
+        if file_path is None:
+            # history 模式路由（/About、/Introduce 等）回落到 index.html
+            index_path = os.path.join(DIST_DIR, "index.html")
+            if not os.path.isfile(index_path):
+                raise HTTPException(status_code=404, detail="Not Found")
+            return FileResponse(index_path, media_type="text/html", headers=_NO_STORE)
+
+        media_type = mimetypes.guess_type(file_path)[0]
+        # index.html 不缓存，与 nginx.conf 的 no-store 保持一致
+        headers = _NO_STORE if os.path.basename(file_path) == "index.html" else None
+        return FileResponse(file_path, media_type=media_type, headers=headers)
 
 
 if __name__ == "__main__":

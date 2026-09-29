@@ -42,6 +42,12 @@ handwriting-web/
 │   ├── pdf.py                # PyMuPDF 生成 PDF
 │   └── schedule_clean.py     # 每日午夜清理 temp/
 ├── e2e/                      # Playwright 端到端测试 (真实前后端 + 少量 mock 分支)
+├── desktop/                  # Windows 桌面版 (Electron 外壳 + PyInstaller 打包的后端)
+│   ├── main.js               # Electron 主进程: 拉起后端 exe + 端口握手 + 开窗
+│   ├── splash.html           # 后端冷启动期间的等待页
+│   ├── backend.spec          # PyInstaller onedir 配置 (打包 dist/ 与字体)
+│   ├── build.sh              # 一键构建脚本
+│   └── requirements-build.txt # 仅打包期依赖 (pyinstaller)
 ├── serverless/               # Vercel 函数 (nodemailer 发邮件)
 ├── .github/workflows/        # CI/CD: frontend/backend docker 构建 + semantic-release + e2e
 ├── docker-compose.yml        # 3 服务: frontend + backend + watchtower
@@ -73,6 +79,41 @@ cd backend && ../venv/Scripts/python.exe -m uvicorn app:app --reload --host 0.0.
 # E2E 测试 (Playwright, 自动拉起前后端; 首次先 npm install && npx playwright install chromium)
 cd e2e && npm test
 ```
+
+## 桌面版 (Windows exe)
+
+Electron 外壳 + PyInstaller 打包的后端 exe。后端在 127.0.0.1 上随机端口同时提供
+SPA 与 `/api`（同源，前端无需跨域配置），Electron 只用 `BrowserWindow` 加载它。
+
+```bash
+# 一键构建 (前端 dist → 后端 exe → NSIS 安装包 + 便携版)
+bash desktop/build.sh
+
+# 只构建后端 exe / 跳过依赖安装
+bash desktop/build.sh --app-only
+bash desktop/build.sh --skip-deps
+
+# 开发调试: 先单独构建后端 exe, 再用 Electron 直接跑
+cd desktop && npx electron .
+```
+
+产物：`desktop/build/backend/handwriting-backend/`（后端 onedir）、
+`desktop/build/installer/`（安装包与便携版）。
+
+`desktop/` 是独立的 npm 工程：版本号写在 `desktop/package.json`，与根目录 semantic-release
+管理的版本**有意解耦**，不要试图同步它们。构建产物 `desktop/build/`、`desktop/node_modules/`
+均已被 `.gitignore` 忽略。
+
+桌面版与线上差异（都靠 `DESKTOP_MODE` / 环境变量区分，Web 部署不受影响）：
+
+- 数据目录在 `%LOCALAPPDATA%\HandwritingWeb`（`tasks.db`、`temp/`、`logs/`、字体），
+  由 `backend/desktop_main.py` 在导入 `app` 之前设好环境变量并 `chdir`。
+  打包后 `__file__` 落在只读/临时的包内目录，不能再依赖它定位数据。
+- 前端 `frontend/src/desktop.js` 按 UA 判定 Electron，桌面版不加载 GA/Clarity/Chatwoot/Sentry。
+- 关掉上报上游 Sentry（`SENTRY_DSN=""`）、跳过 pandoc 自动下载（无 pandoc 时回退 python-docx）、
+  放开 CPU 占用守卫（`CPU_USAGE_LIMIT=100`）。
+- Electron 退出后后端自行退出：后端轮询 `HANDWRITING_PARENT_PID`。
+  **不要改成读 stdin 判断** —— 无控制台的 frozen 进程里阻塞读 stdin 会让后端卡死在启动阶段。
 
 ## 编码约定
 
