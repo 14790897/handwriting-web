@@ -1,6 +1,5 @@
 <template>
-  <transition name="splash-fade">
-    <div v-if="visible" class="book-splash" data-testid="book-splash" @click="skipAnimation">
+  <div class="book-splash" data-testid="book-splash" @click="skipAnimation">
 
       <!-- 左半屏（内页，一直在） -->
       <div class="half half-left">
@@ -57,7 +56,6 @@
       <!-- 跳过提示 -->
       <div class="skip-hint">点击任意处跳过</div>
     </div>
-  </transition>
 </template>
 
 <script>
@@ -65,7 +63,7 @@ export default {
   name: 'BookSplash',
   data() {
     return {
-      visible: true,
+      finished: false,
       bookOpen: false,
       showBrand: false,
       leftLines: [],
@@ -84,19 +82,28 @@ export default {
 mounted() {
     this.leftLines = this.generateLines(6, 10);
     this.rightLines = this.generateLines(6, 10);
-    setTimeout(() => { this.bookOpen = true; }, 400);
-    setTimeout(() => { this.showBrand = true; }, 700);
-    setTimeout(() => {
-      localStorage.setItem('bookSplashShown', '1');
-      this.visible = false;
-      this.$emit('complete');
-    }, 1500);
+    // 时间要和下面的 CSS 对得上：翻页（.half-right 的 transition）150ms 起、600ms 内转完，
+    // 中缝（.spine-center）与品牌文案（.brand-in）都在这之前收尾，1500ms 才开始淡出
+    setTimeout(() => { this.bookOpen = true; }, 150);
+    setTimeout(() => { this.showBrand = true; }, 600);
+    setTimeout(() => { this.finish(); }, 1500);
   },
   methods: {
     skipAnimation() {
-      localStorage.setItem('bookSplashShown', '1');
-      this.visible = false;
+      this.finish();
+    },
+    // 收尾：通知父组件把遮罩移走（淡出由 App.vue 的 transition 负责），
+    // 再记标记 —— 写 localStorage 可能抛错（隐私模式、配额满），
+    // 顺序反了会让全屏遮罩永远盖在应用上
+    finish() {
+      if (this.finished) return;
+      this.finished = true;
       this.$emit('complete');
+      try {
+        localStorage.setItem('bookSplashShown', '1');
+      } catch (error) {
+        void error;
+      }
     },
     generateLines(count, maxLen) {
       const pools = [
@@ -202,7 +209,7 @@ mounted() {
 .half-right {
   transform-style: preserve-3d;
   transform-origin: left center;
-  transition: transform 1.1s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1.000);
   position: relative;
   z-index: 10;
 }
@@ -306,7 +313,7 @@ mounted() {
     rgba(0,0,0,0.06) 70%,
     transparent 100%
   );
-  transition: width 0.6s ease 0.8s;
+  transition: width 0.45s ease 0.2s;
   z-index: 5;
   pointer-events: none;
 }
@@ -367,15 +374,8 @@ mounted() {
 }
 
 /* ── 淡入淡出 ── */
-.splash-fade-leave-active {
-  transition: opacity 0.5s ease;
-}
-.splash-fade-leave-to {
-  opacity: 0;
-}
-
 .brand-in-enter-active {
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition: opacity 0.45s ease, transform 0.45s ease;
 }
 .brand-in-enter-from {
   opacity: 0;

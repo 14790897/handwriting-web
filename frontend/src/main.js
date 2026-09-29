@@ -1,5 +1,4 @@
 import "bootstrap/dist/css/bootstrap.css";
-import "bootstrap";
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
@@ -11,6 +10,8 @@ import axiosRetry from "axios-retry";
 import Swal from "sweetalert2";
 import { createHead } from "@vueuse/head";
 
+import * as Sentry from "@sentry/vue";
+
 import { isDesktop } from "./desktop";
 
 // import Viewer from "v-viewer";H
@@ -18,6 +19,10 @@ import { isDesktop } from "./desktop";
 
 const app = createApp(App);
 const head = createHead();
+
+// 桌面版不加载第三方统计/客服/错误上报：离线环境下它们只会拖慢启动，
+// 还会把用户本地产生的错误混进线上项目的报表里
+const thirdPartyEnabled = !isDesktop();
 
 // 异步加载Google Analytics的JavaScript库
 function initAnalytics() {
@@ -71,7 +76,7 @@ function initChatwoot() {
   document.head.appendChild(chatwootScript);
 }
 
-function initSentry(Sentry) {
+function initSentry() {
   Sentry.init({
     app,
     dsn: "https://507b601bbd374cf58b7c5468cb434578@o4505255803551744.ingest.sentry.io/4505485557891072",
@@ -91,15 +96,10 @@ function initSentry(Sentry) {
   });
 }
 
-// 统计/客服/上报都不参与首屏渲染，等 load 之后的空闲时段再加载。
-// Sentry 单独走动态 import，别让它的体积进主包
-async function initThirdPartyServices() {
-  if (process.env.NODE_ENV !== "production") return;
-
-  initAnalytics();
-  initChatwoot();
-  const Sentry = await import("@sentry/vue");
-  initSentry(Sentry);
+// Sentry 必须在 app.mount() 之前初始化：SDK 在这一步接管 Vue 的 errorHandler、
+// 装上路由 instrumentation 与 window 级错误监听，晚于挂载就丢掉启动阶段和首次渲染的报错
+if (thirdPartyEnabled) {
+  initSentry();
 }
 
 // const DEFAULT_TITLE = "handwrite";
@@ -150,46 +150,45 @@ app.config.globalProperties.$swal = Swal;
 
 app.mount("#app");
 
-const initServiceWorkerUpdatePrompt = async () => {
+// 注销历史遗留的 /sw.js：现在的构建已经不注册 Service Worker，
+// 这里只负责把老访客浏览器里那份清掉（unregister 本身不会触发 controllerchange）
+const unregisterLegacyServiceWorker = async () => {
   try {
-    // 注销旧版 /sw.js
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const reg of registrations) {
       if (reg.active?.scriptURL?.includes("sw.js")) {
         await reg.unregister();
       }
     }
-
-    // 监听新版本激活，提示用户刷新
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (confirm("网站已更新到新版本，点击确定刷新页面以加载最新内容。")) {
-        window.location.reload();
-      }
-    });
   } catch (error) {
-    console.error("[SW] 初始化失败:", error);
+    console.error("[SW] 注销旧版失败:", error);
   }
 };
 
-window.addEventListener("load", () => {
-  // 桌面版不加载第三方统计/客服/错误上报：离线环境下它们只会拖慢启动，
-  // 还会把用户本地产生的错误混进线上项目的报表里
-  if (!isDesktop()) {
-    const runThirdPartyInit = () => {
-      initThirdPartyServices().catch((error) => {
-        console.error("[3P] 初始化失败:", error);
-      });
-    };
+// GA / Clarity / Chatwoot 不参与首屏渲染，等 load 之后的空闲时段再加载
+function initDeferredThirdParty() {
+  initAnalytics();
+  initChatwoot();
+}
 
+function onWindowLoad() {
+  if (thirdPartyEnabled) {
     // timeout 兜底：页面一直繁忙时 requestIdleCallback 可能迟迟不触发
     if ("requestIdleCallback" in window) {
-      window.requestIdleCallback(() => runThirdPartyInit(), { timeout: 3000 });
+      window.requestIdleCallback(initDeferredThirdParty, { timeout: 3000 });
     } else {
-      setTimeout(runThirdPartyInit, 150);
+      setTimeout(initDeferredThirdParty, 150);
     }
   }
 
   if ("serviceWorker" in navigator) {
-    void initServiceWorkerUpdatePrompt();
+    unregisterLegacyServiceWorker();
   }
-});
+}
+
+// bundle 若在 load 之后才执行（异步注入、页面从 bfcache 恢复），load 事件不会再触发
+if (document.readyState === "complete") {
+  onWindowLoad();
+} else {
+  window.addEventListener("load", onWindowLoad);
+}
