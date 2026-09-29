@@ -1,7 +1,7 @@
 <template>
     <div id='text_file_select' class="d-flex justify-content-between">
         <label for="textArea">{{ $t('message.text') }}:</label>
-        <textarea id="textArea" class="form-control" v-model="text"
+        <textarea id="textArea" class="form-control" v-model="text" @input="handleManualInput"
             :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
@@ -22,6 +22,7 @@
 <script>
 export default {
     name: 'TextInput',
+    emits: ['childEvent', 'manual-input'],
 
     data() {
         return {
@@ -48,8 +49,16 @@ export default {
         });
     },
     methods: {
+        handleManualInput() {
+            this.$emit('manual-input');
+        },
+        replaceText(value) {
+            this.text = typeof value === 'string' ? value : '';
+            localStorage.setItem('text', JSON.stringify(this.text));
+        },
         uploadFile(e) {
             let file = e.target.files[0];
+            this.$emit('manual-input');
             // 当用户选择了一个新的文本文件时，更新 selectedTextFileName
             this.selectedTextFileName = e.target.files[0].name;
             // localStorage.setItem('textFile', JSON.stringify(this.textFile));

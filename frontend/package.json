@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve --host 0.0.0.0 --port 8080",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "test:letter-format": "node tests/chineseLetterFormatter.test.js"
   },
   "dependencies": {
     "@microsoft/clarity": "^1.0.0",
