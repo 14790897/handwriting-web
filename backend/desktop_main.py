@@ -48,19 +48,23 @@ def data_dir() -> Path:
     return Path(base) / APP_NAME
 
 
-def find_free_port(preferred: int = 57610) -> int:
-    for port in range(preferred, preferred + 100):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            try:
-                sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-            return port
-    # 系统分配一个
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+def bind_listener(preferred: int = 57610) -> socket.socket:
+    """绑定并 listen 127.0.0.1 上的一个端口，返回已就绪的 socket。
+
+    只绑一次、把 socket 直接交给 uvicorn：如果先探测再关闭、让 uvicorn 自己 bind，
+    两次绑定之间端口可能被别人抢走，uvicorn 会 bind 失败直接退出。
+    不设 SO_REUSEADDR —— Windows 上它会允许别的进程抢占同一端口。
+    """
+    for port in list(range(preferred, preferred + 100)) + [0]:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.bind(("127.0.0.1", port))
+        except OSError:
+            sock.close()
+            continue
+        sock.listen(128)
+        return sock
+    raise RuntimeError(f"{preferred}-{preferred + 99} 内没有可用端口")
 
 
 def prepare_environment() -> Path:
@@ -131,10 +135,11 @@ def main():
 
     prepare_environment()
 
-    # 端口必须在 import app 之前定下来：app.py 在导入期用它配置 CORS 白名单与
-    # 跨站请求拒绝，只放行本应用窗口这一个来源，挡住「用户浏览任意网页时，
-    # 那个页面往 127.0.0.1 发请求驱动本地渲染」这类攻击。
-    port = find_free_port()
+    # 先真正把端口绑好、再 import app：app.py 要在导入期用它配 CORS 白名单，
+    # 而且只绑这一次、把 socket 交给 uvicorn，避免「探测 → 关闭 → 再绑定」
+    # 中间被别的进程抢走端口
+    listener = bind_listener()
+    port = listener.getsockname()[1]
     os.environ["HANDWRITING_ALLOWED_ORIGIN"] = f"http://127.0.0.1:{port}"
 
     # 导入放在环境变量就绪之后：app.py 在导入期读取这些配置并建目录
@@ -144,6 +149,7 @@ def main():
 
     cleanup_marked_directories()
 
+    # 此时 socket 已在 listen，报给 Electron 的端口一定可用
     emit_ready(port)
 
     # 放到导入完成之后启动：万一创建线程与 frozen 导入存在交互，也不该拖住启动
@@ -151,7 +157,7 @@ def main():
 
     # 明确指定 loop/http/ws 实现，避免 uvicorn 运行时按字符串动态导入，
     # PyInstaller 的静态分析看不到那些模块。
-    uvicorn.run(
+    config = uvicorn.Config(
         app,
         host="127.0.0.1",
         port=port,
@@ -161,6 +167,7 @@ def main():
         log_level="info",
         access_log=False,
     )
+    uvicorn.Server(config).run(sockets=[listener])
 
 
 if __name__ == "__main__":
