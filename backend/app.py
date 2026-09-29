@@ -397,16 +397,22 @@ def _origin_of(url):
     return match.group(0) if match else None
 
 
-def foreign_origin(origin_header, referer_header):
-    """请求来自本应用之外的站点时返回该站点，否则返回 None。
+def foreign_origin(origin_header, referer_header, sec_fetch_site=None):
+    """请求来自本应用之外的站点时返回该来源（或 "cross-site"），否则返回 None。
 
-    CORS 白名单只决定浏览器能否「读」响应，不阻止请求被发出，所以必须再按
-    Origin / Referer 主动拒绝：用户浏览任意网页时，那个页面可以往 127.0.0.1
-    发简单请求驱动本地渲染任务。浏览器对跨源请求一定会带 Origin（表单 POST 也带），
-    同源 GET 不带 —— 此时放行，能省略这两个头的只有本机非浏览器客户端。
+    CORS 白名单只决定浏览器能否「读」响应，不阻止请求被发出，所以必须再主动拒绝：
+    用户浏览任意网页时，那个页面可以往 127.0.0.1 发简单请求驱动本地渲染，甚至用
+    <img> / <script> 这类跨源 GET 把任务结果消费掉（result 接口会 pop 掉任务）。
+
+    判断依据三条：Origin（跨源请求一定有，表单 POST 也带）、Referer（可能被
+    Referrer-Policy 去掉）、以及 Sec-Fetch-Site —— 跨源 GET 可能两个都没有，
+    但现代浏览器会带上这个头标明发起方：同源是 same-origin、别的站点是 cross-site、
+    用户直接输网址是 none。同源 GET 三条都不命中，放行。
     """
     if not _allowed_origin:
         return None
+    if sec_fetch_site == "cross-site":
+        return origin_header or referer_header or "cross-site"
     origin = origin_header or _origin_of(referer_header)
     if origin and origin != _allowed_origin:
         return origin
@@ -417,10 +423,13 @@ if _allowed_origin:
 
     @app.middleware("http")
     async def reject_foreign_origin(request: Request, call_next):
-        if foreign_origin(
-            request.headers.get("origin"), request.headers.get("referer")
-        ):
-            logger.warning("拒绝跨站请求: %s -> %s", request.headers.get("origin"), request.url.path)
+        source = foreign_origin(
+            request.headers.get("origin"),
+            request.headers.get("referer"),
+            request.headers.get("sec-fetch-site"),
+        )
+        if source:
+            logger.warning("拒绝跨站请求: %s -> %s", source, request.url.path)
             return JSONResponse(
                 status_code=403,
                 content={"status": "fail", "message": "跨站请求被拒绝"},
@@ -1273,7 +1282,9 @@ async def generate_handwriting(
 async def generate_handwriting_task_websocket(websocket: WebSocket, task_id: str):
     # WebSocket 不走 HTTP 中间件，也不受 CORS 约束，必须自己校验来源
     if foreign_origin(
-        websocket.headers.get("origin"), websocket.headers.get("referer")
+        websocket.headers.get("origin"),
+        websocket.headers.get("referer"),
+        websocket.headers.get("sec-fetch-site"),
     ):
         await websocket.close(code=1008)
         return

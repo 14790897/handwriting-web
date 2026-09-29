@@ -78,17 +78,21 @@ def prepare_environment() -> Path:
         (data / name).mkdir(parents=True, exist_ok=True)
     os.chdir(data)
 
+    # 这些是桌面版的既定行为，必须**覆盖**而不是 setdefault：Electron 会把用户的
+    # 整个环境原样传给后端（desktop/main.js 的 env: {...process.env}），机器上若早已
+    # 存在同名变量就会被带进来 —— 比如某个 SENTRY_DSN 会让用户的本地报错上报到别人的
+    # Sentry 项目，DESKTOP_MODE=false 还会把 pandoc 自动下载和 90% CPU 守卫重新打开。
     dist = bundle / "dist"
-    os.environ.setdefault("HANDWRITING_DATA_DIR", str(data))
-    os.environ.setdefault("FONT_ASSETS_BUNDLED_DIR", str(bundle / "font_assets"))
-    os.environ.setdefault("FONT_ASSETS_DIR", str(data / "font_assets"))
-    os.environ.setdefault("LOG_DIR", str(data / "logs"))
-    os.environ.setdefault("HANDWRITING_DIST_DIR", str(dist) if dist.is_dir() else "")
-    os.environ.setdefault("DESKTOP_MODE", "true")
+    os.environ["HANDWRITING_DATA_DIR"] = str(data)
+    os.environ["FONT_ASSETS_BUNDLED_DIR"] = str(bundle / "font_assets")
+    os.environ["FONT_ASSETS_DIR"] = str(data / "font_assets")
+    os.environ["LOG_DIR"] = str(data / "logs")
+    os.environ["HANDWRITING_DIST_DIR"] = str(dist) if dist.is_dir() else ""
+    os.environ["DESKTOP_MODE"] = "true"
     # 关掉上报到上游项目的 Sentry（空串即不初始化）
-    os.environ.setdefault("SENTRY_DSN", "")
+    os.environ["SENTRY_DSN"] = ""
     # 桌面机上 CPU 常年高占用，默认 90% 阈值会导致随机 429
-    os.environ.setdefault("CPU_USAGE_LIMIT", "100")
+    os.environ["CPU_USAGE_LIMIT"] = "100"
     return data
 
 

@@ -39,6 +39,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # 这个 job 有 contents: write，而后面要跑依赖安装与构建脚本；
+          # 别把 token 留在 git config 里供第三方脚本读取。
+          # gh 步骤用的是显式传的 GH_TOKEN。
+          persist-credentials: false
 
       - name: 解析本次要上传的 tag
         id: tag
@@ -54,12 +58,13 @@ jobs:
             echo "tag=${MANUAL_TAG}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # semantic-release 走 API 建 release，本地不一定有 tag，所以从 API 取最新一条，
-          # 再用创建时间判断它是不是这次工作流产出的 —— 没有新版本时不要往旧 release 上补传
-          read -r LATEST CREATED < <(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" \
-            --jq '[.tag_name, .created_at] | @tsv')
-          echo "最新 release: ${LATEST} (${CREATED})；本次工作流开始于 ${RUN_CREATED_AT}"
-          if [[ "${CREATED}" > "${RUN_CREATED_AT}" ]]; then
+          # semantic-release 走 API 建 release，本地不一定有 tag，所以从 API 取。
+          # 注意：release 的 created_at 是**目标提交的日期**，不是发布时间 —— 用它
+          # 判断「是不是这次工作流产出的」会漏判；要用 published_at。
+          read -r LATEST <<< "$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
+            --jq "[.[] | select(.published_at > \"${RUN_CREATED_AT}\")] | first | .tag_name // \"\"")"
+          if [ -n "${LATEST}" ]; then
+            echo "本次发布的 tag=${LATEST}"
             echo "tag=${LATEST}" >> "$GITHUB_OUTPUT"
           else
             echo "本次没有产生新版本，跳过桌面版构建"
