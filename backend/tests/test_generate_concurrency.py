@@ -146,6 +146,7 @@ def _run_one_request(
         )
 
 
+@pytest.mark.load
 def test_generate_handwriting_concurrency():
     base_url = os.getenv("HANDWRITING_BASE_URL", "http://127.0.0.1:5005").rstrip("/")
     total_requests = int(os.getenv("HANDWRITING_LOAD_REQUESTS", "6"))

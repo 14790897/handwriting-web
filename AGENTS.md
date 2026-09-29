@@ -57,7 +57,15 @@ handwriting-web/
 cd frontend && npm run serve
 
 # 后端 (端口 5005, 热重载)
-cd backend && uvicorn app:app --reload --host 0.0.0.0 --port 5005
+# 下面是 bash / Git Bash 写法 (本项目 .vscode/tasks.json 用的 cmd.exe 同样支持 &&;
+# PowerShell 5.1 不支持 &&, 需要把每条命令拆开单独执行)
+# 首次先在仓库根建 venv 并装依赖:
+#   Windows:      python -m venv venv && venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+#   Linux/macOS:  python3 -m venv venv && venv/bin/python -m pip install -r backend/requirements.txt
+# 启动时必须用这个 venv, 不要用系统 Python —— 系统环境 fastapi 0.115.6 + starlette 1.3.1 起不来,
+# 报 TypeError: Router.__init__() got an unexpected keyword argument 'on_startup'
+cd backend && ../venv/Scripts/python.exe -m uvicorn app:app --reload --host 0.0.0.0 --port 5005
+#            Linux/macOS 换成 ../venv/bin/python
 
 # 或使用 VS Code Tasks:
 #   "⚡ 全栈开发 - 同时启动前后端"
@@ -71,10 +79,35 @@ cd e2e && npm test
 - **Commit message**: 必须遵循 [Conventional Commits](https://www.conventionalcommits.org/) (`feat:` / `fix:` / `chore:` 等)，semantic-release 靠它决定版本号
 - **分支**: 只推到 `main`，不要直接 push（通过 PR）
 - **i18n**: 所有用户可见文字必须同时提供中英文翻译，在 `frontend/src/i18n.js` 中添加
+- **UI 风格**: 新增/改版的界面必须复用站点既有设计语言，不要自带一套配色 —— 主按钮 `#007BFF`（hover `#0056b3`、active `#003d73`）、圆角 `5px`、字体沿用全局 `Avenir, Helvetica, Arial, sans-serif`、面板阴影 `0 2px 5px rgba(0,0,0,0.1)`、输入框边框 `1px solid #ddd`。参考 `HomeView.vue` 的 `.buttons button`
 - **E2E 选择器**: 需要被 `e2e/` 测试点到的元素统一加 `data-testid`，测试侧只用 `getByTestId`，不要依赖中文文案或 CSS 类
 - **注释**: 后端使用中文注释，标注日期
 - **Lint**: 前端保存前自动 lint (`lint-staged` + ESLint + Prettier)
 - **不要手动改** `CHANGELOG.md` 和版本号，由 semantic-release 自动管理
+
+## 维护者工作流：外部 PR 与截图
+
+> 来自 2026-09-28 处理贡献者 fork PR (#66/#67) 的实操经验。
+
+**推送权限只覆盖 PR 头分支**
+
+- `gh api repos/<fork> --jq .permissions.push` 返回 `false` **不代表不能推** —— 只要 PR 开了 `maintainerCanModify`（allow edits by maintainers），维护者就能推到该 PR 的**头分支**：
+  `git push https://github.com/<fork-owner>/handwriting-web.git HEAD:refs/heads/<branch>`
+- 但该权限**仅限头分支**：fork 上的其他分支（如截图用的 `pr-assets`）推送会被拒 `permission denied`
+- `git push --dry-run` **不可靠** —— 对它报成功的分支，真实推送仍可能被拒
+
+**截图只能靠「推分支 + raw 链接」**
+
+GitHub 没有给 token 用的图片上传接口：网页版拖拽上传走的是网页会话专属的 `uploads.github.com/user-attachments/assets`（token 调用返回 404），策略接口 `github.com/upload/policies/assets` 同样只认网页会话。所以可行做法只有一条：
+
+- 图片推到某个公开分支，再用 `raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/<path>` 引用
+- 用 **commit SHA** 而非分支名引用 —— 分支被改写（force-push）时，链接不会跟着变
+- 但这只防改写、**不防删分支**：没有 branch / tag / PR ref 指向该 commit 时，它会变成不可达对象，被 GitHub GC 回收后链接就 404（reachability 按 branch/tag 判定，见 [GitHub 博客](https://github.blog/engineering/scaling-gits-garbage-collection/)）。**截图分支要长期保留，不要删**
+- **更稳的位置是 PR 头分支** —— 只要该提交还是 PR 的**当前头**，`refs/pull/<n>/head` 就会引用它，删分支、合并都不会让它失效。实测 PR #76：建 PR 后删掉头分支，ref 仍在、commit 可解析、raw 仍返回 200 且字节数与本地一致，只有 PR 本身转为 closed
+- 但它**跟随 PR 当前头，并非永久钉住某个提交** —— 作者再推提交或 force-push，ref 就移到新提交，旧提交失去引用、可能被 GC（PR #67 的 ref 就随我们的推送从 `8bbfc2c` 移到了 `b2f3462`）。所以它是「比普通分支更耐删」，真要永久还是得把图并进 `main`
+- 代价与限制：图会进 PR 的 Files changed；而且**必须在 PR 还开着时推** —— 合并后 `maintainerCanModify` 会被收回，维护者再也推不进去（PR #67 合并后才想补图，就是这时踩到的）
+- 不介意「别删分支」这个约束的话，放普通分支也行（如主仓库的 `pr-assets` 分支，孤儿提交只含图片，不带整棵树）
+- **贡献者的图放自己的 fork，维护者别去代推** —— 推不了。例：ejjcc 的 fork 上有 `pr-assets` 分支按 PR 分目录存图（`pr-assets/<slug>/<name>.png`）
 
 ## 重要注意事项
 
