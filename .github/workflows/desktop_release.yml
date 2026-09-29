@@ -114,6 +114,12 @@ jobs:
         shell: bash
         env:
           PYTHON: python
+          # 英文 Windows runner 的控制台代码页是 cp1252，Python 往 stdout 打中文会抛
+          # UnicodeEncodeError。build.sh 自己也 export 了这两个（见 2026-09-29 那次
+          # 失败），但手动补传检出的可能是**修复之前**的 tag —— 那时它的 build.sh 还是
+          # 旧脚本，全靠这里兜住，否则补传历史版本会以同样的方式失败。
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: utf-8
         run: bash desktop/build.sh
 
       - name: 挂到 Release 上
