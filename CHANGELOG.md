@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/14790897/handwriting-web/compare/v1.29.0...v1.30.0) (2026-09-29)
+
+
+### Features
+
+* add one-click Chinese letter formatting ([#67](https://github.com/14790897/handwriting-web/issues/67)) ([f41b350](https://github.com/14790897/handwriting-web/commit/f41b350ca7be56c5f4595509058e3980a363c611)), closes [#007](https://github.com/14790897/handwriting-web/issues/007) [#0056b3](https://github.com/14790897/handwriting-web/issues/0056b3) [#003d73](https://github.com/14790897/handwriting-web/issues/003d73)
+
 # [1.29.0](https://github.com/14790897/handwriting-web/compare/v1.28.0...v1.29.0) (2026-07-28)
 
 
