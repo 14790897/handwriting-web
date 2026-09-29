@@ -57,7 +57,10 @@ handwriting-web/
 cd frontend && npm run serve
 
 # 后端 (端口 5005, 热重载)
-# 必须用仓库根的 venv, 不要用系统 Python —— 系统环境 fastapi 0.115.6 + starlette 1.3.1 起不来,
+# 首次先在仓库根建 venv 并装依赖:
+#   Windows:      python -m venv venv && venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+#   Linux/macOS:  python3 -m venv venv && venv/bin/python -m pip install -r backend/requirements.txt
+# 启动时必须用这个 venv, 不要用系统 Python —— 系统环境 fastapi 0.115.6 + starlette 1.3.1 起不来,
 # 报 TypeError: Router.__init__() got an unexpected keyword argument 'on_startup'
 cd backend && ../venv/Scripts/python.exe -m uvicorn app:app --reload --host 0.0.0.0 --port 5005
 #            Linux/macOS 换成 ../venv/bin/python
