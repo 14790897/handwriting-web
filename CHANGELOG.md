@@ -1,3 +1,10 @@
+## [1.32.2](https://github.com/14790897/handwriting-web/compare/v1.32.1...v1.32.2) (2026-09-29)
+
+
+### Performance Improvements
+
+* reduce first-screen load time by deferring non-critical startup work ([#63](https://github.com/14790897/handwriting-web/issues/63)) ([2cedc37](https://github.com/14790897/handwriting-web/commit/2cedc370152b240df8b955938d771f7531c3d1ac))
+
 ## [1.32.1](https://github.com/14790897/handwriting-web/compare/v1.32.0...v1.32.1) (2026-09-29)
 
 
