@@ -268,6 +268,27 @@ mysql_host = os.getenv("MYSQL_HOST", "db")
 enable_user_auth = os.getenv("ENABLE_USER_AUTH", "false")
 # 桌面版（Electron + PyInstaller 打包）标志，由 desktop_main.py 设置
 DESKTOP_MODE = os.getenv("DESKTOP_MODE", "false").lower() == "true"
+
+
+def read_app_version():
+    """应用版本号，供前端页面展示。
+
+    优先环境变量：桌面版由 Electron 传 app.getVersion()，拿到的是真正安装的那个版本；
+    否则读随包分发的 VERSION（发版时由 scripts/sync-version.js 写入，进后端镜像与
+    PyInstaller 的 datas）；都没有就返回空串，前端不显示。
+    """
+    override = os.getenv("HANDWRITING_APP_VERSION", "").strip()
+    if override:
+        return override
+    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
+    try:
+        with open(version_file, encoding="utf-8") as fp:
+            return fp.read().strip()
+    except OSError:
+        return ""
+
+
+app_version = read_app_version()
 # 获取当前路径
 current_path = os.getcwd()
 # 创建一个子文件夹用于存储输出的图片
@@ -1440,6 +1461,12 @@ def get_fonts_info():
     if filenames == []:
         return JSONResponse({"error": "fontfile not found"}, status_code=400)
     return JSONResponse(filenames)
+
+
+@app.get("/api/version")
+def get_version():
+    """给前端页面展示的版本号。"""
+    return JSONResponse({"version": app_version})
 
 
 def mysql_operation(image_data):

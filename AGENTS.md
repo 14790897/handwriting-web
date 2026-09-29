@@ -45,9 +45,11 @@ handwriting-web/
 ├── desktop/                  # Windows 桌面版 (Electron 外壳 + PyInstaller 打包的后端)
 │   ├── main.js               # Electron 主进程: 拉起后端 exe + 端口握手 + 开窗
 │   ├── splash.html           # 后端冷启动期间的等待页
-│   ├── backend.spec          # PyInstaller onedir 配置 (打包 dist/ 与字体)
-│   ├── build.sh              # 一键构建脚本
+│   ├── backend.spec          # PyInstaller onedir 配置 (打包 dist/、字体与 VERSION)
+│   ├── build.sh              # 一键构建脚本 (前端 dist → 后端 exe → 安装包)
 │   └── requirements-build.txt # 仅打包期依赖 (pyinstaller)
+├── scripts/
+│   └── sync-version.js       # 发版时把发版号同步到 desktop/ 与 backend/VERSION
 ├── serverless/               # Vercel 函数 (nodemailer 发邮件)
 ├── .github/workflows/        # CI/CD: frontend/backend docker 构建 + semantic-release + e2e
 ├── docker-compose.yml        # 3 服务: frontend + backend + watchtower
@@ -107,9 +109,24 @@ cd desktop && npx electron .
 是因为 token 触发的 release/tag 事件不会再触发新工作流；`workflow_run` 不受该限制，
 所以不依赖 `secrets.GH_TOKEN` 是不是 PAT。也可以用 workflow_dispatch 手动补传历史版本。
 
-`desktop/` 是独立的 npm 工程：版本号写在 `desktop/package.json`，与根目录 semantic-release
-管理的版本**有意解耦**，不要试图同步它们。构建产物 `desktop/build/`、`desktop/node_modules/`
-均已被 `.gitignore` 忽略。
+### 版本号
+
+发版号的唯一来源是 semantic-release 的 `${nextRelease.version}`（仓库根的 `package.json`
+没有 version 字段）。`release.config.js` 用 `@semantic-release/exec` 在 prepare 阶段跑
+`scripts/sync-version.js`，把发版号同步到三处，再由 `@semantic-release/git` 一起提交：
+
+| 位置 | 谁读它 |
+|---|---|
+| `desktop/package.json` / `desktop/package-lock.json` | electron-builder 的产物名（`${version}`）、About 对话框 |
+| `backend/VERSION` | 后端 `/api/version` 的兜底；进后端镜像（`COPY backend /app`）与 PyInstaller 的 datas |
+
+展示路径：桌面版 Electron 通过 `HANDWRITING_APP_VERSION` 把 `app.getVersion()` 传给后端
+（拿到的是**真正安装的那个版本**，优先于 VERSION 文件）；Web 部署则读镜像里的
+`backend/VERSION`。前端在首页页脚显示 `/api/version` 的结果（`data-testid="app-version"`），
+取不到就整行不显示。
+
+**不要手改这三个文件里的版本号**，它们由发版流程维护。构建产物 `desktop/build/`、
+`desktop/node_modules/` 均已被 `.gitignore` 忽略。
 
 桌面版与线上差异（都靠 `DESKTOP_MODE` / 环境变量区分，Web 部署不受影响）：
 

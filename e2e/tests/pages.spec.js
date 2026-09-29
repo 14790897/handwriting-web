@@ -1,6 +1,13 @@
-const { test, expect } = require("./fixtures");
+const { test, expect, openHome } = require("./fixtures");
 
 test.describe("静态页面与导航", () => {
+  test("首页底部显示当前版本号", async ({ page }) => {
+    await openHome(page);
+
+    // 版本号来自后端 /api/version（发版时由 scripts/sync-version.js 写进 backend/VERSION）
+    await expect(page.getByTestId("app-version")).toHaveText(/^v\d+\.\d+\.\d+$/);
+  });
+
   test("功能介绍页可访问", async ({ page }) => {
     await page.goto("/Introduce");
 

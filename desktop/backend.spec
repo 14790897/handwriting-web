@@ -14,11 +14,14 @@ FRONTEND_DIST = ROOT / "frontend" / "dist"
 if not (FRONTEND_DIST / "index.html").is_file():
     raise SystemExit("缺少 frontend/dist/index.html，请先在 frontend/ 执行 npm run build")
 
-# 随包分发的只读资源：字体（同步到用户可写目录）与前端静态文件
+# 随包分发的只读资源：字体（同步到用户可写目录）、前端静态文件、版本号
 datas = [
     (str(BACKEND_DIR / "font_assets"), "font_assets"),
     (str(FRONTEND_DIST), "dist"),
 ]
+# app.py 读 __file__ 同级目录下的 VERSION 作为版本号兜底（桌面版通常走 Electron 传的环境变量）
+if (BACKEND_DIR / "VERSION").is_file():
+    datas.append((str(BACKEND_DIR / "VERSION"), "."))
 
 hiddenimports = [
     # 发行名是 handrightbeta，但 import 名是 handright

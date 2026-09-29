@@ -48,6 +48,8 @@ function startBackend() {
       ...process.env,
       HANDWRITING_DATA_DIR: dir,
       HANDWRITING_PARENT_PID: String(process.pid),
+      // 页面上要显示的版本号：用安装的这个版本，而不是构建时写死的
+      HANDWRITING_APP_VERSION: app.getVersion(),
       // Windows 上 Python 的管道/文件默认走 ANSI 代码页，中文日志会抛
       // UnicodeEncodeError 或写成乱码；强制整个解释器用 UTF-8
       PYTHONUTF8: "1",

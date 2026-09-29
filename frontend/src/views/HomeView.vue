@@ -321,6 +321,7 @@
         <!-- <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a> -->
         <span class="text-black">{{ $t('message.projectAddress') }}:</span>
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
+        <span v-if="appVersion" data-testid="app-version" class="version-tag">v{{ appVersion }}</span>
       </div>
       <!-- 本网站是免费网站如果你是付费访问的请退款 -->
       <div class ='freeprompt'>{{ $t('message.freeprompt') }}</div>
@@ -383,6 +384,8 @@ export default {
   data() {
     return {
       text: "",
+      // 页面底部展示的版本号，来自 /api/version；取不到就不显示
+      appVersion: "",
       fontFile: null,
       backgroundImage: null,
       fontSize: 124,
@@ -481,6 +484,13 @@ export default {
     if (typeof this.enableFullPreview !== 'boolean') {
       this.enableFullPreview = false;
     }
+
+    this.$http.get('/api/version').then(response => {
+      this.appVersion = response.data?.version || '';
+    }).catch(() => {
+      // 版本号只是展示信息，取不到就不显示，不打扰用户
+      this.appVersion = '';
+    });
 
     this.$http.get('/api/fonts_info').then(response => {
       this.options = response.data.map((font, index) => {
@@ -2133,6 +2143,12 @@ input[type="file"]:hover {
   color: #e70808;
   text-align: center;
   margin-top: 10px;
+}
+
+.version-tag {
+  margin-left: 8px;
+  font-size: 0.8rem;
+  color: #6c757d;
 }
 @media (max-width: 1000px) {
   .container {
