@@ -96,7 +96,9 @@ cd e2e && npm test
 GitHub 没有给 token 用的图片上传接口：网页版拖拽上传走的是网页会话专属的 `uploads.github.com/user-attachments/assets`（token 调用返回 404），策略接口 `github.com/upload/policies/assets` 同样只认网页会话。所以可行做法只有一条：
 
 - 图片推到某个公开分支，再用 `raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/<path>` 引用
-- 必须用 **commit SHA**，不要用分支名 —— 分支一改写，链接就失效
+- 用 **commit SHA** 而非分支名引用 —— 分支被改写（force-push）时，链接不会跟着变
+- 但这只防改写、**不防删分支**：没有 branch / tag / PR ref 指向该 commit 时，它会变成不可达对象，被 GitHub GC 回收后链接就 404（reachability 按 branch/tag 判定，见 [GitHub 博客](https://github.blog/engineering/scaling-gits-garbage-collection/)）。**截图分支要长期保留，不要删**
+- 唯一的例外是 **PR 头提交** —— 它被 `refs/pull/<n>/head` 钉住，分支删了也还在（实测 PR #26：分支已删，该 commit 仍可访问，raw 返回 200，而伪造 SHA 对照返回 404）
 - **贡献者的图放自己的 fork，维护者别去代推** —— 推不了。例：ejjcc 的 fork 上有 `pr-assets` 分支按 PR 分目录存图（`pr-assets/<slug>/<name>.png`）
 - 维护者自己要加图时，用**主仓库**的 `pr-assets` 分支（孤儿提交，只含图片，不带整棵树）
 
