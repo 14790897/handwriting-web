@@ -157,7 +157,7 @@ cd desktop && npx electron .
 - **Commit message**: 必须遵循 [Conventional Commits](https://www.conventionalcommits.org/) (`feat:` / `fix:` / `chore:` 等)，semantic-release 靠它决定版本号
 - **分支**: 只推到 `main`，不要直接 push（通过 PR）
 - **i18n**: 所有用户可见文字必须同时提供中英文翻译，在 `frontend/src/i18n.js` 中添加
-- **UI 风格**: 新增/改版的界面必须复用站点既有设计语言，不要自带一套配色 —— 主按钮 `#007BFF`（hover `#0056b3`、active `#003d73`）、圆角 `5px`、字体沿用全局 `Avenir, Helvetica, Arial, sans-serif`、面板阴影 `0 2px 5px rgba(0,0,0,0.1)`、输入框边框 `1px solid #ddd`。参考 `HomeView.vue` 的 `.buttons button`
+- **UI 风格**: 新增/改版的界面必须复用站点既有设计语言，不要自带一套配色 —— 主按钮 `#007BFF`（hover `#0056b3`、active `#003d73`）、圆角 `5px`、字体沿用全局 `Avenir, Helvetica, Arial, sans-serif`、面板阴影 `0 2px 5px rgba(0,0,0,0.1)`、输入框边框 `1px solid #ddd`。参考 `HomeView.vue` 的 `.action-btn`（顶栏按钮）与 `.letter-format-button`
 - **E2E 选择器**: 需要被 `e2e/` 测试点到的元素统一加 `data-testid`，测试侧只用 `getByTestId`，不要依赖中文文案或 CSS 类
 - **注释**: 后端使用中文注释，标注日期
 - **Lint**: 前端保存前自动 lint (`lint-staged` + ESLint + Prettier)
