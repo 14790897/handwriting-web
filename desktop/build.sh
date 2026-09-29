@@ -23,10 +23,15 @@ for arg in "$@"; do
   esac
 done
 
-# 优先用仓库根目录的 venv —— 系统 Python 的 fastapi/starlette 版本组合起不来。
+# 优先用 PYTHON 指定的解释器（CI 上没有 venv），否则找仓库根目录的 venv ——
+# 系统 Python 的 fastapi/starlette 版本组合起不来。
 # 在 git worktree 里构建时 venv 通常只在主工作区（git worktree list 的第一项），
 # 与 e2e/playwright.config.js 的查找顺序保持一致。
 find_python() {
+  if [ -n "${PYTHON:-}" ]; then
+    echo "$PYTHON"
+    return 0
+  fi
   local roots=("$ROOT") main_root
   main_root="$(git -C "$ROOT" worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2; exit}')"
   if [ -n "$main_root" ] && [ "$main_root" != "$ROOT" ]; then
@@ -41,8 +46,26 @@ find_python() {
 }
 
 PYTHON="$(find_python)" || {
-  echo "找不到 venv（已查找：$ROOT 及主工作区），请先按 AGENTS.md 在仓库根目录创建 venv 并安装 backend/requirements.txt" >&2
+  echo "找不到 venv（已查找：$ROOT 及主工作区），请先按 AGENTS.md 在仓库根目录创建 venv 并安装 backend/requirements.txt，或用 PYTHON=<解释器> 指定" >&2
   exit 1
+}
+
+# --skip-deps 对前端和 desktop 一视同仁；有 lockfile 时用 npm ci 保证可复现
+ensure_node_deps() {
+  local dir="$1"
+  if [ -d "$dir/node_modules" ]; then
+    return 0
+  fi
+  if [ "$SKIP_DEPS" = true ]; then
+    echo "!! $dir/node_modules 不存在，但已指定 --skip-deps，跳过安装" >&2
+    return 0
+  fi
+  echo "==> 安装 $dir 的 npm 依赖"
+  if [ -f "$dir/package-lock.json" ]; then
+    (cd "$dir" && npm ci --no-audit --no-fund)
+  else
+    (cd "$dir" && npm install --no-audit --no-fund)
+  fi
 }
 
 echo "==> 使用 Python: $PYTHON"
@@ -54,10 +77,8 @@ if [ "$SKIP_DEPS" = false ]; then
 fi
 
 echo "==> 构建前端"
+ensure_node_deps "$ROOT/frontend"
 cd "$ROOT/frontend"
-if [ ! -d node_modules ] && [ "$SKIP_DEPS" = false ]; then
-  npm ci --no-audit --no-fund
-fi
 npm run build
 
 echo "==> 打包后端 (PyInstaller onedir)"
@@ -80,10 +101,8 @@ print(f"图标已写入 {target}")
 PY
 
 echo "==> 打包 Electron 应用"
+ensure_node_deps "$DESKTOP"
 cd "$DESKTOP"
-if [ ! -d node_modules ]; then
-  npm install --no-audit --no-fund
-fi
 if [ "$APP_ONLY" = true ]; then
   npm run pack
 else

@@ -338,9 +338,10 @@ ch.setLevel(logging.DEBUG)
 
 # 创建 file handler，并设置级别为 DEBUG
 # LOG_DIR 供桌面版指向可写数据目录；仓库内运行时仍是 backend/logs
+# 显式指定 utf-8：Windows 上 FileHandler 默认用 ANSI 代码页，中文日志会写坏
 log_dir = os.getenv("LOG_DIR", "logs")
 os.makedirs(log_dir, exist_ok=True)
-fh = logging.FileHandler(os.path.join(log_dir, "app.log"))
+fh = logging.FileHandler(os.path.join(log_dir, "app.log"), encoding="utf-8")
 fh.setLevel(logging.DEBUG)
 
 # 创建 formatter
@@ -355,13 +356,55 @@ logger.addHandler(ch)
 logger.addHandler(fh)
 
 app = FastAPI()
+
+# 桌面版由 desktop_main.py 设成本应用窗口的源（http://127.0.0.1:<port>）。
+# 前端与后端同源、本来就不依赖 CORS，所以桌面版把白名单收紧到这一个来源；
+# Web 部署不设该变量，沿用原来的宽松配置。
+_allowed_origin = os.getenv("HANDWRITING_ALLOWED_ORIGIN", "")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[_allowed_origin] if _allowed_origin else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _origin_of(url):
+    """从 URL 里取出 scheme://host:port，取不到返回 None。"""
+    match = re.match(r"^https?://[^/]+", url or "")
+    return match.group(0) if match else None
+
+
+def foreign_origin(origin_header, referer_header):
+    """请求来自本应用之外的站点时返回该站点，否则返回 None。
+
+    CORS 白名单只决定浏览器能否「读」响应，不阻止请求被发出，所以必须再按
+    Origin / Referer 主动拒绝：用户浏览任意网页时，那个页面可以往 127.0.0.1
+    发简单请求驱动本地渲染任务。浏览器对跨源请求一定会带 Origin（表单 POST 也带），
+    同源 GET 不带 —— 此时放行，能省略这两个头的只有本机非浏览器客户端。
+    """
+    if not _allowed_origin:
+        return None
+    origin = origin_header or _origin_of(referer_header)
+    if origin and origin != _allowed_origin:
+        return origin
+    return None
+
+
+if _allowed_origin:
+
+    @app.middleware("http")
+    async def reject_foreign_origin(request: Request, call_next):
+        if foreign_origin(
+            request.headers.get("origin"), request.headers.get("referer")
+        ):
+            logger.warning("拒绝跨站请求: %s -> %s", request.headers.get("origin"), request.url.path)
+            return JSONResponse(
+                status_code=403,
+                content={"status": "fail", "message": "跨站请求被拒绝"},
+            )
+        return await call_next(request)
 
 
 # 自定义 422 错误响应，把字段名提取出来让前端更易读
@@ -441,7 +484,9 @@ def create_notebook_image(
 
 def read_docx(file_path):
     document = Document(file_path)
-    text = " ".join([paragraph.text for paragraph in document.paragraphs])
+    # 必须保留段落换行：正文里的 "---"（分页）与 ">>>"（右对齐）是按行匹配的标记，
+    # 用空格拼接会把整篇压成一行，标记永远不生效，而且不会报任何错
+    text = "\n".join([paragraph.text for paragraph in document.paragraphs])
     return text
 
 
@@ -472,6 +517,10 @@ except OSError:
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
     if not _pandoc_available:
+        logger.warning(
+            "pandoc 不可用，改用 python-docx 提取 %s（保留段落换行，但表格/列表等结构会丢失）",
+            docx_file_path,
+        )
         return read_docx(docx_file_path)
     text = pypandoc.convert_file(docx_file_path, 'plain')
     return text
@@ -1201,6 +1250,13 @@ async def generate_handwriting(
 
 @app.websocket("/api/generate_handwriting/ws/{task_id}")
 async def generate_handwriting_task_websocket(websocket: WebSocket, task_id: str):
+    # WebSocket 不走 HTTP 中间件，也不受 CORS 约束，必须自己校验来源
+    if foreign_origin(
+        websocket.headers.get("origin"), websocket.headers.get("referer")
+    ):
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
     await register_task_websocket(task_id, websocket)
     try:

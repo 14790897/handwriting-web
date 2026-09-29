@@ -48,6 +48,10 @@ function startBackend() {
       ...process.env,
       HANDWRITING_DATA_DIR: dir,
       HANDWRITING_PARENT_PID: String(process.pid),
+      // Windows 上 Python 的管道/文件默认走 ANSI 代码页，中文日志会抛
+      // UnicodeEncodeError 或写成乱码；强制整个解释器用 UTF-8
+      PYTHONUTF8: "1",
+      PYTHONIOENCODING: "utf-8",
       PYTHONUNBUFFERED: "1",
     },
     stdio: ["ignore", "pipe", "pipe"],

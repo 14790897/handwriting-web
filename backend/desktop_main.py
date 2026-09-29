@@ -122,7 +122,20 @@ def emit_ready(port: int):
 
 
 def main():
+    # 打包后 stdout/stderr 是管道或重定向文件，Windows 默认按 ANSI 代码页编码，
+    # 中文日志会抛 UnicodeEncodeError（后台线程里就等于静默失败）。Electron 会传
+    # PYTHONUTF8，这里再兜一层，保证直接双击 exe 时也不会崩。
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     prepare_environment()
+
+    # 端口必须在 import app 之前定下来：app.py 在导入期用它配置 CORS 白名单与
+    # 跨站请求拒绝，只放行本应用窗口这一个来源，挡住「用户浏览任意网页时，
+    # 那个页面往 127.0.0.1 发请求驱动本地渲染」这类攻击。
+    port = find_free_port()
+    os.environ["HANDWRITING_ALLOWED_ORIGIN"] = f"http://127.0.0.1:{port}"
 
     # 导入放在环境变量就绪之后：app.py 在导入期读取这些配置并建目录
     import uvicorn
@@ -131,7 +144,6 @@ def main():
 
     cleanup_marked_directories()
 
-    port = find_free_port()
     emit_ready(port)
 
     # 放到导入完成之后启动：万一创建线程与 frozen 导入存在交互，也不该拖住启动

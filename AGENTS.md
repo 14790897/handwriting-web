@@ -89,9 +89,10 @@ SPA 与 `/api`（同源，前端无需跨域配置），Electron 只用 `Browser
 # 一键构建 (前端 dist → 后端 exe → NSIS 安装包 + 便携版)
 bash desktop/build.sh
 
-# 只构建后端 exe / 跳过依赖安装
+# 只出 Electron 目录版（不生成 NSIS 安装包）/ 跳过依赖安装 / 指定解释器（CI 用）
 bash desktop/build.sh --app-only
 bash desktop/build.sh --skip-deps
+PYTHON=python bash desktop/build.sh
 
 # 开发调试: 先单独构建后端 exe, 再用 Electron 直接跑
 cd desktop && npx electron .
@@ -99,6 +100,12 @@ cd desktop && npx electron .
 
 产物：`desktop/build/backend/handwriting-backend/`（后端 onedir）、
 `desktop/build/installer/`（安装包与便携版）。
+
+**发版自动构建**：`.github/workflows/desktop_release.yml` 在 Semantic Release 工作流成功后，
+在 `windows-latest` 上构建并把安装包/便携版挂到对应 Release 上（PyInstaller 不能交叉编译，
+所以必须是 Windows runner）。用 `workflow_run` 而不是 `release: published` / `push: tags`，
+是因为 token 触发的 release/tag 事件不会再触发新工作流；`workflow_run` 不受该限制，
+所以不依赖 `secrets.GH_TOKEN` 是不是 PAT。也可以用 workflow_dispatch 手动补传历史版本。
 
 `desktop/` 是独立的 npm 工程：版本号写在 `desktop/package.json`，与根目录 semantic-release
 管理的版本**有意解耦**，不要试图同步它们。构建产物 `desktop/build/`、`desktop/node_modules/`
@@ -114,6 +121,19 @@ cd desktop && npx electron .
   放开 CPU 占用守卫（`CPU_USAGE_LIMIT=100`）。
 - Electron 退出后后端自行退出：后端轮询 `HANDWRITING_PARENT_PID`。
   **不要改成读 stdin 判断** —— 无控制台的 frozen 进程里阻塞读 stdin 会让后端卡死在启动阶段。
+
+### 桌面版安全与编码（改这块之前先读）
+
+- **跨站请求防护**：本地后端监听在 `127.0.0.1`，任何网页都能向它发请求，而同源策略只挡
+  「读响应」、不挡「发请求」。所以 `desktop_main.py` 会把端口提前定下来并设
+  `HANDWRITING_ALLOWED_ORIGIN`，`app.py` 据此把 CORS 白名单收紧到这一个来源，
+  并用 Origin/Referer 主动拒绝其它来源（HTTP 用中间件，WebSocket 不走中间件、单独校验）。
+  **不要退回 `allow_origins=["*"]`**，也不要去掉这个校验。
+- **Windows 编码**：打包后 stdout 是管道、日志是文件，Python 默认按 ANSI 代码页编码，
+  中文会抛 `UnicodeEncodeError`（`backend/identify.py` 里有中文 `print`，会让
+  `/api/imagefileprocess` 直接 500）或写成乱码。Electron 传 `PYTHONUTF8=1` +
+  `PYTHONIOENCODING=utf-8`，`desktop_main.py` 另有一层 `reconfigure` 兜底，
+  日志文件则显式用 `encoding="utf-8"`。新增往 stdout/文件写中文的代码时注意这条。
 
 ## 编码约定
 
