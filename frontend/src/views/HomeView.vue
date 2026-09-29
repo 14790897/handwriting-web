@@ -2266,6 +2266,11 @@ input[type="file"]:hover {
     min-height: 100vh;
   }
 
+  /* 顶栏按钮在窄屏会换行到两三行，吸顶会长期占掉小屏近三分之一的高度 */
+  .app-header {
+    position: static;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
   }
