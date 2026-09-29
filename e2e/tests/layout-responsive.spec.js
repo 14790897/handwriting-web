@@ -62,8 +62,7 @@ test.describe("响应式布局", () => {
 
     // 滚动后顶栏随页面上移，不再长期遮住内容
     await page.evaluate(() => window.scrollTo(0, 600));
-    await page.waitForTimeout(200);
-    expect((await layoutMetrics(page)).headerTop).toBeLessThan(0);
+    await expect.poll(async () => (await layoutMetrics(page)).headerTop).toBeLessThan(0);
   });
 
   test("窄屏视口：toast 落在屏幕下半区，不盖住顶栏按钮", async ({ page }) => {
@@ -75,7 +74,8 @@ test.describe("响应式布局", () => {
 
     const toast = page.locator(".swal2-toast");
     await expect(toast).toBeVisible();
-    const box = await toast.boundingBox();
-    expect(box.y).toBeGreaterThan(1180 / 2);
+    // toast 有入场动画，位置要轮询等它稳定；高度取自实际视口，避免和硬编码值漂移
+    const { height } = page.viewportSize();
+    await expect.poll(async () => (await toast.boundingBox())?.y ?? 0).toBeGreaterThan(height / 2);
   });
 });
