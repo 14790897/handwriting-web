@@ -1,15 +1,16 @@
 <template>
     <div id='text_file_select' class="d-flex justify-content-between">
         <label for="textArea">{{ $t('message.text') }}:</label>
-        <textarea id="textArea" class="form-control" v-model="text" @input="handleManualInput"
+        <textarea id="textArea" class="form-control" v-model="text" data-testid="text-input" @input="handleManualInput"
             :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
         <div class="file_select_container">
-            <button @click="triggerTextFileInput" class="mx-auto">{{ $t('message.chooseFile') }}</button>
-            <span class="border p-2 text-primary " v-if="selectedTextFileName">{{ selectedTextFileName }}</span>
+            <button @click="triggerTextFileInput" class="mx-auto" data-testid="text-file-btn">{{ $t('message.chooseFile') }}</button>
+            <span class="border p-2 text-primary " v-if="selectedTextFileName"
+                data-testid="text-file-name">{{ selectedTextFileName }}</span>
             <label>
-                <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput"
+                <input type="file" ref="textFileInput" @change="uploadFile" id="textFileInput" data-testid="text-file-input"
                     accept=".doc,.docx,.pdf,.txt,.rtf" style="display: none;" />
             </label>
         </div>

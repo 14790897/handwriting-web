@@ -41,8 +41,9 @@ handwriting-web/
 │   ├── identify.py           # OpenCV 图片边距/行距检测
 │   ├── pdf.py                # PyMuPDF 生成 PDF
 │   └── schedule_clean.py     # 每日午夜清理 temp/
+├── e2e/                      # Playwright 端到端测试 (真实前后端 + 少量 mock 分支)
 ├── serverless/               # Vercel 函数 (nodemailer 发邮件)
-├── .github/workflows/        # CI/CD: frontend/backend docker 构建 + semantic-release
+├── .github/workflows/        # CI/CD: frontend/backend docker 构建 + semantic-release + e2e
 ├── docker-compose.yml        # 3 服务: frontend + backend + watchtower
 ├── release.config.js         # semantic-release 配置
 ├── package.json              # 仅 semantic-release 依赖
@@ -60,6 +61,9 @@ cd backend && uvicorn app:app --reload --host 0.0.0.0 --port 5005
 
 # 或使用 VS Code Tasks:
 #   "⚡ 全栈开发 - 同时启动前后端"
+
+# E2E 测试 (Playwright, 自动拉起前后端; 首次先 npm install && npx playwright install chromium)
+cd e2e && npm test
 ```
 
 ## 编码约定
@@ -67,6 +71,7 @@ cd backend && uvicorn app:app --reload --host 0.0.0.0 --port 5005
 - **Commit message**: 必须遵循 [Conventional Commits](https://www.conventionalcommits.org/) (`feat:` / `fix:` / `chore:` 等)，semantic-release 靠它决定版本号
 - **分支**: 只推到 `main`，不要直接 push（通过 PR）
 - **i18n**: 所有用户可见文字必须同时提供中英文翻译，在 `frontend/src/i18n.js` 中添加
+- **E2E 选择器**: 需要被 `e2e/` 测试点到的元素统一加 `data-testid`，测试侧只用 `getByTestId`，不要依赖中文文案或 CSS 类
 - **注释**: 后端使用中文注释，标注日期
 - **Lint**: 前端保存前自动 lint (`lint-staged` + ESLint + Prettier)
 - **不要手动改** `CHANGELOG.md` 和版本号，由 semantic-release 自动管理

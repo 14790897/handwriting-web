@@ -3,10 +3,10 @@
   <div class="container">
     <!-- 错误消息以及提示信息 -->
     <div id="message">
-      <div v-if="message" class="alert alert-info" role="alert">
+      <div v-if="message" class="alert alert-info" role="alert" data-testid="message-info">
         {{ message }}
       </div>
-      <div v-if="uploadMessage" class="alert alert-info" role="alert">
+      <div v-if="uploadMessage" class="alert alert-info" role="alert" data-testid="message-upload">
         {{ uploadMessage }}
       </div>
     </div> 
@@ -18,12 +18,13 @@
           <TextInput ref="textInputComp" @childEvent="(eventData) => { this.text = eventData }"
             @manual-input="clearLetterFormatBackup"></TextInput>
           <div class="letter-format-actions">
-            <button type="button" class="letter-format-button" @click="openLetterFormatter">
+            <button type="button" class="letter-format-button" data-testid="letter-format-btn"
+              @click="openLetterFormatter">
               <span class="letter-format-mark" aria-hidden="true">信</span>
               {{ $t('message.formatChineseLetter') }}
             </button>
             <button v-if="letterFormatBackup !== null" type="button" class="letter-format-undo"
-              @click="undoLetterFormatting">
+              data-testid="letter-undo-btn" @click="undoLetterFormatting">
               {{ $t('message.letterUndo') }}
             </button>
           </div>
@@ -33,10 +34,11 @@
           <label>{{ $t('message.fontFile') }}:</label>
           <div class="d-flex flex-row justify-content-between">
             <div class="font-selection">
-              <button @click="triggerFontFileInput">{{ $t('message.chooseFile') }}</button>
-              <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
+              <button data-testid="font-file-btn" @click="triggerFontFileInput">{{ $t('message.chooseFile') }}</button>
+              <input type="file" ref="fontFileInput" data-testid="font-file-input" @change="onFontChange"
+                style="display: none;" />
             </div>
-            <select v-model="selectedOption" class="styled-select" style="width: 60%;">
+            <select v-model="selectedOption" class="styled-select" data-testid="font-select" style="width: 60%;">
               <option v-for="option in options" :value="option.value" :key="option.value">
                 {{ option.text }}
               </option>
@@ -47,7 +49,8 @@
             <label>{{ $t('message.backgroundImageFile') }}:</label>
             <div class="button-container">
               <!-- :disabled="isDimensionSpecified" -->
-              <button @click="triggerImageFileInput" :class="{ 'button-disabled': isDimensionSpecified }"
+              <button data-testid="background-image-btn" @click="triggerImageFileInput"
+                :class="{ 'button-disabled': isDimensionSpecified }"
                 :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
                 {{ $t('message.chooseFile') }}
                 <div>
@@ -59,7 +62,8 @@
               </button>
               <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName
                 }}</span>
-              <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
+              <input type="file" ref="imageFileInput" data-testid="background-image-input"
+                @change="onBackgroundImageChange" style="display: none;" />
               <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
             </div>
           </div>
@@ -69,7 +73,7 @@
       <div c lass="label-container">
  
         <label>{{ $t('message.width') }}:
-          <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
+          <input type="number" v-model="width" data-testid="width-input" :disabled="isBackgroundImageSpecified"
             :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
         </label>
       </div>
@@ -78,7 +82,7 @@
       <div class="label-container">
 
         <label>{{ $t('message.height') }}:
-          <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
+          <input type="number" v-model="height" data-testid="height-input" :disabled="isBackgroundImageSpecified"
             :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
         </label>
         <button type="button" class="close" aria-label="Close" @click="clearDimensions">
@@ -97,41 +101,42 @@
       <div class="label-container">
 
         <label>{{ $t('message.fontSize') }}:
-          <input type="number" v-model="fontSize" placeholder="recommend > 100" />
+          <input type="number" v-model="fontSize" data-testid="font-size-input" placeholder="recommend > 100" />
         </label>
       </div>
 
       <div class="label-container">
         <label>{{ $t('message.lineSpacing') }}:
-          <input type="number" v-model="lineSpacing" />
+          <input type="number" v-model="lineSpacing" data-testid="line-spacing-input" />
         </label>
       </div>
 
       <div class="label-container">
         <label>{{ $t('message.topMargin') }}:
-          <input type="number" v-model="marginTop" />
+          <input type="number" v-model="marginTop" data-testid="margin-top-input" />
         </label>
       </div>
 
       <div class="label-container">
         <label>{{ $t('message.bottomMargin') }}:
-          <input type="number" v-model="marginBottom" />
+          <input type="number" v-model="marginBottom" data-testid="margin-bottom-input" />
         </label>
       </div>
 
       <div class="label-container">
         <label>{{ $t('message.leftMargin') }}:
-          <input type="number" v-model="marginLeft" />
+          <input type="number" v-model="marginLeft" data-testid="margin-left-input" />
         </label>
       </div>
 
       <div class="label-container">
         <label>{{ $t('message.rightMargin') }}:
-          <input type="number" v-model="marginRight" />
+          <input type="number" v-model="marginRight" data-testid="margin-right-input" />
         </label>
       </div>
       <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
-      <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px; font-size:0.9rem">
+      <button class="btn btn-primary" type="button" data-testid="toggle-advanced-btn" @click="toggleCollapse"
+        style="width: 100px; font-size:0.9rem">
         {{ $t('message.expand') }}
       </button>
 
@@ -225,11 +230,11 @@
       @close="showLetterFormatter = false" @apply="applyLetterFormatting" />
 
     <!-- 生成状态提示 -->
-    <div v-if="isGenerating || isInCooldownPeriod" class="generation-status">
-      <div v-if="isGenerating" class="status-generating">
+    <div v-if="isGenerating || isInCooldownPeriod" class="generation-status" data-testid="generation-status">
+      <div v-if="isGenerating" class="status-generating" data-testid="status-generating">
         🔄 正在生成中，请稍候...
       </div>
-      <div v-else-if="isInCooldownPeriod" class="status-cooldown">
+      <div v-else-if="isInCooldownPeriod" class="status-cooldown" data-testid="status-cooldown">
         ⏳ 冷却中，还需等待 {{ remainingCooldown }} 秒
       </div>
     </div>
@@ -237,26 +242,30 @@
     <div class="preset-row">
       <label for="builtinPreset">{{ $t('message.presetLabel') }}:</label>
       <select id="builtinPreset" :value="selectedPreset" @change="applyPreset" class="styled-select"
-        :disabled="!presetOptionsReady">
+        data-testid="builtin-preset-select" :disabled="!presetOptionsReady">
         <option value="">{{ $t('message.presetNone') }}</option>
         <option value="smallUnderlined">{{ $t('message.presetSmallUnderlined') }}</option>
       </select>
     </div>
 
     <div class="buttons">
-      <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
-      <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
-      <button @click="resetSettings">{{ $t('message.resetSettings') }}</button>
-      <button @click="generateHandwriting(preview = true)" :disabled="shouldDisableButtons">
+      <button data-testid="load-settings-btn" @click="loadPreset">{{ $t('message.loadSettings') }}</button>
+      <button data-testid="save-settings-btn" @click="savePreset">{{ $t('message.saveSettings') }}</button>
+      <button data-testid="reset-settings-btn" @click="resetSettings">{{ $t('message.resetSettings') }}</button>
+      <button data-testid="preview-btn" @click="generateHandwriting(preview = true)"
+        :disabled="shouldDisableButtons">
         {{ buttonText || $t('message.preview') }}
       </button>
-      <button v-if="isDevEnv" @click="toggleFullPreview" :disabled="shouldDisableButtons">
+      <button v-if="isDevEnv" data-testid="full-preview-toggle-btn" @click="toggleFullPreview"
+        :disabled="shouldDisableButtons">
         本地全量预览：{{ enableFullPreview ? '开' : '关' }}
       </button>
-      <button @click="generateHandwriting(preview = false)" :disabled="shouldDisableButtons">
+      <button data-testid="generate-image-btn" @click="generateHandwriting(preview = false)"
+        :disabled="shouldDisableButtons">
         {{ buttonText || $t('message.generateFullHandwritingImage') }}
       </button>
-      <button @click="generateHandwriting(preview = false, pdf_save = true)" :disabled="shouldDisableButtons">
+      <button data-testid="generate-pdf-btn" @click="generateHandwriting(preview = false, pdf_save = true)"
+        :disabled="shouldDisableButtons">
         {{ buttonText || $t('message.generatePdf') }}
       </button>
 
@@ -274,30 +283,33 @@
       </div>
     </div>
     <!-- 预览区 -->
-    <div class="preview">
+    <div class="preview" data-testid="preview-area">
       <h2 v-if="!previewImages || previewImages.length === 0">{{ $t('message.preview') }}:</h2>
 
       <div class="preview-container text-center">
         <!-- 导航按钮 -->
         <div v-if="previewImages && previewImages.length > 1" class="mb-3 d-flex justify-content-center align-items-center gap-3">
-          <button @click="prevPage" class="btn btn-outline-primary btn-sm" :disabled="currentPreviewIndex === 0">
+          <button @click="prevPage" data-testid="preview-prev-btn" class="btn btn-outline-primary btn-sm"
+            :disabled="currentPreviewIndex === 0">
             &larr; 上一页
           </button>
-          <span class="mx-3 font-weight-bold">
+          <span class="mx-3 font-weight-bold" data-testid="preview-page-indicator">
             第 {{ currentPreviewIndex + 1 }} 页 / 共 {{ previewImages.length }} 页
           </span>
-          <button @click="nextPage" class="btn btn-outline-primary btn-sm" :disabled="currentPreviewIndex === previewImages.length - 1">
+          <button @click="nextPage" data-testid="preview-next-btn" class="btn btn-outline-primary btn-sm"
+            :disabled="currentPreviewIndex === previewImages.length - 1">
             下一页 &rarr;
           </button>
         </div>
 
         <!-- 图片显示 -->
         <div v-if="previewImages && previewImages.length > 0">
-          <img :src="previewImages[currentPreviewIndex]" 
-               :alt="$t('message.previewImage') + ' ' + (currentPreviewIndex + 1)" 
+          <img :src="previewImages[currentPreviewIndex]" data-testid="preview-image"
+               :alt="$t('message.previewImage') + ' ' + (currentPreviewIndex + 1)"
                style="width: 600px; max-width: 100%; border: 1px solid #ddd; padding: 5px; border-radius: 4px;" />
         </div>
-        <img v-else :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px; max-width: 100%;" />
+        <img v-else :src="previewImage" data-testid="preview-image" :alt="$t('message.previewImage')"
+          style="width: 600px; max-width: 100%;" />
       </div>
     </div>
     <footer class=" footer mt-auto py-3 bg-white">

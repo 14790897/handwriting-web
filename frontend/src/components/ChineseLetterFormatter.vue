@@ -1,7 +1,8 @@
 <template>
-  <div class="letter-overlay" @click.self="closeDialog">
+  <div class="letter-overlay" data-testid="letter-overlay" @click.self="closeDialog">
     <section
       class="letter-dialog"
+      data-testid="letter-dialog"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
@@ -17,6 +18,7 @@
         <button
           type="button"
           class="letter-close"
+          data-testid="letter-close-btn"
           :aria-label="$t('message.cancel')"
           @click="closeDialog"
         >
@@ -47,6 +49,7 @@
             <textarea
               ref="signatureInput"
               v-model.trim="signature"
+              data-testid="letter-signature-input"
               autocomplete="name"
               :placeholder="$t('message.letterSignaturePlaceholder')"
               rows="2"
@@ -58,13 +61,14 @@
             <span>{{ $t("message.letterDate") }}</span>
             <input
               v-model.trim="date"
+              data-testid="letter-date-input"
               type="text"
               :placeholder="$t('message.letterDatePlaceholder')"
             />
           </label>
         </form>
 
-        <aside class="letter-preview">
+        <aside class="letter-preview" data-testid="letter-preview">
           <div class="letter-preview-heading">
             <span>{{ $t("message.letterPreview") }}</span>
             <span>{{ $t("message.letterPreviewHint") }}</span>
@@ -86,12 +90,14 @@
       </div>
 
       <footer class="letter-footer">
-        <button type="button" class="letter-button is-secondary" @click="closeDialog">
+        <button type="button" class="letter-button is-secondary" data-testid="letter-cancel-btn"
+          @click="closeDialog">
           {{ $t("message.cancel") }}
         </button>
         <button
           type="button"
           class="letter-button is-primary"
+          data-testid="letter-apply-btn"
           :disabled="!canApply"
           @click="applyFormatting"
         >
