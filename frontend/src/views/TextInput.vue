@@ -1,12 +1,12 @@
 <template>
     <div id='text_file_select' class="d-flex justify-content-between">
-        <label for="textArea">{{ $t('message.text') }}:</label>
+        <label class="text-field-label" for="textArea">{{ $t('message.text') }}:</label>
         <textarea id="textArea" class="form-control" v-model="text" data-testid="text-input" @input="handleManualInput"
-            :placeholder="$t('message.enterText')"></textarea>
+            :aria-label="$t('message.text')" :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
         <div class="file_select_container">
-            <button @click="triggerTextFileInput" class="mx-auto" data-testid="text-file-btn">{{ $t('message.chooseFile') }}</button>
+            <button @click="triggerTextFileInput" data-testid="text-file-btn">{{ $t('message.chooseFile') }}</button>
             <span class="border p-2 text-primary " v-if="selectedTextFileName"
                 data-testid="text-file-name">{{ selectedTextFileName }}</span>
             <label>
@@ -83,6 +83,9 @@ export default {
                     this.$emit('childEvent', this.text);
                     // 使用与 HomeView 一致的键名存储
                     localStorage.setItem('text', JSON.stringify(this.text));
+                    // 切换新旧版布局会重建本组件：上传途中被重建时上面的 $emit 会被 Vue 丢弃
+                    //（实例已卸载），所以再广播一次，让 HomeView 把结果交给当前活着的输入框
+                    window.dispatchEvent(new CustomEvent('handwriting-text-loaded', { detail: this.text }));
                     this.isLoading = false;
                 })
                 .catch(error => {
@@ -163,26 +166,6 @@ export default {
     left: 50%;
     transform: translate(-50%, -50%);
     /* 用 transform 属性将动画元素的中心对准父元素的中心 */
-}
-
-#textarea {
-    width: 100%;
-    height: 200px;
-    padding: 12px 20px;
-    box-sizing: border-box;
-    border: 2px solid #ccc;
-    border-radius: 4px;
-    background-color: #f8f8f8;
-    font-size: 16px;
-    transition: all 0.3s ease-in-out;
-}
-
-#textarea:hover {
-    border: 2px solid #4285f4;
-    background-color: #fff;
-    box-shadow: 0 0 5px #4285f4;
-    transform: scale(1.05);
-
 }
 
 @keyframes spin {
