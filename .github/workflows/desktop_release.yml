@@ -39,6 +39,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # 手动补传时必须检出那个 tag 的代码：否则会拿 main 的最新代码构建、
+          # 再挂到旧 release 上，产物的版本号和 release 对不上。
+          # 自动触发时 inputs.tag 为空，checkout 走默认（触发运行所在的提交）。
+          ref: ${{ inputs.tag }}
           # 这个 job 有 contents: write，而后面要跑依赖安装与构建脚本；
           # 别把 token 留在 git config 里供第三方脚本读取。
           # gh 步骤用的是显式传的 GH_TOKEN。
@@ -53,32 +57,39 @@ jobs:
           RUN_CREATED_AT: ${{ github.event.workflow_run.created_at }}
         run: |
           set -euo pipefail
+
           if [ -n "${MANUAL_TAG:-}" ]; then
-            echo "手动指定 tag=${MANUAL_TAG}"
-            echo "tag=${MANUAL_TAG}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # semantic-release 走 API 建 release，本地不一定有 tag，所以从 API 取。
-          # 注意：release 的 created_at 是**目标提交的日期**，不是发布时间 —— 用它
-          # 判断「是不是这次工作流产出的」会漏判；要用 published_at。
-          PUBLISHED="$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
-            --jq "[.[] | select(.published_at > \"${RUN_CREATED_AT}\")] | first | .tag_name // \"\"")"
-          if [ -z "${PUBLISHED}" ]; then
-            echo "本次没有产生新版本，跳过桌面版构建"
-            exit 0
+            TARGET="${MANUAL_TAG}"
+            echo "手动补传 tag=${TARGET}"
+          else
+            # semantic-release 走 API 建 release，本地不一定有 tag，所以从 API 取。
+            # 注意：release 的 created_at 是**目标提交的日期**，不是发布时间 —— 用它
+            # 判断「是不是这次工作流产出的」会漏判；要用 published_at。
+            TARGET="$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
+              --jq "[.[] | select(.published_at > \"${RUN_CREATED_AT}\")] | first | .tag_name // \"\"")"
+            if [ -z "${TARGET}" ]; then
+              echo "本次没有产生新版本，跳过桌面版构建"
+              exit 0
+            fi
           fi
 
-          # 光凭发布时间还不能确定这个 release 就是本次运行的产物（并发运行时可能
-          # 挑到别人的）。再加一条硬约束：上传目标的版本必须和检出代码的版本一致 ——
-          # 产物文件名里也带这个版本号，所以旧构建不可能被挂到新 release 上。
-          # 版本号由 scripts/sync-version.js 在发版时写进 backend/VERSION。
-          VERSION="$(tr -d '[:space:]' < backend/VERSION)"
-          if [ "v${VERSION}" != "${PUBLISHED}" ]; then
-            echo "::error::检出代码是 v${VERSION}，但本次发布的 release 是 ${PUBLISHED}，版本不一致，拒绝上传"
+          # 两条路径都要过这道校验：上传目标的版本必须等于检出代码的版本。
+          # 光凭发布时间不足以确定 release 就是本次运行的产物（并发运行可能挑到别人的），
+          # 而手动补传更可能拿错代码 —— 版本号取自检出代码里的 backend/VERSION
+          # （发版时由 scripts/sync-version.js 写入并随发版提交），产物文件名也带同一个
+          # 版本号，所以版本对不上就绝不可能是「这次的构建」。
+          if [ ! -f backend/VERSION ]; then
+            echo "::error::检出的代码里没有 backend/VERSION，无法确认版本。该文件随 v1.31.0 之后才引入，补传更早的 release 需要手工处理。"
             exit 1
           fi
-          echo "本次发布的 tag=${PUBLISHED}（与检出代码 v${VERSION} 一致）"
-          echo "tag=${PUBLISHED}" >> "$GITHUB_OUTPUT"
+          VERSION="$(tr -d '[:space:]' < backend/VERSION)"
+          if [ "v${VERSION}" != "${TARGET}" ]; then
+            echo "::error::检出代码是 v${VERSION}，但上传目标是 ${TARGET}，版本不一致，拒绝上传"
+            exit 1
+          fi
+
+          echo "上传目标 ${TARGET}（与检出代码 v${VERSION} 一致）"
+          echo "tag=${TARGET}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         if: steps.tag.outputs.tag != ''
