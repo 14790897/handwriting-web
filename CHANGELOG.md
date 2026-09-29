@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/14790897/handwriting-web/compare/v1.31.0...v1.32.0) (2026-09-29)
+
+
+### Features
+
+* add a Windows desktop build (Electron shell + packaged backend) ([#78](https://github.com/14790897/handwriting-web/issues/78)) ([1c01574](https://github.com/14790897/handwriting-web/commit/1c01574cab75e94cc5797591f278b6cf010379c6))
+
 # [1.31.0](https://github.com/14790897/handwriting-web/compare/v1.30.1...v1.31.0) (2026-09-29)
 
 
