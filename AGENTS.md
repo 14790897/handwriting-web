@@ -57,6 +57,8 @@ handwriting-web/
 cd frontend && npm run serve
 
 # 后端 (端口 5005, 热重载)
+# 下面是 bash / Git Bash 写法 (本项目 .vscode/tasks.json 用的 cmd.exe 同样支持 &&;
+# PowerShell 5.1 不支持 &&, 需要把每条命令拆开单独执行)
 # 首次先在仓库根建 venv 并装依赖:
 #   Windows:      python -m venv venv && venv/Scripts/python.exe -m pip install -r backend/requirements.txt
 #   Linux/macOS:  python3 -m venv venv && venv/bin/python -m pip install -r backend/requirements.txt
@@ -101,7 +103,8 @@ GitHub 没有给 token 用的图片上传接口：网页版拖拽上传走的是
 - 图片推到某个公开分支，再用 `raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/<path>` 引用
 - 用 **commit SHA** 而非分支名引用 —— 分支被改写（force-push）时，链接不会跟着变
 - 但这只防改写、**不防删分支**：没有 branch / tag / PR ref 指向该 commit 时，它会变成不可达对象，被 GitHub GC 回收后链接就 404（reachability 按 branch/tag 判定，见 [GitHub 博客](https://github.blog/engineering/scaling-gits-garbage-collection/)）。**截图分支要长期保留，不要删**
-- **最稳的位置是 PR 头分支** —— 该提交被 `refs/pull/<n>/head` 钉住，删分支、合并都不会让它失效。实测 PR #76：建 PR 后删掉头分支，`refs/pull/76/head` 仍在、commit 可解析、raw 仍返回 200 且字节数与本地一致，只有 PR 本身转为 closed
+- **更稳的位置是 PR 头分支** —— 只要该提交还是 PR 的**当前头**，`refs/pull/<n>/head` 就会引用它，删分支、合并都不会让它失效。实测 PR #76：建 PR 后删掉头分支，ref 仍在、commit 可解析、raw 仍返回 200 且字节数与本地一致，只有 PR 本身转为 closed
+- 但它**跟随 PR 当前头，并非永久钉住某个提交** —— 作者再推提交或 force-push，ref 就移到新提交，旧提交失去引用、可能被 GC（PR #67 的 ref 就随我们的推送从 `8bbfc2c` 移到了 `b2f3462`）。所以它是「比普通分支更耐删」，真要永久还是得把图并进 `main`
 - 代价与限制：图会进 PR 的 Files changed；而且**必须在 PR 还开着时推** —— 合并后 `maintainerCanModify` 会被收回，维护者再也推不进去（PR #67 合并后才想补图，就是这时踩到的）
 - 不介意「别删分支」这个约束的话，放普通分支也行（如主仓库的 `pr-assets` 分支，孤儿提交只含图片，不带整棵树）
 - **贡献者的图放自己的 fork，维护者别去代推** —— 推不了。例：ejjcc 的 fork 上有 `pr-assets` 分支按 PR 分目录存图（`pr-assets/<slug>/<name>.png`）
