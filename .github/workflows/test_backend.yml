@@ -42,8 +42,8 @@ jobs:
         working-directory: backend
         run: python -m pytest tests/ -q
 
-      # Step 6: 冒烟启动 —— 能跑满 60s 被 timeout 杀掉（退出码 124）视为通过
+      # Step 6: 冒烟启动 —— 能跑满 60s 被 timeout 杀掉才说明后端在服务；
+      # 提前退出（崩溃或自行退出）都算失败，退出码 124 才是通过
       - name: Smoke-test app boot
-        run: |
-          cd backend
-            timeout 60s python app.py || EXIT_CODE=$? && if [ $EXIT_CODE -eq 124 ]; then exit 0; else exit $EXIT_CODE; fi
+        working-directory: backend
+        run: bash smoke_boot.sh
