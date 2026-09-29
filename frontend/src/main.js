@@ -11,27 +11,32 @@ import axiosRetry from "axios-retry";
 import Swal from "sweetalert2";
 import { createHead } from "@vueuse/head";
 
+import { isDesktop } from "./desktop";
+
 // import Viewer from "v-viewer";H
 // import "viewerjs/dist/viewer.css";
 
 const app = createApp(App);
 const head = createHead();
 
-const initThirdPartyServices = async () => {
-  if (process.env.NODE_ENV !== "production") return;
-
+// 异步加载Google Analytics的JavaScript库
+function initAnalytics() {
   const script = document.createElement("script");
   script.async = true;
   script.src = "https://www.googletagmanager.com/gtag/js?id=G-GB1XG89B6Z";
   document.head.appendChild(script);
 
+  // 当脚本加载完成后进行初始化
   script.onload = () => {
+    // 初始化window.dataLayer数组
     window.dataLayer = window.dataLayer || [];
 
+    // 定义gtag函数
     function gtag() {
       window.dataLayer.push(arguments);
     }
 
+    // 调用gtag函数进行配置
     gtag("js", new Date());
     gtag("config", "G-GB1XG89B6Z");
 
@@ -48,7 +53,9 @@ const initThirdPartyServices = async () => {
       y.parentNode.insertBefore(t, y);
     })(window, document, "clarity", "script", "ounxp8da5s");
   };
+}
 
+function initChatwoot() {
   const chatwootScript = document.createElement("script");
   chatwootScript.async = true;
   chatwootScript.defer = true;
@@ -62,23 +69,38 @@ const initThirdPartyServices = async () => {
     }
   };
   document.head.appendChild(chatwootScript);
+}
 
-  const Sentry = await import("@sentry/vue");
+function initSentry(Sentry) {
   Sentry.init({
     app,
     dsn: "https://507b601bbd374cf58b7c5468cb434578@o4505255803551744.ingest.sentry.io/4505485557891072",
     integrations: [
       new Sentry.BrowserTracing({
+        // Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
         tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
         routingInstrumentation: Sentry.vueRouterInstrumentation(router),
       }),
       new Sentry.Replay(),
     ],
-    tracesSampleRate: 1.0,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
+    // Performance Monitoring
+    tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!
+    // Session Replay
+    replaysSessionSampleRate: 0.1, // This sets the sample rate to 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+    replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
   });
-};
+}
+
+// 统计/客服/上报都不参与首屏渲染，等 load 之后的空闲时段再加载。
+// Sentry 单独走动态 import，别让它的体积进主包
+async function initThirdPartyServices() {
+  if (process.env.NODE_ENV !== "production") return;
+
+  initAnalytics();
+  initChatwoot();
+  const Sentry = await import("@sentry/vue");
+  initSentry(Sentry);
+}
 
 // const DEFAULT_TITLE = "handwrite";
 
@@ -130,6 +152,7 @@ app.mount("#app");
 
 const initServiceWorkerUpdatePrompt = async () => {
   try {
+    // 注销旧版 /sw.js
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const reg of registrations) {
       if (reg.active?.scriptURL?.includes("sw.js")) {
@@ -137,6 +160,7 @@ const initServiceWorkerUpdatePrompt = async () => {
       }
     }
 
+    // 监听新版本激活，提示用户刷新
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (confirm("网站已更新到新版本，点击确定刷新页面以加载最新内容。")) {
         window.location.reload();
@@ -148,20 +172,21 @@ const initServiceWorkerUpdatePrompt = async () => {
 };
 
 window.addEventListener("load", () => {
-  const runThirdPartyInit = () => {
-    initThirdPartyServices().catch((error) => {
-      console.error("[3P] 初始化失败:", error);
-    });
-  };
+  // 桌面版不加载第三方统计/客服/错误上报：离线环境下它们只会拖慢启动，
+  // 还会把用户本地产生的错误混进线上项目的报表里
+  if (!isDesktop()) {
+    const runThirdPartyInit = () => {
+      initThirdPartyServices().catch((error) => {
+        console.error("[3P] 初始化失败:", error);
+      });
+    };
 
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(() => {
-      runThirdPartyInit();
-    });
-  } else {
-    setTimeout(() => {
-      runThirdPartyInit();
-    }, 150);
+    // timeout 兜底：页面一直繁忙时 requestIdleCallback 可能迟迟不触发
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(() => runThirdPartyInit(), { timeout: 3000 });
+    } else {
+      setTimeout(runThirdPartyInit, 150);
+    }
   }
 
   if ("serviceWorker" in navigator) {

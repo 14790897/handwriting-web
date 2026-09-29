@@ -1,291 +1,561 @@
 <template>
-  <div style="height: 20px;"></div>
-  <div class="container">
-    <!-- 错误消息以及提示信息 -->
-    <div id="message">
-      <div v-if="message" class="alert alert-info" role="alert">
-        {{ message }}
+  <div id="app-shell" :class="{ 'legacy-mode': legacyLayout }">
+    <!-- 顶部操作栏：设置存取 + 生成操作 -->
+    <header class="app-header" data-testid="app-header">
+      <div class="header-bar">
+        <div class="app-title">{{ $t('message.appTitle') }}</div>
+        <div class="header-actions">
+          <button class="action-btn secondary" data-testid="load-settings-btn" @click="loadPreset">{{ $t('message.loadSettings') }}</button>
+          <button class="action-btn secondary" data-testid="save-settings-btn" @click="savePreset">{{ $t('message.saveSettings') }}</button>
+          <button class="action-btn secondary" data-testid="reset-settings-btn" @click="resetSettings">{{ $t('message.resetSettings') }}</button>
+          <span class="header-divider" aria-hidden="true"></span>
+          <button class="action-btn primary" data-testid="preview-btn" @click="generateHandwriting(preview = true)"
+            :disabled="shouldDisableButtons">
+            {{ buttonText || $t('message.preview') }}
+          </button>
+          <button v-if="isDevEnv" class="action-btn secondary" data-testid="full-preview-toggle-btn" @click="toggleFullPreview"
+            :disabled="shouldDisableButtons">
+            本地全量预览：{{ enableFullPreview ? '开' : '关' }}
+          </button>
+          <button class="action-btn primary" data-testid="generate-image-btn" @click="generateHandwriting(preview = false)"
+            :disabled="shouldDisableButtons">
+            {{ buttonText || $t('message.generateFullHandwritingImage') }}
+          </button>
+          <button class="action-btn primary" data-testid="generate-pdf-btn" @click="generateHandwriting(preview = false, pdf_save = true)"
+            :disabled="shouldDisableButtons">
+            {{ buttonText || $t('message.generatePdf') }}
+          </button>
+          <router-link to="/Feedback" class="action-btn info">{{ $t('message.feedback') }}</router-link>
+          <button class="action-btn secondary" data-testid="layout-toggle-btn" @click="toggleLayout">
+            {{ legacyLayout ? $t('message.newLayout') : $t('message.legacyLayout') }}
+          </button>
+        </div>
       </div>
-      <div v-if="uploadMessage" class="alert alert-info" role="alert">
-        {{ uploadMessage }}
+
+      <!-- 错误消息以及提示信息 -->
+      <div id="message">
+        <div v-if="message" class="alert alert-info" role="alert" data-testid="message-info">
+          {{ message }}
+        </div>
+        <div v-if="uploadMessage" class="alert alert-info" role="alert" data-testid="message-upload">
+          {{ uploadMessage }}
+        </div>
       </div>
-    </div> 
 
-    <div id="form">
-      <div class="container_file row">
+      <!-- 供 e2e 核对实际交付的 PDF 体积，平时不占位（见 e2e/tests/home-generate.spec.js） -->
+      <span v-if="lastPdfDownloadBytes > 0" data-testid="pdf-download-bytes" style="display: none;">{{
+        lastPdfDownloadBytes }}</span>
+    </header>
 
-        <div class="col justify-content-between">
-          <TextInput @childEvent="(eventData) => { this.text = eventData }"></TextInput>
+    <!-- 三栏工作区：左=参数，中=正文，右=预览 -->
+    <div v-if="!legacyLayout" class="workspace" data-testid="workspace">
+      <!-- 左栏：参数设置 -->
+      <aside class="panel panel-settings" data-testid="panel-settings">
+        <h2 class="panel-title">{{ $t('message.settingsPanel') }}</h2>
+
+        <label class="field-label" for="fontSelect">{{ $t('message.fontFile') }}:</label>
+        <div class="font-selection">
+          <button class="action-btn secondary small" data-testid="font-file-btn" @click="triggerFontFileInput">{{ $t('message.chooseFile') }}</button>
+          <input type="file" ref="fontFileInput" data-testid="font-file-input" @change="onFontChange" style="display: none;" />
+          <select id="fontSelect" v-model="selectedOption" class="styled-select font-select" data-testid="font-select">
+            <option v-for="option in options" :value="option.value" :key="option.value">
+              {{ option.text }}
+            </option>
+          </select>
         </div>
 
-        <div class="col">
-          <label>{{ $t('message.fontFile') }}:</label>
-          <div class="d-flex flex-row justify-content-between">
-            <div class="font-selection">
-              <button @click="triggerFontFileInput">{{ $t('message.chooseFile') }}</button>
-              <input type="file" ref="fontFileInput" @change="onFontChange" style="display: none;" />
-            </div>
-            <select v-model="selectedOption" class="styled-select" style="width: 60%;">
-              <option v-for="option in options" :value="option.value" :key="option.value">
-                {{ option.text }}
-              </option>
-            </select>
-          </div>
-
-          <div class="image-container">
-            <label>{{ $t('message.backgroundImageFile') }}:</label>
-            <div class="button-container">
-              <!-- :disabled="isDimensionSpecified" -->
-              <button @click="triggerImageFileInput" :class="{ 'button-disabled': isDimensionSpecified }"
-                :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
-                {{ $t('message.chooseFile') }}
-                <div>
-                  <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
-                    <div class="clear-button-line"></div>
-                    <div class="clear-button-line"></div>
-                  </div>
+        <label class="field-label">{{ $t('message.backgroundImageFile') }}:</label>
+        <div class="image-container">
+          <div class="button-container">
+            <button class="action-btn secondary small" data-testid="background-image-btn" @click="triggerImageFileInput"
+              :class="{ 'button-disabled': isDimensionSpecified }"
+              :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
+              {{ $t('message.chooseFile') }}
+              <div>
+                <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
+                  <div class="clear-button-line"></div>
+                  <div class="clear-button-line"></div>
                 </div>
-              </button>
-              <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName
-                }}</span>
-              <input type="file" ref="imageFileInput" @change="onBackgroundImageChange" style="display: none;" />
-              <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
+              </div>
+            </button>
+            <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName }}</span>
+            <input type="file" ref="imageFileInput" data-testid="background-image-input"
+              @change="onBackgroundImageChange" style="display: none;" />
+            <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
+          </div>
+        </div>
+
+        <div class="label-container">
+          <label for="widthInput">{{ $t('message.width') }}:</label>
+          <input id="widthInput" type="number" v-model="width" data-testid="width-input" :disabled="isBackgroundImageSpecified"
+            :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
+        </div>
+
+        <div class="label-container">
+          <label for="heightInput">{{ $t('message.height') }}:</label>
+          <input id="heightInput" type="number" v-model="height" data-testid="height-input" :disabled="isBackgroundImageSpecified"
+            :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
+          <button type="button" class="close" aria-label="Close" @click="clearDimensions">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="check-container">
+          <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2" v-model="isUnderlined">
+          <label for="optionUnderline">{{ $t('message.underline') }}</label>
+        </div>
+
+        <div class="check-container">
+          <input class="optionEnglishSpacing" type="checkbox" id="optionEnglishSpacing" name="optionEnglishSpacing"
+            value="englishSpacing" v-model="enableEnglishSpacing">
+          <label for="optionEnglishSpacing">{{ $t('message.enableEnglishSpacing') }}</label>
+        </div>
+
+        <div class="label-container">
+          <label for="fontSizeInput">{{ $t('message.fontSize') }}:</label>
+          <input id="fontSizeInput" type="number" v-model="fontSize" data-testid="font-size-input" placeholder="recommend > 100" />
+        </div>
+
+        <div class="label-container">
+          <label for="lineSpacingInput">{{ $t('message.lineSpacing') }}:</label>
+          <input id="lineSpacingInput" type="number" v-model="lineSpacing" data-testid="line-spacing-input" />
+        </div>
+
+        <div class="label-container">
+          <label for="marginTopInput">{{ $t('message.topMargin') }}:</label>
+          <input id="marginTopInput" type="number" v-model="marginTop" data-testid="margin-top-input" />
+        </div>
+
+        <div class="label-container">
+          <label for="marginBottomInput">{{ $t('message.bottomMargin') }}:</label>
+          <input id="marginBottomInput" type="number" v-model="marginBottom" data-testid="margin-bottom-input" />
+        </div>
+
+        <div class="label-container">
+          <label for="marginLeftInput">{{ $t('message.leftMargin') }}:</label>
+          <input id="marginLeftInput" type="number" v-model="marginLeft" data-testid="margin-left-input" />
+        </div>
+
+        <div class="label-container">
+          <label for="marginRightInput">{{ $t('message.rightMargin') }}:</label>
+          <input id="marginRightInput" type="number" v-model="marginRight" data-testid="margin-right-input" />
+        </div>
+
+        <!-- 展开/折叠高级参数 -->
+        <button class="btn btn-primary advanced-toggle" type="button" data-testid="toggle-advanced-btn" @click="toggleCollapse">
+          {{ $t('message.expand') }}
+        </button>
+
+        <div v-if="isExpanded" id="collapseContent">
+          <div class="card card-body">
+            <div class="label-container">
+              <label>{{ $t('message.lineSpacingSigma') }}:
+                <input type="number" v-model="lineSpacingSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.fontSizeSigma') }}:
+                <input type="number" v-model="fontSizeSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.wordSpacingSigma') }}:
+                <input type="number" v-model="wordSpacingSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.perturbXSigma') }}:
+                <input type="number" v-model="perturbXSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.perturbYSigma') }}:
+                <input type="number" v-model="perturbYSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.perturbThetaSigma') }}:
+                <input type="number" v-model="perturbThetaSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.wordSpacing') }}:
+                <input type="number" v-model="wordSpacing" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.strikethrough_length_sigma') }}:
+                <input type="text" v-model="strikethrough_length_sigma" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_angle_sigma') }}:
+                <input type="number" v-model="strikethrough_angle_sigma" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_width_sigma') }}:
+                <input type="number" v-model="strikethrough_width_sigma" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_probability') }}:
+                <input type="number" v-model="strikethrough_probability" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_width') }}:
+                <input type="number" v-model="strikethrough_width" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.ink_depth_sigma') }}:
+                <input type="number" v-model="ink_depth_sigma" />
+              </label>
             </div>
           </div>
         </div>
-      </div>
 
-      <div c lass="label-container">
- 
-        <label>{{ $t('message.width') }}:
-          <input type="number" v-model="width" :disabled="isBackgroundImageSpecified"
-            :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
-        </label>
-      </div>
+        <div class="preset-row">
+          <label for="builtinPreset">{{ $t('message.presetLabel') }}:</label>
+          <select id="builtinPreset" :value="selectedPreset" @change="applyPreset" class="styled-select"
+            data-testid="builtin-preset-select" :disabled="!presetOptionsReady">
+            <option value="">{{ $t('message.presetNone') }}</option>
+            <option value="smallUnderlined">{{ $t('message.presetSmallUnderlined') }}</option>
+          </select>
+        </div>
+      </aside>
 
+      <!-- 中栏：正文 -->
+      <main class="panel panel-text" data-testid="panel-text">
+        <h2 class="panel-title">{{ $t('message.text') }}</h2>
 
-      <div class="label-container">
+        <TextInput class="text-input-fill" ref="textInputComp" @childEvent="(eventData) => { this.text = eventData }"
+          @manual-input="clearLetterFormatBackup"></TextInput>
 
-        <label>{{ $t('message.height') }}:
-          <input type="number" v-model="height" :disabled="isBackgroundImageSpecified"
-            :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
-        </label>
-        <button type="button" class="close" aria-label="Close" @click="clearDimensions">
-          <span aria-hidden="true">&times;</span>
+        <div class="letter-format-actions">
+          <button type="button" class="letter-format-button" data-testid="letter-format-btn" @click="openLetterFormatter">
+            <span class="letter-format-mark" aria-hidden="true">信</span>
+            {{ $t('message.formatChineseLetter') }}
+          </button>
+          <button v-if="letterFormatBackup !== null" type="button" class="letter-format-undo"
+            data-testid="letter-undo-btn" @click="undoLetterFormatting">
+            {{ $t('message.letterUndo') }}
+          </button>
+        </div>
+
+        <!-- 生成状态提示与页数提示（新旧两版共用同一个组件） -->
+        <GenerationStatus :generating="isGenerating" :cooldown-seconds="remainingCooldown"
+          :page-count="estimatedPages" />
+      </main>
+
+      <!-- 右栏：预览 -->
+      <section class="panel panel-preview" data-testid="panel-preview">
+        <h2 class="panel-title">{{ $t('message.preview') }}</h2>
+
+        <div class="preview-container text-center">
+          <!-- 导航按钮 -->
+          <div v-if="previewImages && previewImages.length > 1" class="preview-nav">
+            <button @click="prevPage" data-testid="preview-prev-btn" class="btn btn-outline-primary btn-sm"
+              :disabled="currentPreviewIndex === 0">
+              &larr; {{ $t('message.prevPage') }}
+            </button>
+            <span class="preview-page-indicator" data-testid="preview-page-indicator">
+              {{ $t('message.pageIndicator', { current: currentPreviewIndex + 1, total: previewImages.length }) }}
+            </span>
+            <button @click="nextPage" data-testid="preview-next-btn" class="btn btn-outline-primary btn-sm"
+              :disabled="currentPreviewIndex === previewImages.length - 1">
+              {{ $t('message.nextPage') }} &rarr;
+            </button>
+          </div>
+
+          <!-- 图片显示 -->
+          <div v-if="previewImages && previewImages.length > 0">
+            <img :src="previewImages[currentPreviewIndex]" data-testid="preview-image" class="preview-image"
+              :alt="$t('message.previewImage') + ' ' + (currentPreviewIndex + 1)" />
+          </div>
+          <img v-else :src="previewImage" data-testid="preview-image" :alt="$t('message.previewImage')"
+            class="preview-image" />
+        </div>
+      </section>
+    </div>
+
+    <!-- 旧版布局：改造前的表单 + 右侧预览，可用顶栏「旧版界面」按钮切回 -->
+    <div v-else class="legacy-root" data-testid="legacy-layout">
+      <div id="form">
+        <div class="container_file row">
+
+          <div class="col justify-content-between">
+            <TextInput ref="textInputComp" @childEvent="(eventData) => { this.text = eventData }"
+              @manual-input="clearLetterFormatBackup"></TextInput>
+            <div class="letter-format-actions">
+              <button type="button" class="letter-format-button" data-testid="letter-format-btn"
+                @click="openLetterFormatter">
+                <span class="letter-format-mark" aria-hidden="true">信</span>
+                {{ $t('message.formatChineseLetter') }}
+              </button>
+              <button v-if="letterFormatBackup !== null" type="button" class="letter-format-undo"
+                data-testid="letter-undo-btn" @click="undoLetterFormatting">
+                {{ $t('message.letterUndo') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="col">
+            <label>{{ $t('message.fontFile') }}:</label>
+            <div class="d-flex flex-row justify-content-between">
+              <div class="font-selection">
+                <button data-testid="font-file-btn" @click="triggerFontFileInput">{{ $t('message.chooseFile') }}</button>
+                <input type="file" ref="fontFileInput" data-testid="font-file-input" @change="onFontChange"
+                  style="display: none;" />
+              </div>
+              <select v-model="selectedOption" class="styled-select" data-testid="font-select" style="width: 60%;">
+                <option v-for="option in options" :value="option.value" :key="option.value">
+                  {{ option.text }}
+                </option>
+              </select>
+            </div>
+
+            <div class="image-container">
+              <label>{{ $t('message.backgroundImageFile') }}:</label>
+              <div class="button-container">
+                <button data-testid="background-image-btn" @click="triggerImageFileInput"
+                  :class="{ 'button-disabled': isDimensionSpecified }"
+                  :title="isDimensionSpecified ? $t('message.widthAndHeightSpecified') : ''">
+                  {{ $t('message.chooseFile') }}
+                  <div>
+                    <div v-if="selectedImageFileName" class="clear-button" @click.stop="clearImage">
+                      <div class="clear-button-line"></div>
+                      <div class="clear-button-line"></div>
+                    </div>
+                  </div>
+                </button>
+                <span class="border p-2 fs-6 text-primary nowrap" v-if="selectedImageFileName">{{ selectedImageFileName }}</span>
+                <input type="file" ref="imageFileInput" data-testid="background-image-input"
+                  @change="onBackgroundImageChange" style="display: none;" />
+                <div v-if="isLoading" class="loader">{{ $t('message.loading') }}...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.width') }}:
+            <input type="number" v-model="width" data-testid="width-input" :disabled="isBackgroundImageSpecified"
+              :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
+          </label>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.height') }}:
+            <input type="number" v-model="height" data-testid="height-input" :disabled="isBackgroundImageSpecified"
+              :title="isBackgroundImageSpecified ? $t('message.backgroundImageSpecified') : ''" />
+          </label>
+          <button type="button" class="close" aria-label="Close" @click="clearDimensions">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2"
+          v-model="isUnderlined">
+        <label for="optionUnderline" style="margin-right: 0px;">{{ $t('message.underline') }}</label>
+
+        <input class="optionEnglishSpacing" type="checkbox" id="optionEnglishSpacing" name="optionEnglishSpacing"
+          value="englishSpacing" v-model="enableEnglishSpacing">
+        <label for="optionEnglishSpacing" style="margin-right: 0px;">{{ $t('message.enableEnglishSpacing') }}</label>
+
+        <div class="label-container">
+          <label>{{ $t('message.fontSize') }}:
+            <input type="number" v-model="fontSize" data-testid="font-size-input" placeholder="recommend > 100" />
+          </label>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.lineSpacing') }}:
+            <input type="number" v-model="lineSpacing" data-testid="line-spacing-input" />
+          </label>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.topMargin') }}:
+            <input type="number" v-model="marginTop" data-testid="margin-top-input" />
+          </label>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.bottomMargin') }}:
+            <input type="number" v-model="marginBottom" data-testid="margin-bottom-input" />
+          </label>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.leftMargin') }}:
+            <input type="number" v-model="marginLeft" data-testid="margin-left-input" />
+          </label>
+        </div>
+
+        <div class="label-container">
+          <label>{{ $t('message.rightMargin') }}:
+            <input type="number" v-model="marginRight" data-testid="margin-right-input" />
+          </label>
+        </div>
+
+        <!-- 展开/折叠高级参数 -->
+        <button class="btn btn-primary" type="button" data-testid="toggle-advanced-btn" @click="toggleCollapse"
+          style="width: 100px; font-size:0.9rem">
+          {{ $t('message.expand') }}
         </button>
+
+        <div v-if="isExpanded" id="collapseContent">
+          <div class="card card-body">
+            <div class="label-container">
+              <label>{{ $t('message.lineSpacingSigma') }}:
+                <input type="number" v-model="lineSpacingSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.fontSizeSigma') }}:
+                <input type="number" v-model="fontSizeSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.wordSpacingSigma') }}:
+                <input type="number" v-model="wordSpacingSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.perturbXSigma') }}:
+                <input type="number" v-model="perturbXSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.perturbYSigma') }}:
+                <input type="number" v-model="perturbYSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.perturbThetaSigma') }}:
+                <input type="number" v-model="perturbThetaSigma" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.wordSpacing') }}:
+                <input type="number" v-model="wordSpacing" />
+              </label>
+            </div>
+
+            <div class="label-container">
+              <label>{{ $t('message.strikethrough_length_sigma') }}:
+                <input type="text" v-model="strikethrough_length_sigma" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_angle_sigma') }}:
+                <input type="number" v-model="strikethrough_angle_sigma" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_width_sigma') }}:
+                <input type="number" v-model="strikethrough_width_sigma" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_probability') }}:
+                <input type="number" v-model="strikethrough_probability" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.strikethrough_width') }}:
+                <input type="number" v-model="strikethrough_width" />
+              </label>
+            </div>
+
+            <div class='label-container'>
+              <label>{{ $t('message.ink_depth_sigma') }}:
+                <input type="number" v-model="ink_depth_sigma" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="preset-row">
+          <label for="builtinPreset">{{ $t('message.presetLabel') }}:</label>
+          <select id="builtinPreset" :value="selectedPreset" @change="applyPreset" class="styled-select"
+            data-testid="builtin-preset-select" :disabled="!presetOptionsReady">
+            <option value="">{{ $t('message.presetNone') }}</option>
+            <option value="smallUnderlined">{{ $t('message.presetSmallUnderlined') }}</option>
+          </select>
+        </div>
       </div>
 
-      <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2"
-        v-model="isUnderlined">
-      <label for="optionUnderline" style="margin-right: 0px;">增加下划线</label>
+      <!-- 生成状态与页数提示：和改造前一样，旧版里也要显示 -->
+      <GenerationStatus :generating="isGenerating" :cooldown-seconds="remainingCooldown"
+        :page-count="estimatedPages" />
 
-      <input class="optionEnglishSpacing" type="checkbox" id="optionEnglishSpacing" name="optionEnglishSpacing" value="englishSpacing"
-        v-model="enableEnglishSpacing">
-      <label for="optionEnglishSpacing" style="margin-right: 0px;">{{ $t('message.enableEnglishSpacing') }}</label>
+      <div class="preview" data-testid="preview-area">
+        <h2 v-if="!previewImages || previewImages.length === 0">{{ $t('message.preview') }}:</h2>
 
-      <div class="label-container">
-
-        <label>{{ $t('message.fontSize') }}:
-          <input type="number" v-model="fontSize" placeholder="recommend > 100" />
-        </label>
-      </div>
-
-      <div class="label-container">
-        <label>{{ $t('message.lineSpacing') }}:
-          <input type="number" v-model="lineSpacing" />
-        </label>
-      </div>
-
-      <div class="label-container">
-        <label>{{ $t('message.topMargin') }}:
-          <input type="number" v-model="marginTop" />
-        </label>
-      </div>
-
-      <div class="label-container">
-        <label>{{ $t('message.bottomMargin') }}:
-          <input type="number" v-model="marginBottom" />
-        </label>
-      </div>
-
-      <div class="label-container">
-        <label>{{ $t('message.leftMargin') }}:
-          <input type="number" v-model="marginLeft" />
-        </label>
-      </div>
-
-      <div class="label-container">
-        <label>{{ $t('message.rightMargin') }}:
-          <input type="number" v-model="marginRight" />
-        </label>
-      </div>
-      <!-- 这是一个按钮，用户点击这个按钮时，会展开或折叠下面的内容区域 -->
-      <button class="btn btn-primary" type="button" @click="toggleCollapse" style="width: 100px; font-size:0.9rem">
-        {{ $t('message.expand') }}
-      </button>
-
-      <!-- 这是一个内容区域，它的 id 与上面的按钮的 data-target 相对应 -->
-      <div v-if="isExpanded" id="collapseContent">
-        <div class="card card-body">
-          <div class="label-container">
-            <label>{{ $t('message.lineSpacingSigma') }}:
-              <input type="number" v-model="lineSpacingSigma" />
-            </label>
+        <div class="preview-container text-center">
+          <div v-if="previewImages && previewImages.length > 1"
+            class="mb-3 d-flex justify-content-center align-items-center gap-3">
+            <button @click="prevPage" data-testid="preview-prev-btn" class="btn btn-outline-primary btn-sm"
+              :disabled="currentPreviewIndex === 0">
+              &larr; {{ $t('message.prevPage') }}
+            </button>
+            <span class="mx-3 font-weight-bold" data-testid="preview-page-indicator">
+              {{ $t('message.pageIndicator', { current: currentPreviewIndex + 1, total: previewImages.length }) }}
+            </span>
+            <button @click="nextPage" data-testid="preview-next-btn" class="btn btn-outline-primary btn-sm"
+              :disabled="currentPreviewIndex === previewImages.length - 1">
+              {{ $t('message.nextPage') }} &rarr;
+            </button>
           </div>
 
-          <div class="label-container">
-            <label>{{ $t('message.fontSizeSigma') }}:
-              <input type="number" v-model="fontSizeSigma" />
-            </label>
+          <div v-if="previewImages && previewImages.length > 0">
+            <img :src="previewImages[currentPreviewIndex]" data-testid="preview-image"
+              :alt="$t('message.previewImage') + ' ' + (currentPreviewIndex + 1)"
+              style="width: 600px; max-width: 100%; border: 1px solid #ddd; padding: 5px; border-radius: 4px;" />
           </div>
-
-          <div class="label-container">
-            <label>{{ $t('message.wordSpacingSigma') }}:
-              <input type="number" v-model="wordSpacingSigma" />
-            </label>
-          </div>
-
-          <div class="label-container">
-            <label>{{ $t('message.perturbXSigma') }}:
-              <input type="number" v-model="perturbXSigma" />
-            </label>
-          </div>
-
-          <div class="label-container">
-            <label>{{ $t('message.perturbYSigma') }}:
-              <input type="number" v-model="perturbYSigma" />
-            </label>
-          </div>
-
-          <div class="label-container">
-            <label>{{ $t('message.perturbThetaSigma') }}:
-              <input type="number" v-model="perturbThetaSigma" />
-            </label>
-          </div>
-
-          <div class="label-container">
-            <label>{{ $t('message.wordSpacing') }}:
-              <input type="number" v-model="wordSpacing" />
-            </label>
-          </div>
-
-
-
-          <div class="label-container">
-            <label>{{ $t('message.strikethrough_length_sigma') }}:
-              <input type="text" v-model="strikethrough_length_sigma" />
-            </label>
-          </div>
-
-          <div class='label-container'>
-            <label>{{ $t('message.strikethrough_angle_sigma') }}:
-              <input type="number" v-model="strikethrough_angle_sigma" />
-            </label>
-          </div>
-
-          <div class='label-container'>
-            <label>{{ $t('message.strikethrough_width_sigma') }}:
-              <input type="number" v-model="strikethrough_width_sigma" />
-            </label>
-          </div>
-
-          <div class='label-container'>
-            <label>{{ $t('message.strikethrough_probability') }}:
-              <input type="number" v-model="strikethrough_probability" />
-            </label>
-          </div>
-
-          <div class='label-container'>
-            <label>{{ $t('message.strikethrough_width') }}:
-              <input type="number" v-model="strikethrough_width" />
-            </label>
-          </div>
-
-          <div class='label-container'>
-            <label>{{ $t('message.ink_depth_sigma') }}:
-              <input type="number" v-model="ink_depth_sigma" />
-            </label>
-          </div>
+          <img v-else :src="previewImage" data-testid="preview-image" :alt="$t('message.previewImage')"
+            style="width: 600px; max-width: 100%;" />
         </div>
       </div>
     </div>
 
-    <!-- 生成状态提示 -->
-    <div v-if="isGenerating || isInCooldownPeriod" class="generation-status">
-      <div v-if="isGenerating" class="status-generating">
-        🔄 正在生成中，请稍候...
-      </div>
-      <div v-else-if="isInCooldownPeriod" class="status-cooldown">
-        ⏳ 冷却中，还需等待 {{ remainingCooldown }} 秒
-      </div>
-    </div>
+    <ChineseLetterFormatter v-if="showLetterFormatter" :source-text="text" @close="showLetterFormatter = false"
+      @apply="applyLetterFormatting" />
 
-    <div class="buttons">
-      <button @click="loadPreset">{{ $t('message.loadSettings') }}</button>
-      <button @click="savePreset">{{ $t('message.saveSettings') }}</button>
-      <button @click="resetSettings">{{ $t('message.resetSettings') }}</button>
-      <button @click="generateHandwriting(preview = true)" :disabled="shouldDisableButtons">
-        {{ buttonText || $t('message.preview') }}
-      </button>
-      <button v-if="isDevEnv" @click="toggleFullPreview" :disabled="shouldDisableButtons">
-        本地全量预览：{{ enableFullPreview ? '开' : '关' }}
-      </button>
-      <button @click="generateHandwriting(preview = false)" :disabled="shouldDisableButtons">
-        {{ buttonText || $t('message.generateFullHandwritingImage') }}
-      </button>
-      <button @click="generateHandwriting(preview = false, pdf_save = true)" :disabled="shouldDisableButtons">
-        {{ buttonText || $t('message.generatePdf') }}
-      </button>
-
-      <router-link to="/Feedback" class="btn btn-info">{{ $t('message.feedback') }}</router-link>
-    </div>
-
-    <!-- 页数提示 -->
-    <div v-if="isProductionSite() && text && text.length > 0" class="page-info-alert">
-      <div class="alert alert-warning" style="margin: 10px 0; font-size: 14px;">
-        <strong>📄 页数提示：</strong>
-        预计生成 <strong>{{ estimatePageCount() }}</strong> 页
-        <span v-if="estimatePageCount() > 10" style="color: #d63384;">
-          （handwrite.14790897.xyz限制一次最多10页，超出部分将被截断）
-        </span>
-      </div>
-    </div>
-    <!-- 预览区 -->
-    <div class="preview">
-      <h2 v-if="!previewImages || previewImages.length === 0">{{ $t('message.preview') }}:</h2>
-
-      <div class="preview-container text-center">
-        <!-- 导航按钮 -->
-        <div v-if="previewImages && previewImages.length > 1" class="mb-3 d-flex justify-content-center align-items-center gap-3">
-          <button @click="prevPage" class="btn btn-outline-primary btn-sm" :disabled="currentPreviewIndex === 0">
-            &larr; 上一页
-          </button>
-          <span class="mx-3 font-weight-bold">
-            第 {{ currentPreviewIndex + 1 }} 页 / 共 {{ previewImages.length }} 页
-          </span>
-          <button @click="nextPage" class="btn btn-outline-primary btn-sm" :disabled="currentPreviewIndex === previewImages.length - 1">
-            下一页 &rarr;
-          </button>
-        </div>
-
-        <!-- 图片显示 -->
-        <div v-if="previewImages && previewImages.length > 0">
-          <img :src="previewImages[currentPreviewIndex]" 
-               :alt="$t('message.previewImage') + ' ' + (currentPreviewIndex + 1)" 
-               style="width: 600px; max-width: 100%; border: 1px solid #ddd; padding: 5px; border-radius: 4px;" />
-        </div>
-        <img v-else :src="previewImage" :alt="$t('message.previewImage')" style="width: 600px; max-width: 100%;" />
-      </div>
-    </div>
-    <footer class=" footer mt-auto py-3 bg-white">
+    <footer class="footer mt-auto py-3 bg-white" data-testid="site-footer">
       <div class="container text-center">
-
         <!-- <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a> -->
         <span class="text-black">{{ $t('message.projectAddress') }}:</span>
         <a href="https://github.com/14790897/handwriting-web" class="text-info">GitHub</a>
+        <span v-if="appVersion" data-testid="app-version" class="version-tag">v{{ appVersion }}</span>
       </div>
       <!-- 本网站是免费网站如果你是付费访问的请退款 -->
-      <div class ='freeprompt'>{{ $t('message.freeprompt') }}</div>
+      <div class="freeprompt">{{ $t('message.freeprompt') }}</div>
     </footer>
   </div>
 </template>
@@ -293,7 +563,40 @@
 <script>
 import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
+import ChineseLetterFormatter from '../components/ChineseLetterFormatter.vue';
+import GenerationStatus from '../components/GenerationStatus.vue';
 import Swal from 'sweetalert2';
+
+const BUILTIN_PRESETS = {
+  smallUnderlined: {
+    fontName: '云烟体.ttf',
+    values: {
+      fontSize: 70,
+      lineSpacing: 100,
+      width: 2481,
+      height: 3507,
+      marginTop: 150,
+      marginBottom: 150,
+      marginLeft: 150,
+      marginRight: 150,
+      lineSpacingSigma: 1,
+      fontSizeSigma: 1,
+      wordSpacingSigma: 2,
+      perturbXSigma: 1,
+      perturbYSigma: 1,
+      perturbThetaSigma: 0.05,
+      wordSpacing: 2,
+      strikethrough_length_sigma: 2,
+      strikethrough_angle_sigma: 2,
+      strikethrough_width_sigma: 2,
+      strikethrough_probability: 0,
+      strikethrough_width: 8,
+      ink_depth_sigma: 30,
+      isUnderlined: true,
+      enableEnglishSpacing: false,
+    },
+  },
+};
 
 
 
@@ -306,12 +609,16 @@ export default {
   // },
   components: {
     TextInput,
+    ChineseLetterFormatter,
+    GenerationStatus,
 
   },
 
   data() {
     return {
       text: "",
+      // 页面底部展示的版本号，来自 /api/version；取不到就不显示
+      appVersion: "",
       fontFile: null,
       backgroundImage: null,
       fontSize: 124,
@@ -338,10 +645,13 @@ export default {
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
+      lastPdfDownloadBytes: 0,  // 最近一次 PDF 下载的字节数，供 e2e 核对
       selectedFontFileName: '',
       selectedImageFileName: '',
       //字体下拉选框
       selectedOption: '1',  // 当前选中的选项
+      selectedPreset: '',
+      builtinPresets: BUILTIN_PRESETS,
       options: '',  // 下拉选项
       isLoading: false, //7.6
       strikethrough_length_sigma: 2,
@@ -365,14 +675,34 @@ export default {
       queueFullTotal: 0,            // 初始等待秒数，用于计算进度条
       queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
+      legacyLayout: false,
+      showLetterFormatter: false,
+      letterFormatBackup: null,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
+      persistentUiItems: ['enableFullPreview', 'legacyLayout'],
     };
   },
   created() {
+    window.addEventListener('handwriting-text-loaded', this.onTextLoaded);
+
+    const savedPreset = localStorage.getItem('selectedPreset');
+    if (savedPreset !== null && savedPreset !== "undefined") {
+      try {
+        const presetKey = JSON.parse(savedPreset);
+        if (typeof presetKey === 'string' && (!presetKey || this.builtinPresets[presetKey])) {
+          this.selectedPreset = presetKey;
+        } else {
+          localStorage.removeItem('selectedPreset');
+        }
+      } catch (error) {
+        console.error('解析内置预设失败:', error);
+        localStorage.removeItem('selectedPreset');
+      }
+    }
 
     // const localStorageItems = ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing'];//, 'backgroundImage', 'selectedImageFileName'
 
-    this.localStorageItems.forEach(item => {
+    [...this.localStorageItems, ...this.persistentUiItems].forEach(item => {
       const value = localStorage.getItem(item);
       if (value !== null && value !== "undefined") {
         try {
@@ -386,10 +716,25 @@ export default {
       }
     });
 
+    if (typeof this.enableFullPreview !== 'boolean') {
+      this.enableFullPreview = false;
+    }
+
+    this.$http.get('/api/version').then(response => {
+      this.appVersion = response.data?.version || '';
+    }).catch(() => {
+      // 版本号只是展示信息，取不到就不显示，不打扰用户
+      this.appVersion = '';
+    });
+
     this.$http.get('/api/fonts_info').then(response => {
       this.options = response.data.map((font, index) => {
         return { value: String(index + 1), text: font };
       });
+      const selected = this.builtinPresets[this.selectedPreset];
+      if (selected && !this.applyPresetFont(selected.fontName)) {
+        this.clearSelectedPreset();
+      }
     }).catch(error => {
       if (error.response && error.response.data) {
         this.errorMessage = error.response.data.error;
@@ -436,6 +781,17 @@ export default {
     isDevEnv() {
       return process.env.NODE_ENV === 'development';
     },
+    // 页数提示只在生产站点显示；用 computed 避免模板里反复调用 estimatePageCount()
+    estimatedPages() {
+      if (!this.isProductionSite() || !this.text || this.text.length === 0) {
+        return 0;
+      }
+      return this.estimatePageCount();
+    },
+    presetOptionsReady() {
+      const preset = this.builtinPresets.smallUnderlined;
+      return Array.isArray(this.options) && this.options.some(option => option.text === preset.fontName);
+    },
 
     //vuex中的login_delete_message，下面使用watch监控这个值  7.13
     ...mapState(['login_delete_message']),
@@ -451,11 +807,9 @@ export default {
     errorMessage(newVal) {
       if (newVal) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'error',
           title: newVal,
-          showConfirmButton: false,
           timer: 5000,
           timerProgressBar: true,
         });
@@ -464,11 +818,9 @@ export default {
     message(newVal) {
       if (newVal) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'success',
           title: newVal,
-          showConfirmButton: false,
           timer: 3000,
           timerProgressBar: true,
         });
@@ -477,11 +829,9 @@ export default {
     uploadMessage(newVal) {
       if (newVal) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'info',
           title: newVal,
-          showConfirmButton: false,
           timer: false, // 上传提示保持显示
           showClass: { popup: 'swal2-show' },
           hideClass: { popup: 'swal2-hide' },
@@ -491,14 +841,7 @@ export default {
     queueFullCountdown(newVal) {
       if (newVal > 0) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'warning',
-          title: `服务器繁忙，队列已满，预计 ${newVal} 秒后可重试`,
-          showConfirmButton: false,
-          timer: newVal * 1000,
-          timerProgressBar: true,
-          didOpen: (toast) => {
+          ...this.toastBase((toast) => {
             const progressBar = toast.querySelector('.swal2-timer-progress-bar');
             if (progressBar && this.queueFullTotal > 0) {
               // 更新进度条
@@ -511,7 +854,11 @@ export default {
               };
               requestAnimationFrame(updateProgress);
             }
-          },
+          }),
+          icon: 'warning',
+          title: `服务器繁忙，队列已满，预计 ${newVal} 秒后可重试`,
+          timer: newVal * 1000,
+          timerProgressBar: true,
         });
       }
     },
@@ -695,9 +1042,139 @@ export default {
       },
       deep: true
     },
+    enableFullPreview(newVal) {
+      localStorage.setItem('enableFullPreview', JSON.stringify(newVal));
+    },
+    legacyLayout(newVal) {
+      localStorage.setItem('legacyLayout', JSON.stringify(newVal));
+    },
   },
 
   methods: {
+    openLetterFormatter() {
+      if (!this.text || !this.text.trim()) {
+        this.$swal.fire({
+          ...this.toastBase(),
+          icon: 'info',
+          title: this.$t('message.letterTextRequired'),
+          timer: 2200,
+        });
+        return;
+      }
+      this.showLetterFormatter = true;
+    },
+    // 顶栏操作按钮排在页面顶部，toast 固定在右上角会盖住按钮、吞掉点击。
+    // 实测按钮行最右端约 1060px，加上 toast 自身 360px 宽，所以 1440px 以下改贴右下角。
+    toastPosition() {
+      return window.innerWidth <= 1440 ? 'bottom-end' : 'top-end';
+    },
+    // toast 的公共配置；didOpen 回调可选，用于叠加自定义逻辑（如队列满的进度条）
+    toastBase(didOpen) {
+      return {
+        toast: true,
+        position: this.toastPosition(),
+        showConfirmButton: false,
+        didOpen: (toast) => {
+          // 供 e2e 选择，不依赖 SweetAlert 自己的类名
+          toast.setAttribute('data-testid', 'app-toast');
+          if (didOpen) didOpen(toast);
+        },
+      };
+    },
+    applyLetterFormatting(formattedText) {
+      const textInput = this.$refs.textInputComp;
+      if (!textInput || typeof textInput.replaceText !== 'function') return;
+
+      if (this.letterFormatBackup === null) {
+        this.letterFormatBackup = this.text;
+      }
+      textInput.replaceText(formattedText);
+      this.showLetterFormatter = false;
+      this.message = this.$t('message.letterFormatApplied');
+    },
+    undoLetterFormatting() {
+      const textInput = this.$refs.textInputComp;
+      if (!textInput || typeof textInput.replaceText !== 'function' || this.letterFormatBackup === null) return;
+
+      const previousText = this.letterFormatBackup;
+      this.letterFormatBackup = null;
+      textInput.replaceText(previousText);
+    },
+    clearLetterFormatBackup() {
+      this.letterFormatBackup = null;
+    },
+    // 文本文件上传是异步的；上传途中切换布局会重建 TextInput，旧实例的 emit 会被 Vue 丢弃，
+    // 所以由 TextInput 广播事件，这里再把结果喂给当前活着的输入框（见 TextInput.uploadFile）
+    onTextLoaded(event) {
+      const loadedText = event.detail;
+      if (typeof loadedText !== 'string') return;
+      this.text = loadedText;
+      const input = this.$refs.textInputComp;
+      if (input && typeof input.replaceText === 'function' && input.text !== loadedText) {
+        input.replaceText(loadedText);
+      }
+    },
+    clearSelectedPreset() {
+      this.selectedPreset = '';
+      localStorage.removeItem('selectedPreset');
+    },
+    applyPresetFont(fontName) {
+      if (!fontName || !Array.isArray(this.options)) return false;
+
+      const match = this.options.find(option => option.text === fontName);
+      if (!match) return false;
+
+      this.selectedOption = match.value;
+      this.fontFile = null;
+      this.selectedFontFileName = '';
+      if (this.$refs.fontFileInput) {
+        this.$refs.fontFileInput.value = '';
+      }
+      localStorage.setItem('selectedOption', JSON.stringify(match.value));
+      localStorage.setItem('fontFile', JSON.stringify(null));
+      localStorage.setItem('selectedFontFileName', JSON.stringify(''));
+      return true;
+    },
+    applyPreset(event) {
+      const presetKey = event.target.value;
+      const preset = this.builtinPresets[presetKey];
+      if (!preset) {
+        this.clearSelectedPreset();
+        return;
+      }
+
+      if (this.backgroundImage && ('width' in preset.values || 'height' in preset.values)) {
+        event.target.value = this.selectedPreset;
+        this.$swal.fire({
+          icon: 'info',
+          title: this.$t('message.presetBackgroundImageActive'),
+        });
+        return;
+      }
+
+      if (!this.applyPresetFont(preset.fontName)) {
+        event.target.value = this.selectedPreset;
+        this.$swal.fire({
+          icon: 'error',
+          title: this.$t('message.presetUnavailable'),
+        });
+        return;
+      }
+
+      Object.entries(preset.values).forEach(([key, value]) => {
+        this[key] = value;
+        localStorage.setItem(key, JSON.stringify(value));
+      });
+      this.selectedPreset = presetKey;
+      localStorage.setItem('selectedPreset', JSON.stringify(this.selectedPreset));
+
+      this.$swal.fire({
+        icon: 'success',
+        title: this.$t('message.presetApplied'),
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    },
     prevPage() {
       if (this.currentPreviewIndex > 0) {
         this.currentPreviewIndex--;
@@ -713,6 +1190,9 @@ export default {
     },
     toggleFullPreview() {
       this.enableFullPreview = !this.enableFullPreview;
+    },
+    toggleLayout() {
+      this.legacyLayout = !this.legacyLayout;
     },
     startQueueFullCountdown(seconds) {
       // 清掉旧计时器
@@ -872,7 +1352,8 @@ export default {
 
       } else if (contentType.includes('application/pdf')) {
         // 处理.pdf文件
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', 'images.pdf'); // 或任何其他文件名
@@ -880,6 +1361,8 @@ export default {
         link.click();
         // 下载完成后，将链接删除
         document.body.removeChild(link);
+        // e2e 靠这个数字核对实际交付的 PDF 体积（见 e2e/tests/home-generate.spec.js）
+        this.lastPdfDownloadBytes = pdfBlob.size;
         // 设置提示信息
         this.message = '文件已下载。';
         this.uploadMessage = '';
@@ -1206,6 +1689,7 @@ export default {
       this.selectedFontFileName = '';
       this.selectedImageFileName = '';
       this.selectedOption = '1';
+      this.clearSelectedPreset();
       this.previewImage = "/default1.webp";
     },
     loadPreset() {
@@ -1226,6 +1710,7 @@ export default {
         Object.keys(data).forEach(item => {
           this[item] = data[item];
         });
+        this.clearSelectedPreset();
 
         this.$swal.fire({
           icon: 'success',
@@ -1242,6 +1727,7 @@ export default {
       }
     },
     onBackgroundImageChange(event) {
+      this.clearSelectedPreset();
       // 当用户选择了一个新的背景图片文件时，更新 selectedImageFileName，由于这边直接触发函数了，所以localstorage可以在这里修改，
       //之前因为文字不能触发函数，所以要放在watch里面
       this.selectedImageFileName = event.target.files[0].name;
@@ -1295,6 +1781,7 @@ export default {
       })
     },
     onFontChange(event) {
+      this.clearSelectedPreset();
       // 当用户选择了一个新的字体文件时，更新 selectedFontFileName
       this.selectedFontFileName = event.target.files[0].name;
       this.fontFile = event.target.files[0];
@@ -1521,6 +2008,8 @@ export default {
 
   // 组件销毁时清理定时器
   beforeUnmount() {
+    window.removeEventListener('handwriting-text-loaded', this.onTextLoaded);
+
     if (this.cooldownTimer) {
       clearInterval(this.cooldownTimer);
       this.cooldownTimer = null;
@@ -1532,195 +2021,426 @@ export default {
 
 
 <style scoped>
-.container {
-  display: grid;
-  grid-template-areas:
-    "form image"
-    "button image"
-    "message image";
-  grid-template-columns: 1fr 2fr;
-}
-
-#message {
-  grid-area: message;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow: auto;
-  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
-}
-
-#form {
-  grid-area: form;
-  flex: 1 0 300px;
-  max-width: 650px;
-  column-count: auto;
-  column-width: 200px;
-  column-gap: 1em;
-  width: 80vw;
-  padding: 20px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  overflow: auto;
-  box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
-}
-
-#form label {
-  margin-bottom: 10px;
-}
-
-#form input,
-#form textarea {
-  width: 50%;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-  box-sizing: border-box;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-
-/* 想让标签和输入在一行显示，但是没有用 7.14 */
-.label-container {
-  display: flex;
-  /* justify-content: center; */
-  align-items: center;
-}
-.buttons{
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-.buttons button {
-  grid-area: button;
-  padding: 10px 10px;
-  border-radius: 5px;
-  border: none;
-  background: #007BFF;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease-in-out;
-  font-weight: bold;
-  /* 使文本更粗 */
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  /* 添加阴影效果 */
-  outline: none;
-  /* 移除默认的焦点轮廓 */
-  margin-right: 10px;
-  /* 为每个按钮添加右边距 */
-  margin-top: 10px;
-}
-
-.buttons button:last-child {
-  margin-right: 0;
-  /* 为最后一个按钮移除右边距，避免额外空间 */
-}
-
-.buttons button:hover {
-  background: #0056b3;
-  transform: scale(1.05);
-  /* 悬停时按钮轻微放大 */
-}
-
-.buttons button:active {
-  background: #003d73;
-  /* 按下按钮时更改背景色 */
-  transform: scale(0.95);
-  /* 按下按钮时按钮轻微缩小 */
-}
-
-.buttons button:disabled {
-  background: #cccccc;
-  /* 禁用按钮时的背景色 */
-  cursor: not-allowed;
-  /* 禁用按钮时的鼠标样式 */
-}
-
-
-.preview {
-  /* flex: 1; */
-  padding: 20px;
-  box-sizing: border-box;
-  grid-area: image;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  min-width: 100px;
-  min-height: 200px;
-
-}
-
-.preview img {
-  max-width: 100%;
-  height: auto;
-  object-fit: cover;
-  position: sticky;
-  top: 0;
-}
-
-input[type="number"],
-input[type="text"],
-input[type="file"] {
-  transition: all 0.3s ease;
-  /* 过渡效果 */
-}
-
-input[type="number"]:hover,
-input[type="text"]:hover,
-input[type="file"]:hover {
-  transform: scale(1.05);
-  /* 放大输入框 */
-  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
-  /* 添加阴影效果 */
-}
-
-/* >>> .TextInput{ */
-.container_file {
+/* ===== 整体：顶部操作栏 + 三栏工作区 ===== */
+#app-shell {
   display: flex;
   flex-direction: column;
+  /* 固定为一屏高，工作区拿剩余空间，三栏在各自高度内滚动，整页不滚动。
+     dvh 让带动态工具栏的移动浏览器（宽度 >1000px 的平板）也算得对可视高度，
+     不支持的浏览器忽略这一行、回落到 100vh。 */
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* 只有新版三栏需要左对齐；旧版沿用全局 #app 的居中对齐 */
+#app-shell:not(.legacy-mode) {
+  text-align: left;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 10px 20px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  max-width: 400px;
-  margin: auto;
 }
 
-.container_file label {
-  font-size: 1.2rem;
-  font-weight: 500;
+/* 操作按钮靠左排布：右上角要留给 SweetAlert 的 top-end toast，避免通知盖住按钮 */
+.app-title {
+  margin-right: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2c3e50;
+  white-space: nowrap;
 }
 
-.container_file button {
-  padding: 10px 5px;
-  font-size: 0.9rem;
-  color: white;
-  background-color: #4285f4;
-  border: none;
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 2px;
+  background: #dde1e6;
+}
+
+/* 操作按钮：顶栏与左栏共用 */
+.action-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  border: 1px solid transparent;
   border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  line-height: 1.2;
+  text-decoration: none;
   cursor: pointer;
-  margin: 0 auto;
+  transition: all 0.2s ease-in-out;
 }
 
-.container_file button:disabled {
-  background-color: grey;
+.action-btn.primary {
+  color: #fff;
+  background: #007BFF;
+  border-color: #007BFF;
 }
 
-.container_file span {
-  /* display: block; */
-  margin-top: 5px;
+.action-btn.secondary {
+  color: #007BFF;
+  background: #fff;
+  border-color: #007BFF;
+}
+
+.action-btn.info {
+  color: #fff;
+  background: #17a2b8;
+  border-color: #17a2b8;
+}
+
+.action-btn.small {
+  padding: 7px 10px;
+  font-size: 0.85rem;
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+}
+
+.action-btn.primary:hover:not(:disabled) {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+.action-btn.secondary:hover:not(:disabled) {
+  background: #e3f2fd;
+}
+
+.action-btn.info:hover {
+  background: #138496;
+  border-color: #138496;
+}
+
+.action-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.action-btn.primary:active:not(:disabled) {
+  background: #003d73;
+  border-color: #003d73;
+}
+
+.action-btn:disabled {
+  color: #fff;
+  background: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* 提示信息 */
+#message {
+  margin-top: 8px;
+}
+
+#message .alert {
+  margin-bottom: 0;
+  padding: 8px 12px;
   font-size: 0.9rem;
-  color: #444;
 }
 
-/* } */
+/* ===== 三栏工作区 ===== */
+.workspace {
+  flex: 1 1 auto;
+  /* 允许在工作区内部收缩：顶栏变高（例如出现提示条）时让三栏变矮，而不是把整页撑出滚动条 */
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.panel {
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  /* 高度由工作区剩余空间决定，内容超出时本栏自己滚动 */
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.panel-title {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef0f2;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-align: left;
+}
+
+/* ===== 左栏：参数设置 ===== */
+.field-label {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #444;
+  text-align: left;
+}
+
+.panel-settings .label-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.panel-settings .label-container label {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.panel-settings input[type="number"],
+.panel-settings input[type="text"] {
+  flex: 0 0 110px;
+  width: 110px;
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* 高级参数卡片：标签与输入框上下排列，宽度占满。
+   限定在左栏里，否则同为 #collapseContent 的旧版分支会被一起改掉 */
+.panel-settings #collapseContent .label-container {
+  display: block;
+}
+
+.panel-settings #collapseContent .label-container label {
+  display: block;
+  white-space: normal;
+}
+
+.panel-settings #collapseContent .label-container input {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.check-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.check-container label {
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.advanced-toggle {
+  width: 100%;
+  margin: 10px 0;
+  font-size: 0.9rem;
+}
+
+.font-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.font-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.image-container {
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.button-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.panel-settings .preset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eef0f2;
+}
+
+.panel-settings .preset-row label {
+  margin: 0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.panel-settings .preset-row .styled-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ===== 中栏：正文 ===== */
+.panel-text {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 正文输入区撑满中栏剩余高度。
+   用 id + 类提高优先级，覆盖 TextInput 自己的 #text_file_select 规则；
+   旧版分支不挂 .text-input-fill，保持改造前那个 400px 居中窄栏。 */
+#text_file_select.text-input-fill {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  min-height: 320px;
+  margin: 0;
+}
+
+#text_file_select.text-input-fill :deep(#textArea) {
+  flex: 1 1 auto;
+  min-height: 240px;
+  font-size: 1rem;
+  line-height: 1.8;
+  resize: vertical;
+}
+
+/* 中栏标题已经说明这是正文栏，隐藏重复的字段标签；旧版仍显示「文字:」 */
+#text_file_select.text-input-fill :deep(.text-field-label) {
+  display: none;
+}
+
+.letter-format-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  flex: 0 0 auto;
+}
+
+.letter-format-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.letter-format-button {
+  color: white;
+  background: #007BFF;
+  border: 1px solid #007BFF;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.letter-format-button:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+  transform: scale(1.05);
+}
+
+.letter-format-button:active {
+  background: #003d73;
+  border-color: #003d73;
+  transform: scale(0.95);
+}
+
+.letter-format-undo {
+  color: #2c3e50;
+  background: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.letter-format-undo:hover {
+  color: #0056b3;
+  background: #e3f2fd;
+  border-color: #007BFF;
+}
+
+.letter-format-mark {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  color: #007BFF;
+  background: white;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* ===== 右栏：预览 ===== */
+.panel-preview {
+  min-width: 100px;
+}
+
+.preview-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.preview-page-indicator {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.preview-image {
+  max-width: 100%;
+  height: auto;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* ===== 通用控件 ===== */
 .styled-select {
-  padding: 10px;
+  padding: 8px 10px;
   border: none;
   border-radius: 5px;
   color: white;
   background-color: #4285f4;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: all 0.3s ease-in-out;
-
-
 }
 
 .styled-select:hover {
-  transform: scale(1.05);
-  /* 放大输入框 */
+  transform: scale(1.02);
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -1728,78 +2448,21 @@ input[type="file"]:hover {
   outline: none;
 }
 
-.button-container {
-  display: flex;
-  justify-content: space-around;
-  position: relative;
+.styled-select:disabled {
+  background-color: #b9c3cc;
+  cursor: not-allowed;
 }
 
-.clear-button {
-  position: relative;
-  top: 5px;
-  right: 5px;
-  width: 12px;
-  height: 12px;
-  cursor: pointer;
+input[type="number"],
+input[type="text"],
+input[type="file"] {
+  transition: all 0.3s ease;
 }
 
-.clear-button-line {
-  position: absolute;
-  left: 1px;
-  width: 10px;
-  height: 2px;
-  background-color: #000;
-}
-
-.clear-button-line:first-child {
-  top: 5px;
-  transform: rotate(45deg);
-}
-
-.clear-button-line:last-child {
-  top: 5px;
-  transform: rotate(-45deg);
-}
-
-.font-selection {
-  display: flex;
-  justify-content: space-around;
-}
-
-.loader {
-  border: 16px solid #f3f3f3;
-  /* Light grey */
-  border-top: 16px solid #3498db;
-  /* Blue */
-  border-radius: 50%;
-  width: 120px;
-  height: 120px;
-  animation: spin 2s linear infinite;
-  position: absolute;
-  /* 设置动画为绝对定位 */
-  top: 50%;
-  /* 将动画定位在父元素的中心 */
-  left: 50%;
-  transform: translate(-50%, -50%);
-  /* 用 transform 属性将动画元素的中心对准父元素的中心 */
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.image-container {
-  /* display: flex;
-  justify-content: center;
-  align-items: center; */
-  position: relative;
-  margin-bottom: 15px;
+input[type="number"]:hover,
+input[type="text"]:hover,
+input[type="file"]:hover {
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.2);
 }
 
 .close {
@@ -1834,51 +2497,242 @@ input[type="file"]:hover {
   box-sizing: content-box !important;
 }
 
+.clear-button {
+  position: relative;
+  top: 5px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+
+.clear-button-line {
+  position: absolute;
+  left: 1px;
+  width: 10px;
+  height: 2px;
+  background-color: #000;
+}
+
+.clear-button-line:first-child {
+  top: 5px;
+  transform: rotate(45deg);
+}
+
+.clear-button-line:last-child {
+  top: 5px;
+  transform: rotate(-45deg);
+}
+
+.loader {
+  border: 16px solid #f3f3f3;
+  /* Light grey */
+  border-top: 16px solid #3498db;
+  /* Blue */
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+  position: absolute;
+  /* 设置动画为绝对定位 */
+  top: 50%;
+  /* 将动画定位在父元素的中心 */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 用 transform 属性将动画元素的中心对准父元素的中心 */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .freeprompt {
   font-size: 0.8rem;
   color: #e70808;
   text-align: center;
   margin-top: 10px;
 }
+
+.version-tag {
+  margin-left: 8px;
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+/* 生成状态提示样式 */
+/* 队列已满提示 - 已迁移到 Swal Toast */
+/* 生成状态/页数提示的样式已随组件移到 components/GenerationStatus.vue */
+
+/* ===== 旧版布局：顶栏「旧版界面」按钮切回，样式沿用改造前那一套 ===== */
+#app-shell.legacy-mode {
+  /* 旧版是整页滚动，而不是三栏各自滚动 */
+  height: auto;
+  min-height: 100vh;
+}
+
+.legacy-root {
+  display: grid;
+  grid-template-areas: "form image";
+  grid-template-columns: 1fr 2fr;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  /* 改造前这层是 Bootstrap 的 .container（居中限宽）。换成 .legacy-root 后要自己补回来，
+     否则宽屏下旧版整页铺满，还会和仍用 .container 的页脚对不齐 */
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+.legacy-root #form {
+  grid-area: form;
+  max-width: 650px;
+  column-count: auto;
+  column-width: 200px;
+  column-gap: 1em;
+  width: 80vw;
+  padding: 20px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  overflow: auto;
+  box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+}
+
+.legacy-root #form label {
+  margin-bottom: 10px;
+}
+
+.legacy-root #form input,
+.legacy-root #form textarea {
+  width: 50%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.legacy-root .label-container {
+  display: flex;
+  align-items: center;
+}
+
+.legacy-root .container_file {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  margin: auto;
+}
+
+.legacy-root .container_file label {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* 书信排版按钮有自己的一套配色，交给 .letter-format-* 规则 */
+.legacy-root .container_file button:not(.letter-format-button):not(.letter-format-undo) {
+  padding: 10px 5px;
+  font-size: 0.9rem;
+  color: white;
+  background-color: #4285f4;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 0 auto;
+}
+
+.legacy-root .container_file button:disabled {
+  background-color: grey;
+}
+
+.legacy-root .container_file span {
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.legacy-root .letter-format-actions {
+  max-width: 400px;
+  margin: 10px auto 0;
+}
+
+/* 旧版的内置预设行沿用改造前的居中样式（新版左栏那套带分隔线的写在 .panel-settings 下） */
+.legacy-root .preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.legacy-root .preset-row label {
+  margin: 0;
+}
+
+.legacy-root .preset-row .styled-select {
+  min-width: 220px;
+}
+
+.legacy-root .preview {
+  grid-area: image;
+  padding: 20px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  min-width: 100px;
+  min-height: 200px;
+}
+
+.legacy-root .preview img {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+  position: sticky;
+  top: 0;
+}
+
+/* 窄屏：三栏堆叠成单栏，恢复整页滚动，不再限制每栏高度 */
 @media (max-width: 1000px) {
-  .container {
-    /* flex-direction: column; */
+  #app-shell {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* 顶栏按钮在窄屏会换行到两三行，吸顶会长期占掉小屏近三分之一的高度 */
+  .app-header {
+    position: static;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    max-height: none;
+  }
+
+  .legacy-root {
     grid-template-areas:
       "form"
-      "button"
-      "message"
       "image";
     grid-template-columns: 1fr;
   }
 
-  #form,
-  .preview {
-    flex: 1 0 100%;
+  /* 单栏时收窄参数行，避免标签与输入框被拉得太远 */
+  .panel-settings .label-container,
+  .panel-settings .check-container,
+  .panel-settings .font-selection,
+  .panel-settings .image-container,
+  .panel-settings .advanced-toggle,
+  .panel-settings .preset-row {
+    max-width: 420px;
   }
 }
-
-/* 生成状态提示样式 */
-.generation-status {
-  margin: 15px 0;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-  font-weight: bold;
-  animation: pulse 2s infinite;
-}
-
-.status-generating {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #bbdefb;
-}
-
-.status-cooldown {
-  background-color: #fff3e0;
-  color: #f57c00;
-  border: 1px solid #ffcc02;
-}
-
-/* 队列已满提示 - 已迁移到 Swal Toast */
-
 </style>

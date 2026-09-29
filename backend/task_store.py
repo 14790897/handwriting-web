@@ -19,8 +19,15 @@ logger = logging.getLogger(__name__)
 
 # ── 配置 ────────────────────────────────────────────────────────────
 
-_DB_PATH = Path(__file__).resolve().parent / "tasks.db"
-_RESULT_DIR = Path(__file__).resolve().parent / "temp" / "task_results"
+# 桌面版把数据放在可写目录（%LOCALAPPDATA%），打包后 __file__ 位于只读的包内或
+# 退出即删的 onefile 临时目录，不能再用它定位数据库。
+_data_dir = os.getenv("HANDWRITING_DATA_DIR")
+if _data_dir:
+    _DB_PATH = Path(_data_dir) / "tasks.db"
+    _RESULT_DIR = Path(_data_dir) / "temp" / "task_results"
+else:
+    _DB_PATH = Path(__file__).resolve().parent / "tasks.db"
+    _RESULT_DIR = Path(__file__).resolve().parent / "temp" / "task_results"
 _DB_TIMEOUT = 10  # 秒
 _TTL_SECONDS = 60 * 30  # 30 分钟
 

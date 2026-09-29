@@ -1,6 +1,6 @@
 <template>
   <transition name="splash-fade">
-    <div v-if="visible" class="book-splash" @click="skipAnimation">
+    <div v-if="visible" class="book-splash" data-testid="book-splash" @click="skipAnimation">
 
       <!-- 左半屏（内页，一直在） -->
       <div class="half half-left">
@@ -90,7 +90,7 @@ mounted() {
       localStorage.setItem('bookSplashShown', '1');
       this.visible = false;
       this.$emit('complete');
-    }, 1200);
+    }, 1500);
   },
   methods: {
     skipAnimation() {

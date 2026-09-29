@@ -1,0 +1,3 @@
+# 仅打包桌面版 exe 时需要的构建期依赖。
+# 运行时依赖见 backend/requirements.txt。
+pyinstaller>=6.10,<7

@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import itertools
+import re
 import time
 from typing import Any, Optional, Union
 
@@ -10,6 +12,7 @@ from fastapi import (
     Depends,
     FastAPI,
     File,
+    HTTPException,
     Request,
     UploadFile,
     WebSocket,
@@ -17,7 +20,7 @@ from fastapi import (
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 # run_in_threadpool 已移除：handwrite() 返回惰性生成器（map 对象），
 # 真正的 CPU 密集渲染在后续 for 循环消费生成器时才发生，
@@ -32,6 +35,7 @@ load_dotenv()
 import gc
 import io
 import logging
+import mimetypes
 import os
 import shutil
 import tempfile
@@ -262,6 +266,29 @@ from task_types import (
 # 获取环境变量
 mysql_host = os.getenv("MYSQL_HOST", "db")
 enable_user_auth = os.getenv("ENABLE_USER_AUTH", "false")
+# 桌面版（Electron + PyInstaller 打包）标志，由 desktop_main.py 设置
+DESKTOP_MODE = os.getenv("DESKTOP_MODE", "false").lower() == "true"
+
+
+def read_app_version():
+    """应用版本号，供前端页面展示。
+
+    优先环境变量：桌面版由 Electron 传 app.getVersion()，拿到的是真正安装的那个版本；
+    否则读随包分发的 VERSION（发版时由 scripts/sync-version.js 写入，进后端镜像与
+    PyInstaller 的 datas）；都没有就返回空串，前端不显示。
+    """
+    override = os.getenv("HANDWRITING_APP_VERSION", "").strip()
+    if override:
+        return override
+    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
+    try:
+        with open(version_file, encoding="utf-8") as fp:
+            return fp.read().strip()
+    except OSError:
+        return ""
+
+
+app_version = read_app_version()
 # 获取当前路径
 current_path = os.getcwd()
 # 创建一个子文件夹用于存储输出的图片
@@ -299,17 +326,23 @@ font_file_names = [
     if os.path.isfile(os.path.join(font_assets_dir, f)) and f.endswith(".ttf")
 ]
 # sentry部分 7.7
-sentry_sdk.init(
-    dsn="https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
-    integrations=[
-        StarletteIntegration(),
-        FastApiIntegration(),
-    ],
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
-    traces_sample_rate=1.0,
+# 桌面版由 desktop_main.py 设 SENTRY_DSN="" 关闭上报，避免把用户本地错误发到线上项目
+_sentry_dsn = os.getenv(
+    "SENTRY_DSN",
+    "https://ed22d5c0e3584faeb4ae0f67d19f68aa@o4505255803551744.ingest.sentry.io/4505485583253504",
 )
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[
+            StarletteIntegration(),
+            FastApiIntegration(),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+    )
 
 # 启动计划任务线程, 定时清理
 schedule_clean.start_schedule_thread()
@@ -325,7 +358,11 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # 创建 file handler，并设置级别为 DEBUG
-fh = logging.FileHandler("logs/app.log")
+# LOG_DIR 供桌面版指向可写数据目录；仓库内运行时仍是 backend/logs
+# 显式指定 utf-8：Windows 上 FileHandler 默认用 ANSI 代码页，中文日志会写坏
+log_dir = os.getenv("LOG_DIR", "logs")
+os.makedirs(log_dir, exist_ok=True)
+fh = logging.FileHandler(os.path.join(log_dir, "app.log"), encoding="utf-8")
 fh.setLevel(logging.DEBUG)
 
 # 创建 formatter
@@ -340,13 +377,64 @@ logger.addHandler(ch)
 logger.addHandler(fh)
 
 app = FastAPI()
+
+# 桌面版由 desktop_main.py 设成本应用窗口的源（http://127.0.0.1:<port>）。
+# 前端与后端同源、本来就不依赖 CORS，所以桌面版把白名单收紧到这一个来源；
+# Web 部署不设该变量，沿用原来的宽松配置。
+_allowed_origin = os.getenv("HANDWRITING_ALLOWED_ORIGIN", "")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[_allowed_origin] if _allowed_origin else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _origin_of(url):
+    """从 URL 里取出 scheme://host:port，取不到返回 None。"""
+    match = re.match(r"^https?://[^/]+", url or "")
+    return match.group(0) if match else None
+
+
+def foreign_origin(origin_header, referer_header, sec_fetch_site=None):
+    """请求来自本应用之外的站点时返回该来源（或 "cross-site"），否则返回 None。
+
+    CORS 白名单只决定浏览器能否「读」响应，不阻止请求被发出，所以必须再主动拒绝：
+    用户浏览任意网页时，那个页面可以往 127.0.0.1 发简单请求驱动本地渲染，甚至用
+    <img> / <script> 这类跨源 GET 把任务结果消费掉（result 接口会 pop 掉任务）。
+
+    判断依据三条：Origin（跨源请求一定有，表单 POST 也带）、Referer（可能被
+    Referrer-Policy 去掉）、以及 Sec-Fetch-Site —— 跨源 GET 可能两个都没有，
+    但现代浏览器会带上这个头标明发起方：同源是 same-origin、别的站点是 cross-site、
+    用户直接输网址是 none。同源 GET 三条都不命中，放行。
+    """
+    if not _allowed_origin:
+        return None
+    if sec_fetch_site == "cross-site":
+        return origin_header or referer_header or "cross-site"
+    origin = origin_header or _origin_of(referer_header)
+    if origin and origin != _allowed_origin:
+        return origin
+    return None
+
+
+if _allowed_origin:
+
+    @app.middleware("http")
+    async def reject_foreign_origin(request: Request, call_next):
+        source = foreign_origin(
+            request.headers.get("origin"),
+            request.headers.get("referer"),
+            request.headers.get("sec-fetch-site"),
+        )
+        if source:
+            logger.warning("拒绝跨站请求: %s -> %s", source, request.url.path)
+            return JSONResponse(
+                status_code=403,
+                content={"status": "fail", "message": "跨站请求被拒绝"},
+            )
+        return await call_next(request)
 
 
 # 自定义 422 错误响应，把字段名提取出来让前端更易读
@@ -426,26 +514,44 @@ def create_notebook_image(
 
 def read_docx(file_path):
     document = Document(file_path)
-    text = " ".join([paragraph.text for paragraph in document.paragraphs])
+    # 必须保留段落换行：正文里的 "---"（分页）与 ">>>"（右对齐）是按行匹配的标记，
+    # 用空格拼接会把整篇压成一行，标记永远不生效，而且不会报任何错
+    text = "\n".join([paragraph.text for paragraph in document.paragraphs])
     return text
 
 
 import pypandoc
 
+# 桌面版不自动下载 pandoc（会联网拉 msi 并调 msiexec），改用 python-docx 兜底
+_pandoc_available = False
 try:
     # 1. 尝试获取 Pandoc 版本
     # 如果系统里已经安装了（比如你在 Dockerfile 里用 apt-get 装了），这里会成功
     version = pypandoc.get_pandoc_version()
     print(f"Pandoc found: {version}")
+    _pandoc_available = True
 
 except OSError:
-    # 2. 如果报错说找不到，说明没装，开始自动下载
-    print("Pandoc not found. Downloading...")
-    pypandoc.download_pandoc()
-    print("Pandoc downloaded successfully.")
+    if DESKTOP_MODE:
+        print("Pandoc not found. Falling back to python-docx.")
+    else:
+        # 2. 如果报错说找不到，说明没装，开始自动下载
+        print("Pandoc not found. Downloading...")
+        try:
+            pypandoc.download_pandoc()
+            print("Pandoc downloaded successfully.")
+            _pandoc_available = True
+        except Exception as exc:  # noqa: BLE001 下载失败不应阻断启动
+            print(f"Pandoc download failed: {exc}. Falling back to python-docx.")
 
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
+    if not _pandoc_available:
+        logger.warning(
+            "pandoc 不可用，改用 python-docx 提取 %s（保留段落换行，但表格/列表等结构会丢失）",
+            docx_file_path,
+        )
+        return read_docx(docx_file_path)
     text = pypandoc.convert_file(docx_file_path, 'plain')
     return text
     # return None
@@ -459,6 +565,103 @@ def read_pdf(file_path):
             page_obj = pdf_reader.pages[page_num]
             text += page_obj.extract_text()
     return text
+
+
+# A line containing only three or more dashes forces a new page.
+_PAGE_BREAK_RE = re.compile(r"(?m)^[ \t]*-{3,}[ \t]*$")
+
+# A line prefixed with ">>>" is right-aligned. One optional following space is
+# part of the marker and is removed before rendering.
+_RIGHT_ALIGN_RE = re.compile(r"^[ \t]*>>>[ \t]?")
+
+
+def apply_right_align(text, template):
+    """Replace right-align markers with full-width-space padding."""
+    if ">>>" not in text:
+        return text
+
+    font = template.get_font()
+    word_spacing = template.get_word_spacing()
+    width = template.get_size()[0]
+    usable_width = (
+        width - template.get_left_margin() - template.get_right_margin()
+    )
+    last_glyph_start_limit = usable_width - font.size
+
+    def advance(char):
+        left, _, right, _ = font.getbbox(char)
+        return (right - left) + word_spacing
+
+    pad_unit = advance("　")
+    output = []
+    aligned_count = 0
+
+    for line in text.split("\n"):
+        marker = _RIGHT_ALIGN_RE.match(line)
+        if not marker:
+            output.append(line)
+            continue
+
+        content = line[marker.end():]
+        if not content:
+            output.append("")
+            aligned_count += 1
+            continue
+
+        # Handright decides whether to wrap before drawing each glyph. Its
+        # threshold reserves one nominal font-size cell at the right edge.
+        # Negative word spacing can make an advance negative, so the furthest
+        # glyph start is not necessarily the final glyph's start.
+        prefix_width = 0
+        max_prefix_width = 0
+        for char in content:
+            max_prefix_width = max(max_prefix_width, prefix_width)
+            prefix_width += advance(char)
+        available_padding = last_glyph_start_limit - max_prefix_width
+
+        if pad_unit > 0 and available_padding > 0:
+            # Handright perturbs glyph sizes and spacing during rendering. Keep
+            # one full-width cell free so small variations do not wrap the last
+            # character onto a new line.
+            pad_count = max(0, int(available_padding // pad_unit) - 1)
+        else:
+            pad_count = 0
+
+        output.append("　" * pad_count + content)
+        aligned_count += 1
+
+    if aligned_count:
+        logger.info("right-align applied to %s line(s)", aligned_count)
+    return "\n".join(output)
+
+
+def handwrite_with_page_breaks(text, template):
+    """Render text while honoring manual page-break and alignment markers."""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    aligned = apply_right_align(normalized, template)
+
+    if not _PAGE_BREAK_RE.search(aligned):
+        return handwrite(aligned, template)
+
+    raw_chunks = _PAGE_BREAK_RE.split(aligned)
+    chunks = []
+    for index, chunk in enumerate(raw_chunks):
+        # Splitting a marker-only line leaves one delimiter newline on each
+        # side. Remove exactly those two newlines, preserving any additional
+        # blank lines the user intentionally placed around the page break.
+        if index > 0 and chunk.startswith("\n"):
+            chunk = chunk[1:]
+        if index < len(raw_chunks) - 1 and chunk.endswith("\n"):
+            chunk = chunk[:-1]
+        if chunk.strip():
+            chunks.append(chunk)
+    logger.info("manual page break detected: %s chunk(s)", len(chunks))
+
+    if not chunks:
+        return handwrite("", template)
+    return itertools.chain.from_iterable(
+        handwrite(chunk, template) for chunk in chunks
+    )
 
 
 def handle_exceptions(f):
@@ -581,8 +784,11 @@ async def generate_handwriting_impl(
 
     report_progress("system_check", "正在检查服务器负载", 10)
     cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
-    if cpu_usage > 90:
-        # 如果 CPU 使用率超过 90%，返回提醒
+    # 2026-09-29: 阈值可配置，E2E 测试在开发机上跑时 CPU 常被 webpack/浏览器占满，
+    # 会把 429 当成任务结果回放给前端，测试里用 CPU_USAGE_LIMIT=100 放宽
+    cpu_usage_limit = float(os.getenv("CPU_USAGE_LIMIT", "90"))
+    if cpu_usage > cpu_usage_limit:
+        # 如果 CPU 使用率超过阈值，返回提醒
         return JSONResponse(
             {
                 "status": "waiting",
@@ -765,7 +971,8 @@ async def generate_handwriting_impl(
         line_spacing_sigma=int(data["line_spacing_sigma"]),  # 行间距随机扰动
         font_size_sigma=int(data["font_size_sigma"]),  # 字体大小随机扰动
         word_spacing_sigma=int(data["word_spacing_sigma"]),  # 字间距随机扰动
-        end_chars="，。",  # 防止特定字符因排版算法的自动换行而出现在行首
+        # Keep handright's full default end_chars set so closing punctuation,
+        # such as right quotes, stays on the previous line.
         perturb_x_sigma=int(data["perturb_x_sigma"]),  # 笔画横向偏移随机扰动
         perturb_y_sigma=int(data["perturb_y_sigma"]),  # 笔画纵向偏移随机扰动
         perturb_theta_sigma=float(data["perturb_theta_sigma"]),  # 笔画旋转偏移随机扰动
@@ -791,7 +998,7 @@ async def generate_handwriting_impl(
         report_progress("rendering", "正在生成手写图像", 45)
         # handwrite() 返回惰性 map 对象，只做文本排版（毫秒级），
         # 真正的 CPU 密集渲染在下方 for 循环消费 images 时才触发
-        images = handwrite(text_to_generate, template)
+        images = handwrite_with_page_breaks(text_to_generate, template)
         logger.info("handwrite initial images generated successfully")
         # 创建项目内的临时目录，避免使用系统临时目录
         project_temp_base = "./temp"
@@ -905,13 +1112,11 @@ async def generate_handwriting_impl(
         temp_pdf_file_path = None  # 初始化变量
         report_progress("rendering", "正在生成手写图像", 45)
         # handwrite() 返回惰性 map 对象，CPU 密集渲染在 generate_pdf 内部消费时才触发
-        images = handwrite(text_to_generate, template)
+        images = handwrite_with_page_breaks(text_to_generate, template)
         try:
             report_progress("packaging", "正在导出PDF文件", 92)
             # generate_pdf 会消费惰性 images，渲染在此函数内完成
             temp_pdf_file_path = generate_pdf(images=images)
-            # 将文件路径存储在请求上下文中，以便稍后可以访问它
-            # request.temp_file_path = temp_pdf_file_path  # FastAPI Request 无此属性
             with open(temp_pdf_file_path, "rb") as f:
                 pdf_data = f.read()
             report_progress("finalizing", "正在返回PDF结果", 100)
@@ -1075,6 +1280,15 @@ async def generate_handwriting(
 
 @app.websocket("/api/generate_handwriting/ws/{task_id}")
 async def generate_handwriting_task_websocket(websocket: WebSocket, task_id: str):
+    # WebSocket 不走 HTTP 中间件，也不受 CORS 约束，必须自己校验来源
+    if foreign_origin(
+        websocket.headers.get("origin"),
+        websocket.headers.get("referer"),
+        websocket.headers.get("sec-fetch-site"),
+    ):
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
     await register_task_websocket(task_id, websocket)
     try:
@@ -1139,13 +1353,17 @@ async def get_generate_handwriting_task_result(request: Request, task_id: str):
     if response_body is None:
         response_body = b""
 
+    # 这里**不能** pop 掉任务：GET 带销毁副作用的话，一个跨站的 <img>/<script>
+    # 只要 URL 里带对 task_id 就能把用户的结果吃掉（来源头齐全时会被 foreign_origin
+    # 挡掉，但老浏览器/WebView 可能三个头都不发）。读取保持幂等，回收交给 TTL ——
+    # 「取过但没删」和「压根没取过」走的是同一条 cleanup_expired 路径，磁盘不会多占用。
+    # 顺带也修了重试丢结果的问题：下载中途断线时 axios-retry 会重取，以前第二次必 404。
     response = Response(
         content=response_body,
         media_type=task.get("response_content_type") or "application/octet-stream",
         status_code=task.get("response_status_code") or 200,
         headers=task.get("response_headers") or {},
     )
-    pop_generation_task(task_id)
     return response
 
 
@@ -1258,6 +1476,12 @@ def get_fonts_info():
     if filenames == []:
         return JSONResponse({"error": "fontfile not found"}, status_code=400)
     return JSONResponse(filenames)
+
+
+@app.get("/api/version")
+def get_version():
+    """给前端页面展示的版本号。"""
+    return JSONResponse({"version": app_version})
 
 
 def mysql_operation(image_data):
@@ -1404,9 +1628,50 @@ async def after_request(request: Request, call_next):
         # 仅用于调试 7.13
         # session.clear()
         return response
-    else:
+    # 桌面版没有控制台，跳过逐请求打印
+    if not DESKTOP_MODE:
         print(response)
-        return response
+    return response
+
+
+# ── 桌面版：托管打包进 exe 的前端构建产物 ────────────────────────────
+# 由 desktop_main.py 指向随包分发的 frontend/dist；仓库内运行时不设该变量，
+# 路由行为与改动前完全一致（仍是纯 API 服务，静态资源交给 nginx）。
+DIST_DIR = os.getenv("HANDWRITING_DIST_DIR", "")
+
+
+def _resolve_dist_file(rel_path):
+    """在 DIST_DIR 内解析相对路径并阻止路径穿越，非文件返回 None。"""
+    if not DIST_DIR:
+        return None
+    root = os.path.realpath(DIST_DIR)
+    target = os.path.realpath(os.path.join(root, rel_path))
+    if target != root and not target.startswith(root + os.sep):
+        return None
+    return target if os.path.isfile(target) else None
+
+
+if DIST_DIR and os.path.isdir(DIST_DIR):
+    _NO_STORE = {"Cache-Control": "no-store"}
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        # 未匹配的 /api 路径应返回 404，而不是回落到 index.html
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        file_path = _resolve_dist_file(full_path)
+        if file_path is None:
+            # history 模式路由（/About、/Introduce 等）回落到 index.html
+            index_path = os.path.join(DIST_DIR, "index.html")
+            if not os.path.isfile(index_path):
+                raise HTTPException(status_code=404, detail="Not Found")
+            return FileResponse(index_path, media_type="text/html", headers=_NO_STORE)
+
+        media_type = mimetypes.guess_type(file_path)[0]
+        # index.html 不缓存，与 nginx.conf 的 no-store 保持一致
+        headers = _NO_STORE if os.path.basename(file_path) == "index.html" else None
+        return FileResponse(file_path, media_type=media_type, headers=headers)
 
 
 if __name__ == "__main__":

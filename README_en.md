@@ -21,6 +21,25 @@ Upload your desired background image to add a personal touch to your handwriting
 
 You have full control over various parameters such as margins (top, bottom, left, right) and random perturbation between characters. This allows you to fine-tune the look of your handwritten text.
 
+### Text layout markers
+
+Use standalone markers in the text input to control layout:
+
+- `---` (three or more dashes) forces the following content onto a new page.
+- Prefix a line with `>>>` to right-align it, which is useful for signatures and dates.
+
+For example:
+
+```text
+First page
+---
+Second page
+>>>Signature
+>>>July 27, 2026
+```
+
+The markers control layout and are not printed in the generated handwriting.
+
 ### Extract text from various file types
 
 My site can extract text content from various file types, allowing you to upload text easily.

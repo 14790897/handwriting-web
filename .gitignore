@@ -37,3 +37,6 @@ backend/pandoc-*-macOS.pkg
 *.db
 *.bin
 .workbuddy/memory/*
+# 桌面版打包产物
+desktop/build/
+desktop/dist/

@@ -11,9 +11,21 @@ module.exports = {
       },
     ],
     [
+      "@semantic-release/exec", // 把发版号同步到 desktop/package.json、desktop/package-lock.json、backend/VERSION
+      {
+        prepareCmd: "node scripts/sync-version.js ${nextRelease.version}",
+      },
+    ],
+    [
       "@semantic-release/git", // 推送更新后的版本和 changelog 文件
       {
-        assets: ["CHANGELOG.md", "package.json"],
+        assets: [
+          "CHANGELOG.md",
+          "package.json",
+          "desktop/package.json",
+          "desktop/package-lock.json",
+          "backend/VERSION",
+        ],
         message: "chore(release): ${nextRelease.version} [skip ci]",
       },
     ],
