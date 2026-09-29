@@ -9,7 +9,10 @@
       <div v-if="uploadMessage" class="alert alert-info" role="alert" data-testid="message-upload">
         {{ uploadMessage }}
       </div>
-    </div> 
+      <!-- 供 e2e 核对实际交付的 PDF 体积，平时不占位（见 e2e/tests/home-generate.spec.js） -->
+      <span v-if="lastPdfDownloadBytes > 0" data-testid="pdf-download-bytes" style="display: none;">{{
+        lastPdfDownloadBytes }}</span>
+    </div>
 
     <div id="form">
       <div class="container_file row">
@@ -406,6 +409,7 @@ export default {
       errorMessage: '',  // 错误消息
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
+      lastPdfDownloadBytes: 0,  // 最近一次 PDF 下载的字节数，供 e2e 核对
       selectedFontFileName: '',
       selectedImageFileName: '',
       //字体下拉选框
@@ -1072,7 +1076,8 @@ export default {
 
       } else if (contentType.includes('application/pdf')) {
         // 处理.pdf文件
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', 'images.pdf'); // 或任何其他文件名
@@ -1080,6 +1085,8 @@ export default {
         link.click();
         // 下载完成后，将链接删除
         document.body.removeChild(link);
+        // e2e 靠这个数字核对实际交付的 PDF 体积（见 e2e/tests/home-generate.spec.js）
+        this.lastPdfDownloadBytes = pdfBlob.size;
         // 设置提示信息
         this.message = '文件已下载。';
         this.uploadMessage = '';
