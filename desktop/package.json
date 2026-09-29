@@ -1,12 +1,14 @@
 {
   "name": "handwriting-desktop",
-  "version": "1.0.0",
+  "version": "1.30.1",
   "private": true,
   "description": "手写体生成器桌面版（Electron 外壳 + 内置后端）",
   "author": "liuweiqing",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "bash build.sh",
+    "build:app": "bash build.sh --app-only",
     "pack": "electron-builder --win --dir",
     "dist": "electron-builder --win"
   },
@@ -36,11 +38,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
