@@ -57,7 +57,10 @@ handwriting-web/
 cd frontend && npm run serve
 
 # 后端 (端口 5005, 热重载)
-cd backend && uvicorn app:app --reload --host 0.0.0.0 --port 5005
+# 必须用仓库根的 venv, 不要用系统 Python —— 系统环境 fastapi 0.115.6 + starlette 1.3.1 起不来,
+# 报 TypeError: Router.__init__() got an unexpected keyword argument 'on_startup'
+cd backend && ../venv/Scripts/python.exe -m uvicorn app:app --reload --host 0.0.0.0 --port 5005
+#            Linux/macOS 换成 ../venv/bin/python
 
 # 或使用 VS Code Tasks:
 #   "⚡ 全栈开发 - 同时启动前后端"
@@ -71,10 +74,30 @@ cd e2e && npm test
 - **Commit message**: 必须遵循 [Conventional Commits](https://www.conventionalcommits.org/) (`feat:` / `fix:` / `chore:` 等)，semantic-release 靠它决定版本号
 - **分支**: 只推到 `main`，不要直接 push（通过 PR）
 - **i18n**: 所有用户可见文字必须同时提供中英文翻译，在 `frontend/src/i18n.js` 中添加
+- **UI 风格**: 新增/改版的界面必须复用站点既有设计语言，不要自带一套配色 —— 主按钮 `#007BFF`（hover `#0056b3`、active `#003d73`）、圆角 `5px`、字体沿用全局 `Avenir, Helvetica, Arial, sans-serif`、面板阴影 `0 2px 5px rgba(0,0,0,0.1)`、输入框边框 `1px solid #ddd`。参考 `HomeView.vue` 的 `.buttons button`
 - **E2E 选择器**: 需要被 `e2e/` 测试点到的元素统一加 `data-testid`，测试侧只用 `getByTestId`，不要依赖中文文案或 CSS 类
 - **注释**: 后端使用中文注释，标注日期
 - **Lint**: 前端保存前自动 lint (`lint-staged` + ESLint + Prettier)
 - **不要手动改** `CHANGELOG.md` 和版本号，由 semantic-release 自动管理
+
+## 维护者工作流：外部 PR 与截图
+
+> 来自 2026-09-28 处理贡献者 fork PR (#66/#67) 的实操经验。
+
+**推送权限只覆盖 PR 头分支**
+
+- `gh api repos/<fork> --jq .permissions.push` 返回 `false` **不代表不能推** —— 只要 PR 开了 `maintainerCanModify`（allow edits by maintainers），维护者就能推到该 PR 的**头分支**：
+  `git push https://github.com/<fork-owner>/handwriting-web.git HEAD:refs/heads/<branch>`
+- 但该权限**仅限头分支**：fork 上的其他分支（如截图用的 `pr-assets`）推送会被拒 `permission denied`
+- `git push --dry-run` **不可靠** —— 对它报成功的分支，真实推送仍可能被拒
+
+**截图只能靠「推分支 + raw 链接」**
+
+GitHub 没有给 token 用的图片上传接口：网页版拖拽上传走的是网页会话专属的 `uploads.github.com/user-attachments/assets`（token 调用返回 404），策略接口 `github.com/upload/policies/assets` 同样只认网页会话。所以可行做法只有一条：
+
+- 图片推到某个公开分支，再用 `raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/<path>` 引用
+- 必须用 **commit SHA**，不要用分支名 —— 分支一改写，链接就失效
+- 贡献者 ejjcc 的 fork 上有 `pr-assets` 分支按 PR 分目录存图（`pr-assets/<slug>/<name>.png`），但维护者推不了它；维护者自己加图改用**主仓库**的 `pr-assets` 分支（孤儿提交，只含图片，不带整棵树）
 
 ## 重要注意事项
 
