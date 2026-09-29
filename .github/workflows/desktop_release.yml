@@ -1,0 +1,109 @@
+# 发版后自动构建 Windows 桌面版，并把安装包 / 便携版挂到对应的 GitHub Release 上。
+#
+# 为什么用 workflow_run 而不是 release: published / push: tags：
+# semantic-release 是用 token 创建 release 的，而 token 触发的 push / release 事件
+# 默认不会再触发新的工作流（GitHub 防递归）。workflow_run 以「另一个工作流跑完」
+# 为触发条件，不受该限制，所以不依赖 secrets.GH_TOKEN 是不是 PAT 都能生效。
+#
+# 前提：本文件必须在默认分支上才会被 workflow_run 触发。
+name: Desktop Release Assets
+
+on:
+  workflow_run:
+    workflows: ["Semantic Release"]
+    types: [completed]
+    branches: [main]
+  # 手动补传历史版本：Actions 页面 Run workflow，填上 tag
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 要补传产物的 tag（例如 v1.31.0）
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+
+jobs:
+  build-desktop:
+    # 没有新版本时不构建（省掉一次十几分钟的 Windows 构建）
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 解析本次要上传的 tag
+        id: tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_TAG: ${{ inputs.tag }}
+          RUN_CREATED_AT: ${{ github.event.workflow_run.created_at }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MANUAL_TAG:-}" ]; then
+            echo "手动指定 tag=${MANUAL_TAG}"
+            echo "tag=${MANUAL_TAG}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # semantic-release 走 API 建 release，本地不一定有 tag，所以从 API 取最新一条，
+          # 再用创建时间判断它是不是这次工作流产出的 —— 没有新版本时不要往旧 release 上补传
+          read -r LATEST CREATED < <(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" \
+            --jq '[.tag_name, .created_at] | @tsv')
+          echo "最新 release: ${LATEST} (${CREATED})；本次工作流开始于 ${RUN_CREATED_AT}"
+          if [[ "${CREATED}" > "${RUN_CREATED_AT}" ]]; then
+            echo "tag=${LATEST}" >> "$GITHUB_OUTPUT"
+          else
+            echo "本次没有产生新版本，跳过桌面版构建"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.tag.outputs.tag != ''
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        if: steps.tag.outputs.tag != ''
+        with:
+          node-version: "20"
+
+      # build.sh 只装构建期依赖，运行期依赖要在这里先装好
+      - name: 安装 Python 依赖
+        if: steps.tag.outputs.tag != ''
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt -r desktop/requirements-build.txt
+
+      - name: 构建桌面版（前端 dist → 后端 exe → 安装包）
+        if: steps.tag.outputs.tag != ''
+        shell: bash
+        env:
+          PYTHON: python
+        run: bash desktop/build.sh
+
+      - name: 挂到 Release 上
+        if: steps.tag.outputs.tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(desktop/build/installer/*.exe)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "没有找到构建产物 desktop/build/installer/*.exe" >&2
+            exit 1
+          fi
+          printf '上传到 %s:\n' "$TAG"
+          printf '  %s\n' "${files[@]}"
+          gh release upload "$TAG" "${files[@]}" --clobber
