@@ -106,14 +106,5 @@ button:hover {
   overflow: hidden;
 }
 
-/* 小屏：顶栏操作按钮会换行铺满整行，toast 改贴屏幕底部，避免盖住按钮。
-   容器是 100% 高的固定网格，所以不能改容器位置，直接把弹窗对齐到底部。 */
-@media (max-width: 1000px) {
-  body.swal2-toast-shown .swal2-container.swal2-top-end .swal2-popup.swal2-toast {
-    align-self: end;
-    margin-bottom: 1rem;
-  }
-}
-
 </style>
 

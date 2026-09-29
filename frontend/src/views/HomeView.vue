@@ -1,7 +1,7 @@
 <template>
   <div id="app-shell" :class="{ 'legacy-mode': legacyLayout }">
     <!-- 顶部操作栏：设置存取 + 生成操作 -->
-    <header class="app-header">
+    <header class="app-header" data-testid="app-header">
       <div class="header-bar">
         <div class="app-title">{{ $t('message.appTitle') }}</div>
         <div class="header-actions">
@@ -48,9 +48,9 @@
     </header>
 
     <!-- 三栏工作区：左=参数，中=正文，右=预览 -->
-    <div v-if="!legacyLayout" class="workspace">
+    <div v-if="!legacyLayout" class="workspace" data-testid="workspace">
       <!-- 左栏：参数设置 -->
-      <aside class="panel panel-settings">
+      <aside class="panel panel-settings" data-testid="panel-settings">
         <h2 class="panel-title">{{ $t('message.settingsPanel') }}</h2>
 
         <label class="field-label" for="fontSelect">{{ $t('message.fontFile') }}:</label>
@@ -102,7 +102,7 @@
 
         <div class="check-container">
           <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2" v-model="isUnderlined">
-          <label for="optionUnderline">增加下划线</label>
+          <label for="optionUnderline">{{ $t('message.underline') }}</label>
         </div>
 
         <div class="check-container">
@@ -239,7 +239,7 @@
       </aside>
 
       <!-- 中栏：正文 -->
-      <main class="panel panel-text">
+      <main class="panel panel-text" data-testid="panel-text">
         <h2 class="panel-title">{{ $t('message.text') }}</h2>
 
         <TextInput class="text-input-fill" ref="textInputComp" @childEvent="(eventData) => { this.text = eventData }"
@@ -256,30 +256,13 @@
           </button>
         </div>
 
-        <!-- 生成状态提示 -->
-        <div v-if="isGenerating || isInCooldownPeriod" class="generation-status" data-testid="generation-status">
-          <div v-if="isGenerating" class="status-generating" data-testid="status-generating">
-            🔄 正在生成中，请稍候...
-          </div>
-          <div v-else-if="isInCooldownPeriod" class="status-cooldown" data-testid="status-cooldown">
-            ⏳ 冷却中，还需等待 {{ remainingCooldown }} 秒
-          </div>
-        </div>
-
-        <!-- 页数提示 -->
-        <div v-if="isProductionSite() && text && text.length > 0" class="page-info-alert">
-          <div class="alert alert-warning" style="margin: 10px 0; font-size: 14px;">
-            <strong>📄 页数提示：</strong>
-            预计生成 <strong>{{ estimatePageCount() }}</strong> 页
-            <span v-if="estimatePageCount() > 10" style="color: #d63384;">
-              （handwrite.14790897.xyz限制一次最多10页，超出部分将被截断）
-            </span>
-          </div>
-        </div>
+        <!-- 生成状态提示与页数提示（新旧两版共用同一个组件） -->
+        <GenerationStatus :generating="isGenerating" :cooldown-seconds="remainingCooldown"
+          :page-count="estimatedPages" />
       </main>
 
       <!-- 右栏：预览 -->
-      <section class="panel panel-preview" data-testid="preview-area">
+      <section class="panel panel-preview" data-testid="panel-preview">
         <h2 class="panel-title">{{ $t('message.preview') }}</h2>
 
         <div class="preview-container text-center">
@@ -287,14 +270,14 @@
           <div v-if="previewImages && previewImages.length > 1" class="preview-nav">
             <button @click="prevPage" data-testid="preview-prev-btn" class="btn btn-outline-primary btn-sm"
               :disabled="currentPreviewIndex === 0">
-              &larr; 上一页
+              &larr; {{ $t('message.prevPage') }}
             </button>
             <span class="preview-page-indicator" data-testid="preview-page-indicator">
-              第 {{ currentPreviewIndex + 1 }} 页 / 共 {{ previewImages.length }} 页
+              {{ $t('message.pageIndicator', { current: currentPreviewIndex + 1, total: previewImages.length }) }}
             </span>
             <button @click="nextPage" data-testid="preview-next-btn" class="btn btn-outline-primary btn-sm"
               :disabled="currentPreviewIndex === previewImages.length - 1">
-              下一页 &rarr;
+              {{ $t('message.nextPage') }} &rarr;
             </button>
           </div>
 
@@ -310,7 +293,7 @@
     </div>
 
     <!-- 旧版布局：改造前的表单 + 右侧预览，可用顶栏「旧版界面」按钮切回 -->
-    <div v-else class="legacy-root">
+    <div v-else class="legacy-root" data-testid="legacy-layout">
       <div id="form">
         <div class="container_file row">
 
@@ -387,7 +370,7 @@
 
         <input class="optionUnderline" type="checkbox" id="optionUnderline" name="option2" value="value2"
           v-model="isUnderlined">
-        <label for="optionUnderline" style="margin-right: 0px;">增加下划线</label>
+        <label for="optionUnderline" style="margin-right: 0px;">{{ $t('message.underline') }}</label>
 
         <input class="optionEnglishSpacing" type="checkbox" id="optionEnglishSpacing" name="optionEnglishSpacing"
           value="englishSpacing" v-model="enableEnglishSpacing">
@@ -527,6 +510,10 @@
         </div>
       </div>
 
+      <!-- 生成状态与页数提示：和改造前一样，旧版里也要显示 -->
+      <GenerationStatus :generating="isGenerating" :cooldown-seconds="remainingCooldown"
+        :page-count="estimatedPages" />
+
       <div class="preview" data-testid="preview-area">
         <h2 v-if="!previewImages || previewImages.length === 0">{{ $t('message.preview') }}:</h2>
 
@@ -535,14 +522,14 @@
             class="mb-3 d-flex justify-content-center align-items-center gap-3">
             <button @click="prevPage" data-testid="preview-prev-btn" class="btn btn-outline-primary btn-sm"
               :disabled="currentPreviewIndex === 0">
-              &larr; 上一页
+              &larr; {{ $t('message.prevPage') }}
             </button>
             <span class="mx-3 font-weight-bold" data-testid="preview-page-indicator">
-              第 {{ currentPreviewIndex + 1 }} 页 / 共 {{ previewImages.length }} 页
+              {{ $t('message.pageIndicator', { current: currentPreviewIndex + 1, total: previewImages.length }) }}
             </span>
             <button @click="nextPage" data-testid="preview-next-btn" class="btn btn-outline-primary btn-sm"
               :disabled="currentPreviewIndex === previewImages.length - 1">
-              下一页 &rarr;
+              {{ $t('message.nextPage') }} &rarr;
             </button>
           </div>
 
@@ -560,7 +547,7 @@
     <ChineseLetterFormatter v-if="showLetterFormatter" :source-text="text" @close="showLetterFormatter = false"
       @apply="applyLetterFormatting" />
 
-    <footer class="footer mt-auto py-3 bg-white">
+    <footer class="footer mt-auto py-3 bg-white" data-testid="site-footer">
       <div class="container text-center">
         <!-- <a href="mailto:14790897abc@gmail.com" class="text-info">14790897abc@gmail.com</a> -->
         <span class="text-black">{{ $t('message.projectAddress') }}:</span>
@@ -576,6 +563,7 @@
 import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import ChineseLetterFormatter from '../components/ChineseLetterFormatter.vue';
+import GenerationStatus from '../components/GenerationStatus.vue';
 import Swal from 'sweetalert2';
 
 const BUILTIN_PRESETS = {
@@ -621,6 +609,7 @@ export default {
   components: {
     TextInput,
     ChineseLetterFormatter,
+    GenerationStatus,
 
   },
 
@@ -691,6 +680,7 @@ export default {
     };
   },
   created() {
+    window.addEventListener('handwriting-text-loaded', this.onTextLoaded);
 
     const savedPreset = localStorage.getItem('selectedPreset');
     if (savedPreset !== null && savedPreset !== "undefined") {
@@ -781,6 +771,13 @@ export default {
     isDevEnv() {
       return process.env.NODE_ENV === 'development';
     },
+    // 页数提示只在生产站点显示；用 computed 避免模板里反复调用 estimatePageCount()
+    estimatedPages() {
+      if (!this.isProductionSite() || !this.text || this.text.length === 0) {
+        return 0;
+      }
+      return this.estimatePageCount();
+    },
     presetOptionsReady() {
       const preset = this.builtinPresets.smallUnderlined;
       return Array.isArray(this.options) && this.options.some(option => option.text === preset.fontName);
@@ -800,11 +797,9 @@ export default {
     errorMessage(newVal) {
       if (newVal) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'error',
           title: newVal,
-          showConfirmButton: false,
           timer: 5000,
           timerProgressBar: true,
         });
@@ -813,11 +808,9 @@ export default {
     message(newVal) {
       if (newVal) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'success',
           title: newVal,
-          showConfirmButton: false,
           timer: 3000,
           timerProgressBar: true,
         });
@@ -826,11 +819,9 @@ export default {
     uploadMessage(newVal) {
       if (newVal) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'info',
           title: newVal,
-          showConfirmButton: false,
           timer: false, // 上传提示保持显示
           showClass: { popup: 'swal2-show' },
           hideClass: { popup: 'swal2-hide' },
@@ -840,14 +831,7 @@ export default {
     queueFullCountdown(newVal) {
       if (newVal > 0) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'warning',
-          title: `服务器繁忙，队列已满，预计 ${newVal} 秒后可重试`,
-          showConfirmButton: false,
-          timer: newVal * 1000,
-          timerProgressBar: true,
-          didOpen: (toast) => {
+          ...this.toastBase((toast) => {
             const progressBar = toast.querySelector('.swal2-timer-progress-bar');
             if (progressBar && this.queueFullTotal > 0) {
               // 更新进度条
@@ -860,7 +844,11 @@ export default {
               };
               requestAnimationFrame(updateProgress);
             }
-          },
+          }),
+          icon: 'warning',
+          title: `服务器繁忙，队列已满，预计 ${newVal} 秒后可重试`,
+          timer: newVal * 1000,
+          timerProgressBar: true,
         });
       }
     },
@@ -1056,16 +1044,32 @@ export default {
     openLetterFormatter() {
       if (!this.text || !this.text.trim()) {
         this.$swal.fire({
-          toast: true,
-          position: 'top-end',
+          ...this.toastBase(),
           icon: 'info',
           title: this.$t('message.letterTextRequired'),
-          showConfirmButton: false,
           timer: 2200,
         });
         return;
       }
       this.showLetterFormatter = true;
+    },
+    // 顶栏操作按钮排在页面顶部，toast 固定在右上角会盖住按钮、吞掉点击。
+    // 实测按钮行最右端约 1060px，加上 toast 自身 360px 宽，所以 1440px 以下改贴右下角。
+    toastPosition() {
+      return window.innerWidth <= 1440 ? 'bottom-end' : 'top-end';
+    },
+    // toast 的公共配置；didOpen 回调可选，用于叠加自定义逻辑（如队列满的进度条）
+    toastBase(didOpen) {
+      return {
+        toast: true,
+        position: this.toastPosition(),
+        showConfirmButton: false,
+        didOpen: (toast) => {
+          // 供 e2e 选择，不依赖 SweetAlert 自己的类名
+          toast.setAttribute('data-testid', 'app-toast');
+          if (didOpen) didOpen(toast);
+        },
+      };
     },
     applyLetterFormatting(formattedText) {
       const textInput = this.$refs.textInputComp;
@@ -1088,6 +1092,17 @@ export default {
     },
     clearLetterFormatBackup() {
       this.letterFormatBackup = null;
+    },
+    // 文本文件上传是异步的；上传途中切换布局会重建 TextInput，旧实例的 emit 会被 Vue 丢弃，
+    // 所以由 TextInput 广播事件，这里再把结果喂给当前活着的输入框（见 TextInput.uploadFile）
+    onTextLoaded(event) {
+      const loadedText = event.detail;
+      if (typeof loadedText !== 'string') return;
+      this.text = loadedText;
+      const input = this.$refs.textInputComp;
+      if (input && typeof input.replaceText === 'function' && input.text !== loadedText) {
+        input.replaceText(loadedText);
+      }
     },
     clearSelectedPreset() {
       this.selectedPreset = '';
@@ -1983,6 +1998,8 @@ export default {
 
   // 组件销毁时清理定时器
   beforeUnmount() {
+    window.removeEventListener('handwriting-text-loaded', this.onTextLoaded);
+
     if (this.cooldownTimer) {
       clearInterval(this.cooldownTimer);
       this.cooldownTimer = null;
@@ -1998,8 +2015,15 @@ export default {
 #app-shell {
   display: flex;
   flex-direction: column;
-  /* 固定为一屏高，工作区拿剩余空间，三栏在各自高度内滚动，整页不滚动 */
+  /* 固定为一屏高，工作区拿剩余空间，三栏在各自高度内滚动，整页不滚动。
+     dvh 让带动态工具栏的移动浏览器（宽度 >1000px 的平板）也算得对可视高度，
+     不支持的浏览器忽略这一行、回落到 100vh。 */
   height: 100vh;
+  height: 100dvh;
+}
+
+/* 只有新版三栏需要左对齐；旧版沿用全局 #app 的居中对齐 */
+#app-shell:not(.legacy-mode) {
   text-align: left;
 }
 
@@ -2009,7 +2033,7 @@ export default {
   z-index: 20;
   padding: 10px 20px;
   background: #fff;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .header-bar {
@@ -2085,8 +2109,8 @@ export default {
 }
 
 .action-btn.primary:hover:not(:disabled) {
-  background: #0069d9;
-  border-color: #0069d9;
+  background: #0056b3;
+  border-color: #0056b3;
 }
 
 .action-btn.secondary:hover:not(:disabled) {
@@ -2100,6 +2124,11 @@ export default {
 
 .action-btn:active:not(:disabled) {
   transform: scale(0.96);
+}
+
+.action-btn.primary:active:not(:disabled) {
+  background: #003d73;
+  border-color: #003d73;
 }
 
 .action-btn:disabled {
@@ -2134,9 +2163,9 @@ export default {
 .panel {
   padding: 14px 16px;
   background: #fff;
-  border: 1px solid #e6e8eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
   /* 高度由工作区剩余空间决定，内容超出时本栏自己滚动 */
   max-height: 100%;
@@ -2189,17 +2218,18 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* 高级参数卡片：标签与输入框上下排列，宽度占满 */
-#collapseContent .label-container {
+/* 高级参数卡片：标签与输入框上下排列，宽度占满。
+   限定在左栏里，否则同为 #collapseContent 的旧版分支会被一起改掉 */
+.panel-settings #collapseContent .label-container {
   display: block;
 }
 
-#collapseContent .label-container label {
+.panel-settings #collapseContent .label-container label {
   display: block;
   white-space: normal;
 }
 
-#collapseContent .label-container input {
+.panel-settings #collapseContent .label-container input {
   width: 100%;
   margin-top: 4px;
 }
@@ -2246,7 +2276,7 @@ export default {
   position: relative;
 }
 
-.preset-row {
+.panel-settings .preset-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2255,13 +2285,13 @@ export default {
   border-top: 1px solid #eef0f2;
 }
 
-.preset-row label {
+.panel-settings .preset-row label {
   margin: 0;
   font-size: 0.9rem;
   white-space: nowrap;
 }
 
-.preset-row .styled-select {
+.panel-settings .preset-row .styled-select {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -2272,10 +2302,28 @@ export default {
   flex-direction: column;
 }
 
-/* 正文输入区撑满中栏剩余高度 */
-.text-input-fill {
+/* 正文输入区撑满中栏剩余高度。
+   用 id + 类提高优先级，覆盖 TextInput 自己的 #text_file_select 规则；
+   旧版分支不挂 .text-input-fill，保持改造前那个 400px 居中窄栏。 */
+#text_file_select.text-input-fill {
   flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
   min-height: 320px;
+  margin: 0;
+}
+
+#text_file_select.text-input-fill :deep(#textArea) {
+  flex: 1 1 auto;
+  min-height: 240px;
+  font-size: 1rem;
+  line-height: 1.8;
+  resize: vertical;
+}
+
+/* 中栏标题已经说明这是正文栏，隐藏重复的字段标签；旧版仍显示「文字:」 */
+#text_file_select.text-input-fill :deep(.text-field-label) {
+  display: none;
 }
 
 .letter-format-actions {
@@ -2502,28 +2550,8 @@ input[type="file"]:hover {
 }
 
 /* 生成状态提示样式 */
-.generation-status {
-  margin: 15px 0;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-  font-weight: bold;
-  animation: pulse 2s infinite;
-}
-
-.status-generating {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #bbdefb;
-}
-
-.status-cooldown {
-  background-color: #fff3e0;
-  color: #f57c00;
-  border: 1px solid #ffcc02;
-}
-
 /* 队列已满提示 - 已迁移到 Swal Toast */
+/* 生成状态/页数提示的样式已随组件移到 components/GenerationStatus.vue */
 
 /* ===== 旧版布局：顶栏「旧版界面」按钮切回，样式沿用改造前那一套 ===== */
 #app-shell.legacy-mode {
@@ -2538,6 +2566,12 @@ input[type="file"]:hover {
   grid-template-columns: 1fr 2fr;
   flex: 1 1 auto;
   box-sizing: border-box;
+  /* 改造前这层是 Bootstrap 的 .container（居中限宽）。换成 .legacy-root 后要自己补回来，
+     否则宽屏下旧版整页铺满，还会和仍用 .container 的页脚对不齐 */
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 12px;
 }
 
 .legacy-root #form {
@@ -2613,6 +2647,24 @@ input[type="file"]:hover {
   margin: 10px auto 0;
 }
 
+/* 旧版的内置预设行沿用改造前的居中样式（新版左栏那套带分隔线的写在 .panel-settings 下） */
+.legacy-root .preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.legacy-root .preset-row label {
+  margin: 0;
+}
+
+.legacy-root .preset-row .styled-select {
+  min-width: 220px;
+}
+
 .legacy-root .preview {
   grid-area: image;
   padding: 20px;
@@ -2663,7 +2715,7 @@ input[type="file"]:hover {
   .panel-settings .font-selection,
   .panel-settings .image-container,
   .panel-settings .advanced-toggle,
-  .preset-row {
+  .panel-settings .preset-row {
     max-width: 420px;
   }
 }
