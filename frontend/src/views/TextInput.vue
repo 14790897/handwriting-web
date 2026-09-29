@@ -1,12 +1,11 @@
 <template>
-    <div id='text_file_select' class="d-flex justify-content-between">
-        <label for="textArea">{{ $t('message.text') }}:</label>
+    <div id='text_file_select' class="d-flex">
         <textarea id="textArea" class="form-control" v-model="text" data-testid="text-input" @input="handleManualInput"
-            :placeholder="$t('message.enterText')"></textarea>
+            :aria-label="$t('message.text')" :placeholder="$t('message.enterText')"></textarea>
 
         <label for="textFileInput">{{ $t('message.orUploadDocument') }}:</label>
         <div class="file_select_container">
-            <button @click="triggerTextFileInput" class="mx-auto" data-testid="text-file-btn">{{ $t('message.chooseFile') }}</button>
+            <button @click="triggerTextFileInput" data-testid="text-file-btn">{{ $t('message.chooseFile') }}</button>
             <span class="border p-2 text-primary " v-if="selectedTextFileName"
                 data-testid="text-file-name">{{ selectedTextFileName }}</span>
             <label>
@@ -105,8 +104,19 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-width: 400px;
-    margin: auto;
+    width: 100%;
+    text-align: left;
+}
+
+/* 中栏的正文输入框：占满列宽，纵向占满剩余空间，可手动拉伸 */
+#textArea {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 240px;
+    padding: 12px;
+    font-size: 1rem;
+    line-height: 1.8;
+    resize: vertical;
 }
 
 

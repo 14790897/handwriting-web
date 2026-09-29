@@ -4,6 +4,8 @@ const messages = {
   en: {
     message: {
       hello: "Hello world",
+      appTitle: "Handwriting Generator",
+      settingsPanel: "Settings",
       login: "Login",
       loginfailed: "Login failed. Please check your username and password.",
       register: "Register",
@@ -97,6 +99,8 @@ const messages = {
   cn: {
     message: {
       hello: "你好",
+      appTitle: "手写体生成器",
+      settingsPanel: "参数设置",
       login: "登录",
       loginfailed: "登录失败，请检查用户名和密码。",
       register: "注册",
