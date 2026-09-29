@@ -36,8 +36,14 @@ jobs:
           python -m pip install --upgrade pip  # 升级 pip
           pip install -r requirements.txt
 
-      # Step 5: 运行测试文件
-      - name: Run tests
+      # Step 5: 运行 backend/tests/ 下的单元测试
+      # pytest.ini 已把需要真实服务的压测（-m load）反选掉，CI 只跑不需要服务的部分
+      - name: Run unit tests
+        working-directory: backend
+        run: python -m pytest tests/ -q
+
+      # Step 6: 冒烟启动 —— 能跑满 60s 被 timeout 杀掉（退出码 124）视为通过
+      - name: Smoke-test app boot
         run: |
           cd backend
             timeout 60s python app.py || EXIT_CODE=$? && if [ $EXIT_CODE -eq 124 ]; then exit 0; else exit $EXIT_CODE; fi
