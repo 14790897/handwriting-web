@@ -1,3 +1,10 @@
+## [1.32.1](https://github.com/14790897/handwriting-web/compare/v1.32.0...v1.32.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **desktop:** 构建脚本里的 Python 输出强制走 UTF-8，修发版构建失败 ([#79](https://github.com/14790897/handwriting-web/issues/79)) ([739803b](https://github.com/14790897/handwriting-web/commit/739803b5cfe6bc8db862a057d64eb80134894d0e))
+
 # [1.32.0](https://github.com/14790897/handwriting-web/compare/v1.31.0...v1.32.0) (2026-09-29)
 
 
