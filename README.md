@@ -128,6 +128,30 @@ npm run serve
 
 4. 打开浏览器，输入 http://localhost:8080 ，即可访问网站
 
+### E2E 测试（Playwright）
+
+`e2e/` 目录是端到端测试套件，用真实前后端跑完整流程（真实渲染手写图片、下载附件），少数难以真实触发的分支（队列满 503 等）用路由拦截模拟。
+
+首次运行先装依赖和浏览器（需要 Node.js 20 或更高，Playwright 的要求）：
+
+```shell
+cd e2e
+npm install
+npx playwright install chromium
+```
+
+然后直接在 `e2e` 目录下运行（会自动拉起后端 5005 和前端 8080，跑完自动关掉）：
+
+```shell
+npm test
+```
+
+- 需要数据库/依赖已就绪的后端解释器：脚本会自动探测仓库根目录的 `venv`，探测不到时用 `E2E_PYTHON` 指定，例如 `E2E_PYTHON=./venv/Scripts/python.exe npm test`
+- 本地已在跑的开发服务器会被直接复用，不会重复启动
+- 测试时会设置 `CPU_USAGE_LIMIT=100`，避免开发机被 webpack/浏览器占满 CPU 时误触发后端的过载保护（429）
+- 失败时的截图、录像和 trace 在 `e2e/test-results/`，HTML 报告用 `npm run report` 打开
+- 每次 PR 会由 `.github/workflows/e2e.yml` 自动跑一遍
+
 ## 后端架构
 
 ### 整体流程

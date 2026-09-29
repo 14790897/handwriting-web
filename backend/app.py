@@ -680,8 +680,11 @@ async def generate_handwriting_impl(
 
     report_progress("system_check", "正在检查服务器负载", 10)
     cpu_usage = psutil.cpu_percent(interval=1)  # 获取 CPU 使用率，1 秒采样间隔
-    if cpu_usage > 90:
-        # 如果 CPU 使用率超过 90%，返回提醒
+    # 2026-09-29: 阈值可配置，E2E 测试在开发机上跑时 CPU 常被 webpack/浏览器占满，
+    # 会把 429 当成任务结果回放给前端，测试里用 CPU_USAGE_LIMIT=100 放宽
+    cpu_usage_limit = float(os.getenv("CPU_USAGE_LIMIT", "90"))
+    if cpu_usage > cpu_usage_limit:
+        # 如果 CPU 使用率超过阈值，返回提醒
         return JSONResponse(
             {
                 "status": "waiting",
