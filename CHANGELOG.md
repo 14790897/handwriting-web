@@ -1,3 +1,10 @@
+## [1.30.1](https://github.com/14790897/handwriting-web/compare/v1.30.0...v1.30.1) (2026-09-29)
+
+
+### Performance Improvements
+
+* shrink PDF exports by lowering the embedded JPEG quality ([#61](https://github.com/14790897/handwriting-web/issues/61)) ([45c9f9e](https://github.com/14790897/handwriting-web/commit/45c9f9e77ab3d3bc5fb1821f7754b00ca70fb833))
+
 # [1.30.0](https://github.com/14790897/handwriting-web/compare/v1.29.0...v1.30.0) (2026-09-29)
 
 
