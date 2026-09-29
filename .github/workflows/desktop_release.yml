@@ -61,14 +61,24 @@ jobs:
           # semantic-release 走 API 建 release，本地不一定有 tag，所以从 API 取。
           # 注意：release 的 created_at 是**目标提交的日期**，不是发布时间 —— 用它
           # 判断「是不是这次工作流产出的」会漏判；要用 published_at。
-          read -r LATEST <<< "$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
+          PUBLISHED="$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=10" \
             --jq "[.[] | select(.published_at > \"${RUN_CREATED_AT}\")] | first | .tag_name // \"\"")"
-          if [ -n "${LATEST}" ]; then
-            echo "本次发布的 tag=${LATEST}"
-            echo "tag=${LATEST}" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "${PUBLISHED}" ]; then
             echo "本次没有产生新版本，跳过桌面版构建"
+            exit 0
           fi
+
+          # 光凭发布时间还不能确定这个 release 就是本次运行的产物（并发运行时可能
+          # 挑到别人的）。再加一条硬约束：上传目标的版本必须和检出代码的版本一致 ——
+          # 产物文件名里也带这个版本号，所以旧构建不可能被挂到新 release 上。
+          # 版本号由 scripts/sync-version.js 在发版时写进 backend/VERSION。
+          VERSION="$(tr -d '[:space:]' < backend/VERSION)"
+          if [ "v${VERSION}" != "${PUBLISHED}" ]; then
+            echo "::error::检出代码是 v${VERSION}，但本次发布的 release 是 ${PUBLISHED}，版本不一致，拒绝上传"
+            exit 1
+          fi
+          echo "本次发布的 tag=${PUBLISHED}（与检出代码 v${VERSION} 一致）"
+          echo "tag=${PUBLISHED}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         if: steps.tag.outputs.tag != ''
