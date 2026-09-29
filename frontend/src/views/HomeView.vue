@@ -1732,7 +1732,8 @@ export default {
 #app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* 固定为一屏高，工作区拿剩余空间，三栏在各自高度内滚动，整页不滚动 */
+  height: 100vh;
   text-align: left;
 }
 
@@ -1855,7 +1856,9 @@ export default {
 
 /* ===== 三栏工作区 ===== */
 .workspace {
-  flex: 1;
+  flex: 1 1 auto;
+  /* 允许在工作区内部收缩：顶栏变高（例如出现提示条）时让三栏变矮，而不是把整页撑出滚动条 */
+  min-height: 0;
   display: grid;
   grid-template-columns: 300px minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 16px;
@@ -1869,8 +1872,8 @@ export default {
   border-radius: 8px;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
   box-sizing: border-box;
-  /* 留出顶栏、页脚和间距，三栏各自滚动，整页不滚动 */
-  max-height: calc(100vh - 200px);
+  /* 高度由工作区剩余空间决定，内容超出时本栏自己滚动 */
+  max-height: 100%;
   overflow-y: auto;
 }
 
@@ -2256,8 +2259,13 @@ input[type="file"]:hover {
 
 /* 队列已满提示 - 已迁移到 Swal Toast */
 
-/* 窄屏：三栏堆叠成单栏，不再限制高度 */
+/* 窄屏：三栏堆叠成单栏，恢复整页滚动，不再限制每栏高度 */
 @media (max-width: 1000px) {
+  #app-shell {
+    height: auto;
+    min-height: 100vh;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
   }
