@@ -2,16 +2,22 @@ const { test, expect, openHome, fillText, useSmallCanvas, expectPreviewImageLoad
 
 const layoutMetrics = (page) =>
   page.evaluate(() => {
-    const panels = [...document.querySelectorAll(".panel")];
+    const panels = [
+      '[data-testid="panel-settings"]',
+      '[data-testid="panel-text"]',
+      '[data-testid="panel-preview"]',
+    ].map((selector) => document.querySelector(selector));
+    const workspace = document.querySelector('[data-testid="workspace"]');
+    const header = document.querySelector('[data-testid="app-header"]');
     return {
-      columns: getComputedStyle(document.querySelector(".workspace")).gridTemplateColumns.split(" ").length,
+      columns: getComputedStyle(workspace).gridTemplateColumns.split(" ").length,
       pageScrolls: document.documentElement.scrollHeight > window.innerHeight + 1,
       horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       panelHeights: panels.map((el) => Math.round(el.getBoundingClientRect().height)),
-      footerBottom: Math.round(document.querySelector("footer").getBoundingClientRect().bottom),
+      footerBottom: Math.round(document.querySelector('[data-testid="site-footer"]').getBoundingClientRect().bottom),
       viewportHeight: window.innerHeight,
-      headerPosition: getComputedStyle(document.querySelector(".app-header")).position,
-      headerTop: Math.round(document.querySelector(".app-header").getBoundingClientRect().top),
+      headerPosition: getComputedStyle(header).position,
+      headerTop: Math.round(header.getBoundingClientRect().top),
     };
   });
 
@@ -31,7 +37,7 @@ test.describe("响应式布局", () => {
   test("顶栏出现提示条时，三栏让出高度而不是把整页撑出滚动条", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openHome(page);
-    const headerSelector = ".app-header";
+    const headerSelector = '[data-testid="app-header"]';
     const headerHeight = () =>
       page.locator(headerSelector).evaluate((el) => Math.round(el.getBoundingClientRect().height));
     const headerBefore = await headerHeight();
@@ -72,7 +78,7 @@ test.describe("响应式布局", () => {
     await page.getByTestId("text-input").fill("");
     await page.getByTestId("letter-format-btn").click();
 
-    const toast = page.locator(".swal2-toast");
+    const toast = page.getByTestId("app-toast");
     await expect(toast).toBeVisible();
     // toast 有入场动画，位置要轮询等它稳定；高度取自实际视口，避免和硬编码值漂移
     const { height } = page.viewportSize();
