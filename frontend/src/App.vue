@@ -27,8 +27,16 @@ export default {
     // HomeView
   },
   data() {
+    let splashShown = false;
+    try {
+      splashShown = !!localStorage.getItem('bookSplashShown');
+    } catch (error) {
+      // 存储被禁用（例如浏览器「阻止所有 Cookie」）时按“没看过”处理，
+      // 不能让读取异常把整个挂载打断
+      void error;
+    }
     return {
-      showSplash: !localStorage.getItem('bookSplashShown'),
+      showSplash: !splashShown,
     };
   },
   setup() {
@@ -69,6 +77,18 @@ export default {
 </script>
 
 <style>
+/* 开屏遮罩的淡出。被过渡的是 BookSplash 的根节点，所以规则得写在这里：
+   transition 与它的 CSS 放在同一个文件，避免以后有人把另一半当成多余样式删掉 */
+.splash-fade-leave-active {
+  transition: opacity 0.5s ease;
+  /* 淡出期间表单已经露出来了，遮罩不能再吃掉点击 */
+  pointer-events: none;
+}
+
+.splash-fade-leave-to {
+  opacity: 0;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

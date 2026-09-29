@@ -9,7 +9,7 @@ async function blockThirdParty(page) {
 
 const test = base.extend({
   context: async ({ context }, use) => {
-    // 首屏翻书动画会在 3.2 秒内盖住整页，预置标记直接跳过
+    // 首屏翻书动画 1.5 秒后开始淡出（再 0.5 秒淡完），预置标记直接跳过
     await context.addInitScript(() => {
       try {
         window.localStorage.setItem("bookSplashShown", "1");

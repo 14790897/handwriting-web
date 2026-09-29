@@ -760,6 +760,8 @@ export default {
 
     // 按钮是否应该被禁用
     shouldDisableButtons() {
+      // 字体列表还没回来时不能点：请求里要取 options[selectedOption - 1].text
+      if (!Array.isArray(this.options) || this.options.length === 0) return true;
       return this.isGenerating || this.isInCooldownPeriod || this.queueFullCountdown > 0;
     },
 
