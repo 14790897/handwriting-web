@@ -5,6 +5,7 @@
   "description": "Playwright end-to-end tests: Vue frontend + FastAPI backend",
   "scripts": {
     "test": "playwright test",
+    "test:desktop": "playwright test --config playwright.desktop.config.js",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "report": "playwright show-report"

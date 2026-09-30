@@ -122,6 +122,32 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: bash desktop/build.sh
 
+      - name: 安装桌面版 E2E 依赖
+        if: steps.tag.outputs.tag != ''
+        working-directory: e2e
+        run: npm ci --no-audit --no-fund
+
+      # 跑的是上一步刚构建出来的 win-unpacked（真实 Electron 外壳 + 后端 exe，
+      # 和安装包里的文件是同一份），跑不过就不挂 Release。
+      # _electron 驱动的是 Electron 二进制本身，不需要 playwright install 下载浏览器。
+      - name: 桌面版 E2E（真实打包产物）
+        if: steps.tag.outputs.tag != ''
+        working-directory: e2e
+        run: npm run test:desktop
+
+      - name: 上传桌面版 E2E 报告
+        if: always() && steps.tag.outputs.tag != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-e2e-report
+          path: |
+            e2e/desktop-tests/.report
+            e2e/desktop-tests/.results
+          # 这两个目录名以点开头，upload-artifact v4.4 起默认跳过隐藏文件 ——
+          # 不加这一行，上传上去的是两个空目录
+          include-hidden-files: true
+          retention-days: 7
+
       - name: 挂到 Release 上
         if: steps.tag.outputs.tag != ''
         shell: bash

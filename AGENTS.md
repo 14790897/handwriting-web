@@ -98,6 +98,10 @@ PYTHON=python bash desktop/build.sh
 
 # 开发调试: 先单独构建后端 exe, 再用 Electron 直接跑
 cd desktop && npx electron .
+
+# 桌面版 E2E (Playwright _electron 驱动上面构建出来的真实打包产物, 跑不过就不挂 Release)
+bash desktop/build.sh --app-only
+cd e2e && npm run test:desktop
 ```
 
 产物：`desktop/build/backend/handwriting-backend/`（后端 onedir）、

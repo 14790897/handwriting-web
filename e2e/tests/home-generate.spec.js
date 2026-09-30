@@ -42,8 +42,10 @@ test.describe("手写生成主流程（真实后端渲染）", () => {
     const buffer = fs.readFileSync(await download.path());
     expect(buffer.subarray(0, 5).toString("latin1")).toBe("%PDF-");
 
-    // PDF 体积决定下载耗时：同一页按质量 95 导出约 27 KB，回到高质就会顶破这条线
-    expect(buffer.length).toBeLessThan(20_000);
+    // PDF 体积决定下载耗时：同一页按质量 95 导出约 27 KB，回到高质就会顶破这条线。
+    // 手写渲染本身带随机扰动，同样的输入压出来会有几百字节的抖动（CI 实测 19.9-20.4 KB），
+    // 贴着 20 KB 卡会随机翻车，所以留出余量 —— 但仍要远低于 27 KB 才算没回归。
+    expect(buffer.length).toBeLessThan(24_000);
     expect(buffer.length).toBeGreaterThan(1000);
 
     // 前端收到的字节数要和落盘大小一致，顺带确认走的是 pdf 分支
