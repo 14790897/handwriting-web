@@ -143,6 +143,9 @@ jobs:
           path: |
             e2e/desktop-tests/.report
             e2e/desktop-tests/.results
+          # 这两个目录名以点开头，upload-artifact v4.4 起默认跳过隐藏文件 ——
+          # 不加这一行，上传上去的是两个空目录
+          include-hidden-files: true
           retention-days: 7
 
       - name: 挂到 Release 上

@@ -103,11 +103,20 @@ async function launchDesktopApp() {
   // 桌面版的下载是 Electron 自己落盘的：Playwright 的 download 事件在 Electron 下
   // 不会触发（实测），所以挂主进程的 will-download，把文件收进测试目录再看。（也用
   // setSavePath 避免测试往用户真实的下载文件夹里丢文件。）
+  // 同时把每个 DownloadItem 的最终状态记在主进程里：光看文件大小稳定不够 ——
+  // 中断的半截 PDF 同样以 %PDF- 开头，会被当成结果读进来。
   const downloadsDir = path.join(root, "downloads");
   fs.mkdirSync(downloadsDir, { recursive: true });
   await app.evaluate(({ session }, target) => {
+    const states = (globalThis.__hwwDownloads = {});
     session.defaultSession.on("will-download", (event, item) => {
-      item.setSavePath(`${target}/${item.getFilename()}`);
+      const name = item.getFilename();
+      item.setSavePath(`${target}/${name}`);
+      states[name] = "started";
+      // done 的第二个参数是 completed / cancelled / interrupted
+      item.once("done", (doneEvent, state) => {
+        states[name] = state;
+      });
     });
   }, downloadsDir);
 
@@ -173,25 +182,28 @@ async function resetHome(desktop) {
   await waitForHome(desktop.page);
 }
 
-// 等 Electron 真的把文件写下来。文件名用的是 Electron 解析出的 suggested filename，
+// 等 Electron 把文件下完。文件名用的是 Electron 解析出的 suggested filename，
 // 所以「名字不对」也会在这里失败 —— 顺带把目录内容打出来，省得对着超时干瞪眼。
 async function waitForDownload(desktop, filename, timeout = 120_000) {
   const file = path.join(desktop.downloadsDir, filename);
   const deadline = Date.now() + timeout;
-  let lastSize = -1;
   for (;;) {
-    if (fs.existsSync(file)) {
-      const { size } = fs.statSync(file);
-      // 连着两次大小一样才认，避免读到写了一半的文件
-      if (size > 0 && size === lastSize) return file;
-      lastSize = size;
+    // 主进程记的状态，见 launchDesktopApp 里的 will-download 钩子
+    const state = await desktop.app
+      .evaluate((electronModule, name) => globalThis.__hwwDownloads?.[name] ?? null, filename)
+      .catch(() => null);
+
+    if (state === "cancelled" || state === "interrupted") {
+      throw new Error(`下载 ${filename} 未完成：${state}`);
     }
+    if (state === "completed" && fs.existsSync(file)) return file;
     if (Date.now() > deadline) {
+      const listed = fs.readdirSync(desktop.downloadsDir).join(", ") || "(空)";
       throw new Error(
-        `等下载文件超时：${file}\n目录里现有：${fs.readdirSync(desktop.downloadsDir).join(", ") || "(空)"}`
+        `等下载完成超时：${file}（状态：${state ?? "未开始"}）\n目录里现有：${listed}`
       );
     }
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 }
 

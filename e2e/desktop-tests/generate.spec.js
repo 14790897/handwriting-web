@@ -47,8 +47,9 @@ test.describe("打包版的手写生成主流程（真实渲染）", () => {
 
     const buffer = fs.readFileSync(await waitForDownload(desktop, "images.pdf"));
     expect(buffer.subarray(0, 5).toString("latin1")).toBe("%PDF-");
-    // 同一页按质量 95 导出约 27 KB，回到高质就会顶破这条线
-    expect(buffer.length).toBeLessThan(20_000);
+    // 预算与源码版一致（见 e2e/tests/home-generate.spec.js）：真实体积约 20 KB 且带随机
+    // 抖动，质量回到 95 会涨到约 27 KB —— 卡在 24 KB 才既稳又能拦住那个回归
+    expect(buffer.length).toBeLessThan(24_000);
     expect(buffer.length).toBeGreaterThan(1000);
 
     await expect(page.getByTestId("pdf-download-bytes")).toHaveText(String(buffer.length));
