@@ -3,3 +3,5 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+desktop-tests/.results/
+desktop-tests/.report/
