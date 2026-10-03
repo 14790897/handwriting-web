@@ -7,10 +7,11 @@ const layoutMetrics = (page) =>
       '[data-testid="panel-text"]',
       '[data-testid="panel-preview"]',
     ].map((selector) => document.querySelector(selector));
-    const workspace = document.querySelector('[data-testid="workspace"]');
     const header = document.querySelector('[data-testid="app-header"]');
+    // 栏数按面板实际所在的位置数，不看 grid 轨道数 —— 两条可拖动的分隔条各占一条轨道
+    const columnLefts = panels.map((el) => Math.round(el.getBoundingClientRect().left));
     return {
-      columns: getComputedStyle(workspace).gridTemplateColumns.split(" ").length,
+      columns: new Set(columnLefts).size,
       pageScrolls: document.documentElement.scrollHeight > window.innerHeight + 1,
       horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       panelHeights: panels.map((el) => Math.round(el.getBoundingClientRect().height)),
