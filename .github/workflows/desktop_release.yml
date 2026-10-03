@@ -181,17 +181,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.resolve-tag.outputs.tag }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          files=(desktop/build/installer/*.exe)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "没有找到构建产物 desktop/build/installer/*.exe" >&2
-            exit 1
-          fi
-          printf '上传到 %s:\n' "$TAG"
-          printf '  %s\n' "${files[@]}"
-          gh release upload "$TAG" "${files[@]}" --clobber
+        # 脚本内部按文件退避重试，扛 uploads.github.com 对 200MB 大文件偶发的 408
+        run: bash scripts/upload-release-assets.sh "$TAG" 'desktop/build/installer/*.exe'
 
   build-desktop-mac:
     needs: resolve-tag
@@ -259,14 +250,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.resolve-tag.outputs.tag }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          files=(desktop/build/installer/*.dmg desktop/build/installer/*.zip)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "没有找到构建产物 desktop/build/installer/*.dmg|*.zip" >&2
-            exit 1
-          fi
-          printf '上传到 %s:\n' "$TAG"
-          printf '  %s\n' "${files[@]}"
-          gh release upload "$TAG" "${files[@]}" --clobber
+        # DMG 和 zip 都是 200MB+，正是最容易撞 408 的那两个，务必走带重试的脚本
+        run: bash scripts/upload-release-assets.sh "$TAG" 'desktop/build/installer/*.dmg' 'desktop/build/installer/*.zip'

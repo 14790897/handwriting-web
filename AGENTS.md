@@ -126,8 +126,17 @@ macOS 是 `mac-arm64/HandwritingWeb.app` + DMG/zip）。
 两个构建 job 都靠 `needs.resolve-tag.outputs` 判断自己要不要跑，不要再把版本校验逻辑
 复制进构建 job。
 
-三条路径，Windows 那侧都已在 CI 上实测过（macOS job 是 2026-10-03 跟着 macOS 打包一起
-加的，**它的第一次真实运行会是那次改动之后的第一个 release** —— 在那之前别把它当已验证的）：
+**产物上传必须走 `scripts/upload-release-assets.sh`，不要改回直接 `gh release upload`。**
+产物是 200-250 MB 的大文件，uploads.github.com 在上传体持续一段时间没有数据流动时会直接回
+`HTTP 408: Upload body timed out due to inactivity`。2026-10-03 的 v1.33.1 就栽在这上面 ——
+构建和桌面版 E2E 全绿，只有上传那一步超时，`gh` 整体退出非零，连先传的 dmg 都没留下，
+Release 上只剩 Windows 的两个 exe。脚本按**单个文件**退避重试（3 次，30s/60s），
+`--clobber` 让重试安全（同名资产覆盖，不会重复挂）；分开传还保证一个文件失败不会白费
+另一个已经传成功的。
+
+三条路径，Windows 那侧都已在 CI 上实测过。macOS job 在 2026-10-03 的第一个 release
+（v1.33.0）上真跑过一遍，构建 → 桌面版 E2E → 上传全绿，
+`HandwritingWeb-1.33.0-arm64.dmg` 正常挂上：
 
 | 触发 | 行为 |
 |---|---|
