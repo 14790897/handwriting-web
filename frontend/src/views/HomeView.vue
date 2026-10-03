@@ -2391,7 +2391,7 @@ export default {
 }
 
 .resizer:hover::before {
-  background: #c8d4e3;
+  background: #9db3cf;
 }
 
 .resizer:focus-visible::before,
