@@ -9,7 +9,15 @@ const { test, expect, openHome } = require("./fixtures");
 // 这条链路走的是真实上传接口（落盘 → identify_distance → 清理），
 // 能盖住单测直接调函数时跳过的那一段。
 const SAMPLE_PAGE = path.join(__dirname, "..", "fixtures", "sample-page.png");
-const FIXTURE_MARGINS = { marginLeft: 60, marginRight: 60, marginTop: 80, marginBottom: 142 };
+const FIXTURE_MARGINS = {
+  marginLeft: 60,
+  marginRight: 60,
+  marginTop: 80,
+  marginBottom: 142,
+  // 行距量的是行到行，不是单个笔画的粗细：样例图每行是一整条 8px 横线，过 Canny
+  // 后上下两条边缘只差 9px，以前返回的就是这个 9
+  lineSpacing: 70,
+};
 const TOLERANCE_PX = 4;
 
 test.describe("背景图片与边距识别", () => {
@@ -42,11 +50,6 @@ test.describe("背景图片与边距识别", () => {
         `${field} 识别成 ${margins[field]}，偏离合成图的 ${expected} 超过 ${TOLERANCE_PX}px`
       ).toBeLessThanOrEqual(TOLERANCE_PX);
     }
-
-    // 行距只要求是正数：它现在返回的是笔画厚度而非走行距离，属已知缺陷，
-    // 数值不可靠（见 backend/tests/test_identify.py 里的 expectedFailure）
-    expect(typeof margins.lineSpacing, "lineSpacing 应当是数字").toBe("number");
-    expect(margins.lineSpacing, "lineSpacing 应当为正").toBeGreaterThan(0);
 
     const inputValue = async (testId) => Number(await page.getByTestId(testId).inputValue());
     expect(await inputValue("margin-left-input")).toBe(margins.marginLeft);
