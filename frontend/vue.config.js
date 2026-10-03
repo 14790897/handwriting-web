@@ -9,6 +9,11 @@ module.exports = defineConfig({
       "/api": {
         target: "http://127.0.0.1:5005",
         changeOrigin: true,
+        // 不带 ws 的话 Upgrade 请求不会被转发，/api/generate_handwriting/ws/<task_id>
+        // 在本地开发时永远连不上 —— 前端会静默降级成 1.5 秒一次的轮询，
+        // 看起来照样出图，所以这个缺口不容易被发现。生产 nginx 那侧是配了
+        // Upgrade 头的（frontend/nginx.conf），这里对齐。
+        ws: true,
       },
     },
   },
