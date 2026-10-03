@@ -1,3 +1,10 @@
+## [1.32.3](https://github.com/14790897/handwriting-web/compare/v1.32.2...v1.32.3) (2026-10-03)
+
+
+### Bug Fixes
+
+* **desktop:** 桌面版图标改用站点图标，并把重模块移出启动路径 ([#84](https://github.com/14790897/handwriting-web/issues/84)) ([4e05cfb](https://github.com/14790897/handwriting-web/commit/4e05cfbcb8c7400ba9c6d937f3dd3dd6c7b399e5))
+
 ## [1.32.2](https://github.com/14790897/handwriting-web/compare/v1.32.1...v1.32.2) (2026-09-29)
 
 

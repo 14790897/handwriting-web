@@ -1,6 +1,6 @@
 {
   "name": "handwriting-desktop",
-  "version": "1.32.2",
+  "version": "1.32.3",
   "private": true,
   "description": "手写体生成器桌面版（Electron 外壳 + 内置后端）",
   "author": "liuweiqing",
