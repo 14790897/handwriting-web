@@ -47,8 +47,14 @@ test.describe("任务状态 WebSocket 推送", () => {
     expect(socketUrls, "生成任务没有建立 WebSocket 连接，说明走了轮询降级").not.toHaveLength(0);
     expect(polledTaskStatus, "出现了轮询请求，说明 WebSocket 降级了").toHaveLength(0);
 
+    // 帧事件经 CDP 异步投递，可能比预览渲染晚一步才到，所以轮询等它稳定，
+    // 不要在这之后立刻读一次 frames —— 那会偶发地「没收到 completed 帧」
+    await expect
+      .poll(() => frames.filter((frame) => frame.task_status === "completed").length, {
+        message: `没收到 completed 帧，收到的状态：${JSON.stringify(frames)}`,
+      })
+      .toBeGreaterThan(0);
     const completed = frames.filter((frame) => frame.task_status === "completed");
-    expect(completed.length, `没收到 completed 帧，收到的状态：${JSON.stringify(frames)}`).toBeGreaterThan(0);
 
     // 状态帧是前端排队文案的全部来源，字段缺了界面上就会少提示
     for (const field of ["task_id", "task_stage", "task_message", "task_progress"]) {

@@ -1,10 +1,16 @@
 const path = require("path");
 const { test, expect, openHome } = require("./fixtures");
 
-// 样例图是合成的规整横线条（边距 60/60/80、行距 70），见 backend/tests/test_identify.py
-// 里的同名生成逻辑。这里只用它触发真实识别，期望值全部取自响应本身 ——
-// opencv-python 没钉版本，写死 60/80 会被版本差异随机翻车。
+// 样例图是合成的规整横线条，见 backend/tests/test_identify.py 里的同名生成逻辑：
+// 左右边距 60、上边距 80、行距 70。下边距量的是「最后一条线到页面底部」，
+// 比绘制的 80 多出一截（行距摆不整齐，最后一行停在 858，余下 142）。
+//
+// 这里按后端单测同样的 ±4px 容差核对具体数值，而不是只要求「是正数」——
+// 这条链路走的是真实上传接口（落盘 → identify_distance → 清理），
+// 能盖住单测直接调函数时跳过的那一段。
 const SAMPLE_PAGE = path.join(__dirname, "..", "fixtures", "sample-page.png");
+const FIXTURE_MARGINS = { marginLeft: 60, marginRight: 60, marginTop: 80, marginBottom: 142 };
+const TOLERANCE_PX = 4;
 
 test.describe("背景图片与边距识别", () => {
   test("上传图片确认识别后，把四个边距与行距回填进参数框", async ({ page }) => {
@@ -29,11 +35,18 @@ test.describe("背景图片与边距识别", () => {
     expect(response.status()).toBe(200);
     const margins = await response.json();
 
-    // 识别结果应当是有意义的正数；具体数值随 opencv 版本浮动，所以只做区间检查
-    for (const field of ["marginLeft", "marginRight", "marginTop", "marginBottom", "lineSpacing"]) {
+    for (const [field, expected] of Object.entries(FIXTURE_MARGINS)) {
       expect(typeof margins[field], `${field} 应当是数字`).toBe("number");
-      expect(margins[field], `${field} 应当为正`).toBeGreaterThan(0);
+      expect(
+        Math.abs(margins[field] - expected),
+        `${field} 识别成 ${margins[field]}，偏离合成图的 ${expected} 超过 ${TOLERANCE_PX}px`
+      ).toBeLessThanOrEqual(TOLERANCE_PX);
     }
+
+    // 行距只要求是正数：它现在返回的是笔画厚度而非走行距离，属已知缺陷，
+    // 数值不可靠（见 backend/tests/test_identify.py 里的 expectedFailure）
+    expect(typeof margins.lineSpacing, "lineSpacing 应当是数字").toBe("number");
+    expect(margins.lineSpacing, "lineSpacing 应当为正").toBeGreaterThan(0);
 
     const inputValue = async (testId) => Number(await page.getByTestId(testId).inputValue());
     expect(await inputValue("margin-left-input")).toBe(margins.marginLeft);
