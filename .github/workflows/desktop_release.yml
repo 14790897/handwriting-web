@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 要补传产物的 tag（例如 v1.31.0）
+        description: 要补传产物的 tag（例如 v1.32.0）
         required: true
 
 permissions:
@@ -79,7 +79,7 @@ jobs:
           # （发版时由 scripts/sync-version.js 写入并随发版提交），产物文件名也带同一个
           # 版本号，所以版本对不上就绝不可能是「这次的构建」。
           if [ ! -f backend/VERSION ]; then
-            echo "::error::检出的代码里没有 backend/VERSION，无法确认版本。该文件随 v1.31.0 之后才引入，补传更早的 release 需要手工处理。"
+            echo "::error::检出的代码里没有 backend/VERSION，无法确认版本。该文件是 v1.32.0 才引入的，补传更早的 tag 需要手工处理。"
             exit 1
           fi
           VERSION="$(tr -d '[:space:]' < backend/VERSION)"
