@@ -1,3 +1,10 @@
+## [1.33.1](https://github.com/14790897/handwriting-web/compare/v1.33.0...v1.33.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **backend:** 钉住 opencv-python<5 修复识别接口 500，并补齐三处测试空白 ([#85](https://github.com/14790897/handwriting-web/issues/85)) ([ee8075b](https://github.com/14790897/handwriting-web/commit/ee8075b62a2080e7e9164a4f34780dc00a9f44f3))
+
 # [1.33.0](https://github.com/14790897/handwriting-web/compare/v1.32.3...v1.33.0) (2026-10-03)
 
 
