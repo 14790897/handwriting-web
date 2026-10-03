@@ -2,8 +2,28 @@ import cv2
 import numpy as np
 from sklearn.cluster import DBSCAN
 
+
+def _as_lines(lines):
+    """把 HoughLinesP 的结果统一成 (N, 4)。
+
+    opencv-python 4.x 返回 (N, 1, 4)，5.0 起返回 (N, 4)；一条直线都没检出来时返回
+    None。这里收口成一种形状加一种空值，下游就不用再关心 OpenCV 是哪个版本了。
+    5.0 下按 (N, 1, 4) 取下标会抛 IndexError: invalid index to scalar variable。
+    10.3
+    """
+    if lines is None:
+        return np.empty((0, 4), dtype=int)
+    return np.asarray(lines).reshape(-1, 4)
+
+
 #有bug时，别忘了打断点 7.6
 def get_avg_distance(distances):
+    # 没有候选值时给 0：整页检不出直线、或检出的直线全都通栏（左右都贴边，下面那个
+    # 过滤会把它们全丢掉）都会走到这里，DBSCAN 对空输入会直接抛 ValueError 让接口
+    # 变成 500。10.3
+    if len(distances) == 0:
+        return 0
+
     # 将列表转化为 N x 1 的矩阵，因为DBSCAN需要这种格式的输入
     distances_np = np.array(distances).reshape(-1, 1)
 
@@ -48,15 +68,19 @@ def identify_distance(filename):
     # 直线检测
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, 100, minLineLength=100, maxLineGap=10)
 
-    lines = sorted(lines, key=lambda x: x[0][1])
+    # 整页检不出直线（比如用户传了张纯白图）：以前 sorted(None) 直接 TypeError，
+    # 现在退化成全 0，接口不再 500。10.3
+    lines = _as_lines(lines)
+    if len(lines) == 0:
+        return 0, 0, 0, 0, 0
+
+    lines = lines[np.argsort(lines[:, 1])]
 
     # 选择线，计算旋转角度并存储
     angles = []
-    for line in lines:
-        for x1, y1, x2, y2 in line:
-            print('x1:', x1, 'y1:', y1, 'x2:', x2, 'y2:', y2)
-            angle = np.arctan2(y2 - y1, x2 - x1) * 180. / np.pi
-            angles.append(angle)
+    for x1, y1, x2, y2 in lines:
+        angle = np.arctan2(y2 - y1, x2 - x1) * 180. / np.pi
+        angles.append(angle)
 
     # 计算平均角度
     avg_angle = np.mean(angles)
@@ -87,28 +111,30 @@ def identify_distance(filename):
     lines_rotated = cv2.HoughLinesP(edges_rotated, 1, np.pi/180, 100, minLineLength=100, maxLineGap=10)
 
     # 对直线的y坐标进行排序
-    lines_rotated = sorted(lines_rotated, key=lambda x: x[0][1])
+    lines_rotated = _as_lines(lines_rotated)
+    if len(lines_rotated) == 0:
+        return 0, 0, 0, 0, 0
+    lines_rotated = lines_rotated[np.argsort(lines_rotated[:, 1])]
 
 
     # 初始化空列表来存储每行的空白长度
     l_whitespaces = []
     r_whitespaces = []
 
-    for line in lines_rotated:
-        for x1, y1, x2, y2 in line:
-            # 提取每行像素
-            row = binary_rotated[y1]
-            # 找到左边第一个非空白像素，第一个零是为了去掉外面的元组
-            left = np.where(row == 255)[0][0] if np.where(row == 255)[0].size != 0 else 0
-            # 找到右边第一个非空白像素
-            right = np.where(row == 255)[0][-1] if np.where(row == 255)[0].size != 0 else len(row)
-            # 计算空白长度
-            if x1 != 0 and x2 != len(row):
-                whitespace_left = x1 #x1 - left
-                whitespace_right = len(row) - x2 #right - x2
-                l_whitespaces.append(whitespace_left)
-                r_whitespaces.append(whitespace_right)
-            # print('左空白：', whitespace_left,'右空白：',whitespace_right)
+    for x1, y1, x2, y2 in lines_rotated:
+        # 提取每行像素
+        row = binary_rotated[y1]
+        # 找到左边第一个非空白像素，第一个零是为了去掉外面的元组
+        left = np.where(row == 255)[0][0] if np.where(row == 255)[0].size != 0 else 0
+        # 找到右边第一个非空白像素
+        right = np.where(row == 255)[0][-1] if np.where(row == 255)[0].size != 0 else len(row)
+        # 计算空白长度
+        if x1 != 0 and x2 != len(row):
+            whitespace_left = x1 #x1 - left
+            whitespace_right = len(row) - x2 #right - x2
+            l_whitespaces.append(whitespace_left)
+            r_whitespaces.append(whitespace_right)
+        # print('左空白：', whitespace_left,'右空白：',whitespace_right)
 
     avg_l_whitespace = get_avg_distance(l_whitespaces)
     avg_r_whitespace = get_avg_distance(r_whitespaces)
@@ -144,7 +170,7 @@ def identify_distance(filename):
     distances = []
 
     for i in range(1, len(lines_rotated)):
-        distance=lines_rotated[i][0][1] - lines_rotated[i-1][0][1]
+        distance=lines_rotated[i][1] - lines_rotated[i-1][1]
         if distance > 5:
             distances.append(distance)
             # print('行间距：', distance)

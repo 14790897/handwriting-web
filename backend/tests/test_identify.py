@@ -3,10 +3,13 @@ import io
 import os
 import tempfile
 import unittest
+from unittest import mock
 
+import numpy as np
 from PIL import Image, ImageDraw
 
-from identify import identify_distance
+import identify as identify_module
+from identify import _as_lines, identify_distance
 
 # 与 e2e/fixtures/sample-page.png 同一套几何参数：那张图由下面这段逻辑生成，
 # 改动这里时要同步重新生成，否则前后端两个用例盯的就不是同一份数据了。
@@ -73,16 +76,41 @@ class IdentifyDistanceTest(unittest.TestCase):
         *_, line_spacing = identify(self.page)
         self.assertAlmostEqual(line_spacing, LINE_SPACING, delta=4)
 
-    @unittest.expectedFailure
-    def test_a_page_without_detectable_lines_degrades_instead_of_raising(self):
-        # 也是已知缺陷：整页找不到直线时 HoughLinesP 返回 None，sorted(None) 直接
-        # TypeError，/api/imagefileprocess 会变成 500。用户传一张纯白图就会踩到。
-        # 期望的行为是退化成 0 而不是抛异常；修好后这条会变成 unexpectedSuccess。
+    def test_degrades_to_zero_when_no_lines_are_detected(self):
+        # 整页找不到直线时 HoughLinesP 返回 None，以前 sorted(None) 直接 TypeError，
+        # /api/imagefileprocess 会变成 500 —— 用户传一张纯白图就会踩到。
         blank = os.path.join(self.workdir, "blank.png")
         Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), "white").save(blank)
 
-        left, right, top, bottom, line_spacing = identify(blank)
-        self.assertEqual((left, right, top, bottom, line_spacing), (0, 0, 0, 0, 0))
+        self.assertEqual(identify(blank), (0, 0, 0, 0, 0))
+
+    def test_normalises_both_hough_lines_shapes(self):
+        # opencv-python 4.x 返回 (N, 1, 4)，5.0 起返回 (N, 4)；下游只认后者
+        ocv4 = np.array([[[10, 20, 30, 20]], [[10, 50, 30, 50]]])
+        ocv5 = np.array([[10, 20, 30, 20], [10, 50, 30, 50]])
+
+        for lines in (ocv4, ocv5):
+            with self.subTest(shape=lines.shape):
+                np.testing.assert_array_equal(_as_lines(lines), ocv5)
+
+        self.assertEqual(_as_lines(None).shape, (0, 4))
+
+    def test_reads_a_page_through_the_open_cv_5_line_shape(self):
+        # 本机装的是 4.x，所以把真结果挤掉多出来的那一维，模拟 5.0 的形状。
+        # 没有归一化的话，第一处 sorted(..., key=lambda x: x[0][1]) 就会
+        # IndexError: invalid index to scalar variable，接口 500
+        original = identify_module.cv2.HoughLinesP
+
+        def flattened(*args, **kwargs):
+            lines = original(*args, **kwargs)
+            return None if lines is None else np.asarray(lines).reshape(-1, 4)
+
+        with mock.patch.object(identify_module.cv2, "HoughLinesP", side_effect=flattened):
+            left, right, top, _, _ = identify(self.page)
+
+        self.assertAlmostEqual(left, MARGIN_LEFT, delta=4)
+        self.assertAlmostEqual(right, MARGIN_RIGHT, delta=4)
+        self.assertAlmostEqual(top, MARGIN_TOP, delta=4)
 
 
 if __name__ == "__main__":
