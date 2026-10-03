@@ -266,7 +266,9 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(async () => {
     createWindow();
     buildMenu();
-    // 后端冷启动约 20 秒（sklearn/opencv 载入），先给个等待页而不是白屏
+    // 后端启动要几秒（PyInstaller 引导 + fastapi 等基础依赖载入），先给个等待页
+    // 而不是白屏。opencv/sklearn/PyMuPDF 那些重家伙已经不在启动路径上了 ——
+    // 见 backend/app.py 顶部的说明，它们改成了按需导入。
     await mainWindow.loadFile(path.join(__dirname, "splash.html"));
 
     try {

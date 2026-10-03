@@ -96,8 +96,17 @@ cd "$ROOT"
   --workpath "$DESKTOP/build/pyinstaller-work"
 
 echo "==> 生成应用图标"
-# electron-builder 要求 Windows 图标 ≥256x256，仓库里的 logo.png 只有 200x200
-"$PYTHON" - "$ROOT/logo.png" "$DESKTOP/build/icon.ico" <<'PY'
+# 图标源必须是站点自己的图标（frontend/public 里 PWA 用的那张 512x512）。
+# 2026-10-03 修：之前用的是仓库根的 logo.png —— 那是旧的 Vue 风格 V，和网站图标
+# 根本不是一回事，桌面版装出来图标是错的。
+# 站点自带的 favicon.ico 最大只有 48x48，而 electron-builder 要求 Windows 图标
+# ≥256x256，所以这里自己合成多尺寸。
+ICON_SRC="$ROOT/frontend/public/web-app-manifest-512x512.png"
+if [ ! -f "$ICON_SRC" ]; then
+  echo "找不到站点图标 $ICON_SRC，无法生成应用图标" >&2
+  exit 1
+fi
+"$PYTHON" - "$ICON_SRC" "$DESKTOP/build/icon.ico" <<'PY'
 import sys
 from PIL import Image
 

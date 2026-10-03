@@ -41,15 +41,13 @@ import shutil
 import tempfile
 from uuid import uuid4
 
-import PyPDF2
-
-# 文件模块
-from docx import Document
-
-# 图片处理模块
-from identify import identify_distance
-from pdf import generate_pdf
 from werkzeug.utils import secure_filename
+
+# 2026-10-03：PyPDF2 / python-docx / identify（opencv + sklearn）/ pdf（PyMuPDF）原本都在
+# 模块级导入，但它们只服务于少数几个接口，却让每次启动都得先把它们的 DLL 全部载入
+# （实测 sklearn 一家就占整个 import app 的七成）。现已下沉到各自的使用处按需导入。
+# 注意：下面这几个符号被 backend/tests 打了补丁，别一起挪走 —— handright 的
+# Template/handwrite 和 PIL 的 ImageFont 必须保持模块级属性。
 
 
 # 安全文件删除函数
@@ -513,6 +511,8 @@ def create_notebook_image(
 
 
 def read_docx(file_path):
+    from docx import Document
+
     document = Document(file_path)
     # 必须保留段落换行：正文里的 "---"（分页）与 ">>>"（右对齐）是按行匹配的标记，
     # 用空格拼接会把整篇压成一行，标记永远不生效，而且不会报任何错
@@ -558,6 +558,8 @@ def convert_docx_to_text(docx_file_path):
 
 
 def read_pdf(file_path):
+    import PyPDF2
+
     text = ""
     with open(file_path, "rb") as pdf_file_obj:
         pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
@@ -1109,6 +1111,9 @@ async def generate_handwriting_impl(
             # ZIP文件已在上面删除，这里只是保险
     else:
         logger.info("PDF generate")
+        # PyMuPDF 只在导出 PDF 这条路径上用到（见文件顶部说明）
+        from pdf import generate_pdf
+
         temp_pdf_file_path = None  # 初始化变量
         report_progress("rendering", "正在生成手写图像", 45)
         # handwrite() 返回惰性 map 对象，CPU 密集渲染在 generate_pdf 内部消费时才触发
@@ -1440,6 +1445,9 @@ async def imagefileprocess(request: Request, file: UploadFile = File(...)):
         content = await file.read()
         with open(filepath, "wb") as f:
             f.write(content)
+        # opencv + sklearn 只在图片边距检测这条路径上用到（见文件顶部说明）
+        from identify import identify_distance
+
         (
             avg_l_whitespace,
             avg_r_whitespace,
