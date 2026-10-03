@@ -10,9 +10,14 @@ module.exports = {
     // 桌面版的安装包/便携版由 .github/workflows/desktop_release.yml 单独上传。
     "@semantic-release/github", // 发布到 GitHub，生成 Release
     [
-      "@semantic-release/exec", // 把发版号同步到 desktop/package.json、desktop/package-lock.json、backend/VERSION
+      "@semantic-release/exec",
       {
+        // prepare：把发版号同步到 desktop/package.json、desktop/package-lock.json、backend/VERSION
         prepareCmd: "node scripts/sync-version.js ${nextRelease.version}",
+        // success：给 Release 正文补上「哪个机器下哪个包」。
+        // 用 successCmd 而不是 publishCmd —— success 阶段跑在所有 publish 之后，
+        // 这时 @semantic-release/github 一定已经建好 Release 了，不依赖插件顺序。
+        successCmd: "node scripts/append-release-notes.js ${nextRelease.gitTag}",
       },
     ],
     [
