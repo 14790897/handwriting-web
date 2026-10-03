@@ -1,0 +1,4 @@
+# backend/requirements.txt 曾是 UTF-16LE(带 BOM), Git 按 NUL 字节判定为二进制, PR 里显示成
+# "Bin N -> M bytes", 无法逐行 review (例: PR #85 钉 opencv-python<5)。2026-10-03 已转成 UTF-8。
+# text 管行尾归一化, diff 才是强制按文本出 diff 的那个 —— 别删 diff。
+backend/requirements.txt text diff
