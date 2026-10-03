@@ -12,10 +12,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3 # 检出代码
-      - uses: actions/setup-node@v3 # 设置 Node.js 环境
+      - uses: actions/checkout@v4 # 检出代码
+      - uses: actions/setup-node@v4 # 设置 Node.js 环境
         with:
-          node-version: 21
+          node-version: 22 # 21 已 EOL；semantic-release 24 要求 >=20.8.1
       - run: npm install # 安装依赖 1
       - run: npx semantic-release
         env:
