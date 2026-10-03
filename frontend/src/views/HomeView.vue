@@ -48,9 +48,10 @@
     </header>
 
     <!-- 三栏工作区：左=参数，中=正文，右=预览 -->
-    <div v-if="!legacyLayout" class="workspace" data-testid="workspace">
+    <div v-if="!legacyLayout" class="workspace" data-testid="workspace" ref="workspace"
+      :style="workspaceStyle">
       <!-- 左栏：参数设置 -->
-      <aside class="panel panel-settings" data-testid="panel-settings">
+      <aside class="panel panel-settings" data-testid="panel-settings" ref="panelSettings">
         <h2 class="panel-title">{{ $t('message.settingsPanel') }}</h2>
 
         <label class="field-label" for="fontSelect">{{ $t('message.fontFile') }}:</label>
@@ -238,8 +239,16 @@
         </div>
       </aside>
 
+      <!-- 分隔条：左右拖动调整左栏宽度，双击恢复默认 -->
+      <div class="resizer" data-testid="resizer-settings" role="separator" aria-orientation="vertical"
+        :class="{ active: resizeState && resizeState.side === 'left' }"
+        :aria-label="$t('message.resizeColumnLeft')" :title="$t('message.resizeColumnHint')" tabindex="0"
+        @pointerdown="startResize('left', $event)" @pointermove="onResizeMove" @pointerup="endResize"
+        @pointercancel="endResize" @dblclick="resetColumnWidth('left')"
+        @keydown="onResizerKeydown('left', $event)"></div>
+
       <!-- 中栏：正文 -->
-      <main class="panel panel-text" data-testid="panel-text">
+      <main class="panel panel-text" data-testid="panel-text" ref="panelText">
         <h2 class="panel-title">{{ $t('message.text') }}</h2>
 
         <TextInput class="text-input-fill" ref="textInputComp" @childEvent="(eventData) => { this.text = eventData }"
@@ -261,8 +270,16 @@
           :page-count="estimatedPages" />
       </main>
 
+      <!-- 分隔条：左右拖动调整右栏宽度，双击恢复默认 -->
+      <div class="resizer" data-testid="resizer-preview" role="separator" aria-orientation="vertical"
+        :class="{ active: resizeState && resizeState.side === 'right' }"
+        :aria-label="$t('message.resizeColumnRight')" :title="$t('message.resizeColumnHint')" tabindex="0"
+        @pointerdown="startResize('right', $event)" @pointermove="onResizeMove" @pointerup="endResize"
+        @pointercancel="endResize" @dblclick="resetColumnWidth('right')"
+        @keydown="onResizerKeydown('right', $event)"></div>
+
       <!-- 右栏：预览 -->
-      <section class="panel panel-preview" data-testid="panel-preview">
+      <section class="panel panel-preview" data-testid="panel-preview" ref="panelPreview">
         <h2 class="panel-title">{{ $t('message.preview') }}</h2>
 
         <div class="preview-container text-center">
@@ -600,6 +617,16 @@ const BUILTIN_PRESETS = {
 
 
 
+// 三栏拖动：左右两栏各自的最小宽度、中栏的最小宽度（px），
+// 以及 CSS 里那条间隔轨道的宽度（分隔条的拖动热区就画在它上面）
+const MIN_COLUMN_WIDTH = 200;
+const MIN_MIDDLE_WIDTH = 300;
+const GUTTER_WIDTH = 16;
+// 分隔条拿到键盘焦点后，左右方向键每次调整的像素
+const KEYBOARD_RESIZE_STEP = 20;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
 export default {
   // props: {
   //   login_delete_message: {
@@ -676,10 +703,17 @@ export default {
       queueFullTimer: null,         // setInterval 句柄
       enableFullPreview: false,
       legacyLayout: false,
+      // 三栏宽度：null 表示这一栏还用 CSS 里的默认轨道（左 300px / 右 1fr），
+      // 拖动过一次就钉成固定像素值，中栏吃掉剩余空间
+      workspaceColumns: { left: null, right: null },
+      // 拖动中的临时状态：起始指针位置、起始栏宽、可用总宽，仅拖动期间存在
+      resizeState: null,
       showLetterFormatter: false,
       letterFormatBackup: null,
       localStorageItems: ['text', 'fontFile', 'fontSize', 'lineSpacing', 'fill', 'width', 'height', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'selectedFontFileName', 'selectedOption', 'lineSpacingSigma', 'fontSizeSigma', 'wordSpacingSigma', 'perturbXSigma', 'perturbYSigma', 'perturbThetaSigma', 'wordSpacing', 'strikethrough_length_sigma', 'strikethrough_angle_sigma', 'strikethrough_width_sigma', 'strikethrough_probability', 'strikethrough_width', 'ink_depth_sigma', 'isUnderlined', 'enableEnglishSpacing'],
-      persistentUiItems: ['enableFullPreview', 'legacyLayout'],
+      // 这些项在 created() 里统一从 localStorage 还原。
+      // workspaceColumns 没有配 watcher：拖动过程中每帧都写一次不值得，改成收手时才落盘
+      persistentUiItems: ['enableFullPreview', 'legacyLayout', 'workspaceColumns'],
     };
   },
   created() {
@@ -720,6 +754,15 @@ export default {
       this.enableFullPreview = false;
     }
 
+    // 存档损坏（比如被别的版本写成了字符串）时退回默认布局，别让 NaN 进 CSS
+    const savedColumns = this.workspaceColumns;
+    const readColumn = (value) =>
+      typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+    this.workspaceColumns = {
+      left: readColumn(savedColumns && savedColumns.left),
+      right: readColumn(savedColumns && savedColumns.right),
+    };
+
     this.$http.get('/api/version').then(response => {
       this.appVersion = response.data?.version || '';
     }).catch(() => {
@@ -756,6 +799,16 @@ export default {
     isBackgroundImageSpecified() {
       // 当有背景图片时，返回 true，这会禁用宽度和高度输入框
       return !!this.backgroundImage;
+    },
+
+    // 拖动过的栏宽以 CSS 变量喂给 .workspace 的 grid-template-columns；
+    // 没拖动过就不写变量，由 CSS 里的默认轨道接管
+    workspaceStyle() {
+      const style = {};
+      const { left, right } = this.workspaceColumns;
+      if (left) style['--col-left'] = `${left}px`;
+      if (right) style['--col-right'] = `${right}px`;
+      return style;
     },
 
     // 按钮是否应该被禁用
@@ -1195,6 +1248,120 @@ export default {
     },
     toggleLayout() {
       this.legacyLayout = !this.legacyLayout;
+    },
+    // ===== 三栏宽度调整 =====
+    // 量一次工作区与左右两栏的当前尺寸。拖动开始时左右两栏会被钉成此刻的像素宽度，
+    // 之后只有中栏伸缩，所以 clamp 只要守住「两栏 + 两条间隔 + 中栏最小宽度 ≤ 可用宽度」
+    measureWorkspaceMetrics() {
+      const workspace = this.$refs.workspace;
+      if (!workspace || !this.$refs.panelSettings || !this.$refs.panelPreview) return null;
+      const style = getComputedStyle(workspace);
+      const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      return {
+        available: workspace.getBoundingClientRect().width - padding,
+        left: this.$refs.panelSettings.getBoundingClientRect().width,
+        right: this.$refs.panelPreview.getBoundingClientRect().width,
+      };
+    },
+    // 左右两栏一起钉成固定像素宽度；中栏拿走剩下的空间
+    applyColumnWidths(left, right) {
+      this.workspaceColumns = { left: Math.round(left), right: Math.round(right) };
+    },
+    persistWorkspaceColumns() {
+      localStorage.setItem('workspaceColumns', JSON.stringify(this.workspaceColumns));
+    },
+    startResize(side, event) {
+      const metrics = this.measureWorkspaceMetrics();
+      if (!metrics) return;
+      // 先把两栏都钉成当前像素宽度：中栏剩下的宽度不变（画面不跳），
+      // 且拖动期间只有中栏在伸缩，上面那条 clamp 算术才成立
+      this.applyColumnWidths(metrics.left, metrics.right);
+      this.resizeState = {
+        side,
+        startX: event.clientX,
+        startLeft: Math.round(metrics.left),
+        startRight: Math.round(metrics.right),
+        available: metrics.available,
+      };
+      // 指针会移出分隔条，把事件捕获到它自己身上；同时屏蔽整页的选中与光标抖动
+      if (event.currentTarget.setPointerCapture) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    },
+    onResizeMove(event) {
+      const state = this.resizeState;
+      if (!state) return;
+      const delta = event.clientX - state.startX;
+      // 另一栏此刻是钉死的，中栏最小宽度要从可用宽度里扣掉它
+      const otherWidth = state.side === 'left' ? state.startRight : state.startLeft;
+      const maxSide = state.available - GUTTER_WIDTH * 2 - MIN_MIDDLE_WIDTH - otherWidth;
+      if (state.side === 'left') {
+        const left = clamp(state.startLeft + delta, MIN_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, maxSide));
+        this.applyColumnWidths(left, state.startRight);
+      } else {
+        const right = clamp(state.startRight - delta, MIN_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, maxSide));
+        this.applyColumnWidths(state.startLeft, right);
+      }
+    },
+    endResize(event) {
+      if (!this.resizeState) return;
+      if (event.currentTarget.releasePointerCapture && event.currentTarget.hasPointerCapture
+        && event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      this.resizeState = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      this.persistWorkspaceColumns();
+    },
+    // 双击分隔条：这一栏退回 CSS 的弹性默认宽度（左 300px / 右 1fr）
+    resetColumnWidth(side) {
+      this.workspaceColumns = { ...this.workspaceColumns, [side]: null };
+      this.persistWorkspaceColumns();
+    },
+    onResizerKeydown(side, event) {
+      // 方向键朝着分隔条该走的方向推：左分隔条按 → 加宽左栏，右分隔条按 ← 加宽右栏
+      const growKey = side === 'left' ? 'ArrowRight' : 'ArrowLeft';
+      const shrinkKey = side === 'left' ? 'ArrowLeft' : 'ArrowRight';
+      if (event.key !== growKey && event.key !== shrinkKey) return;
+      event.preventDefault();
+
+      const metrics = this.measureWorkspaceMetrics();
+      if (!metrics) return;
+      const other = side === 'left' ? metrics.right : metrics.left;
+      const current = side === 'left' ? metrics.left : metrics.right;
+      const maxSide = metrics.available - GUTTER_WIDTH * 2 - MIN_MIDDLE_WIDTH - other;
+      const step = event.key === growKey ? KEYBOARD_RESIZE_STEP : -KEYBOARD_RESIZE_STEP;
+      const next = clamp(current + step, MIN_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, maxSide));
+
+      // 键盘调整也把两栏一起钉住，否则中栏的伸缩比例会和拖动时对不上
+      this.applyColumnWidths(side === 'left' ? next : metrics.left, side === 'right' ? next : metrics.right);
+      this.persistWorkspaceColumns();
+    },
+    // 窗口变窄时按比例收回钉死的栏宽，否则左右两栏会把中栏挤到最小宽度以下、整页横向溢出
+    clampWorkspaceColumns() {
+      const { left, right } = this.workspaceColumns;
+      if (!left || !right) return;
+      const workspace = this.$refs.workspace;
+      if (!workspace) return;
+      // 窄屏是单栏堆叠，栏宽存的是宽屏时的值，这时候不能拿当前宽度去压它
+      const settings = this.$refs.panelSettings.getBoundingClientRect();
+      const preview = this.$refs.panelPreview.getBoundingClientRect();
+      if (preview.left < settings.right) return;
+
+      const metrics = this.measureWorkspaceMetrics();
+      if (!metrics) return;
+      const maxTotal = metrics.available - GUTTER_WIDTH * 2 - MIN_MIDDLE_WIDTH;
+      if (left + right <= maxTotal) return;
+
+      const scale = maxTotal / (left + right);
+      this.applyColumnWidths(
+        Math.max(MIN_COLUMN_WIDTH, left * scale),
+        Math.max(MIN_COLUMN_WIDTH, right * scale),
+      );
+      this.persistWorkspaceColumns();
     },
     startQueueFullCountdown(seconds) {
       // 清掉旧计时器
@@ -2008,9 +2175,16 @@ export default {
 
   },
 
+  mounted() {
+    // 还原出来的栏宽是按当初那个窗口算的，进页面时先按当前窗口收一次
+    this.clampWorkspaceColumns();
+    window.addEventListener('resize', this.clampWorkspaceColumns);
+  },
+
   // 组件销毁时清理定时器
   beforeUnmount() {
     window.removeEventListener('handwriting-text-loaded', this.onTextLoaded);
+    window.removeEventListener('resize', this.clampWorkspaceColumns);
 
     if (this.cooldownTimer) {
       clearInterval(this.cooldownTimer);
@@ -2167,9 +2341,46 @@ export default {
   /* 允许在工作区内部收缩：顶栏变高（例如出现提示条）时让三栏变矮，而不是把整页撑出滚动条 */
   min-height: 0;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 16px;
+  /* 5 条轨道 = 左栏 / 分隔条 / 中栏 / 分隔条 / 右栏。两条 16px 的轨道就是原来的 gap，
+     由 .resizer 占满、兼作拖动热区，所以这里不再用 gap。
+     左右两栏拖过之后是固定像素（--col-*），中栏吃掉剩余空间；没拖过就走 var() 的默认值。 */
+  grid-template-columns:
+    var(--col-left, 300px) 16px minmax(0, 1.2fr) 16px var(--col-right, minmax(0, 1fr));
   padding: 16px 20px;
+}
+
+/* 栏间分隔条：平时不显形，悬停/聚焦/拖动时才出现一条竖线 */
+.resizer {
+  position: relative;
+  cursor: col-resize;
+  /* 触控设备上把手势交给 pointer 事件，别让它变成滚动 */
+  touch-action: none;
+}
+
+.resizer:focus {
+  outline: none;
+}
+
+.resizer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.resizer:hover::before {
+  background: #c8d4e3;
+}
+
+.resizer:focus-visible::before,
+.resizer.active::before {
+  background: #007BFF;
 }
 
 .panel {
@@ -2714,6 +2925,13 @@ input[type="file"]:hover {
 
   .workspace {
     grid-template-columns: 1fr;
+    /* 宽屏那两条 16px 间隔改由分隔条占据，堆叠时得把行间距补回来 */
+    gap: 16px;
+  }
+
+  /* 单栏堆叠时没有「栏间距」可调，分隔条一并去掉（否则会多出两条 16px 的空行） */
+  .resizer {
+    display: none;
   }
 
   .panel {
