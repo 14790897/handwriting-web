@@ -23,9 +23,7 @@ test.describe("桌面版启动与打包完整性", () => {
     await expect(desktop.page.getByTestId("app-version")).toContainText(PACKAGED_VERSION);
   });
 
-  test("数据目录落在 LOCALAPPDATA 下：握手端口与站点一致，sqlite 已初始化", async ({
-    desktop,
-  }) => {
+  test("数据目录落在平台默认位置：握手端口与站点一致，sqlite 已初始化", async ({ desktop }) => {
     const content = async () => fs.readFileSync(desktop.logPath, "utf8");
 
     // 握手行是 Electron 从后端 stdout 解析出来的那一行，必须原样落进日志文件

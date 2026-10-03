@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# 一键构建 Windows 桌面版。
+# 一键构建桌面版（按当前平台出 Windows 或 macOS 包）。
 #
-#   bash desktop/build.sh              # 完整构建：前端 dist → 后端 exe → Electron 安装包
+#   bash desktop/build.sh              # 完整构建：前端 dist → 后端可执行文件 → 桌面安装包
 #   bash desktop/build.sh --skip-deps  # 跳过 npm ci / pip install（依赖已装好时更快）
-#   bash desktop/build.sh --app-only   # 只出 Electron 目录版（不生成 NSIS 安装包）
+#   bash desktop/build.sh --app-only   # 只出 Electron 目录版（不生成 NSIS / DMG）
 #
 # 产物：
-#   desktop/build/backend/handwriting-backend/   后端 onedir（调试可直接跑 exe）
-#   desktop/build/installer/                     安装包 / 便携版 exe
+#   desktop/build/backend/handwriting-backend/      后端 onedir（调试可直接跑里面的可执行文件）
+#   desktop/build/installer/                        安装包 / 便携版 / .app
+#
+# 注意：PyInstaller 不能交叉编译，后端的架构由构建机的架构决定，所以 macOS 包只能
+# 在对应架构的 mac 上出（CI 里是 macos-14，arm64）。
 set -euo pipefail
 
 # Windows runner 的控制台代码页不是 UTF-8（英文 runner 是 cp1252），Python 往 stdout
@@ -100,7 +103,7 @@ echo "==> 生成应用图标"
 # 2026-10-03 修：之前用的是仓库根的 logo.png —— 那是旧的 Vue 风格 V，和网站图标
 # 根本不是一回事，桌面版装出来图标是错的。
 # 站点自带的 favicon.ico 最大只有 48x48，而 electron-builder 要求 Windows 图标
-# ≥256x256，所以这里自己合成多尺寸。
+# ≥256x256，所以这里自己合成多尺寸。macOS 的 .icns 同样从这张 512 合成。
 ICON_SRC="$ROOT/frontend/public/web-app-manifest-512x512.png"
 if [ ! -f "$ICON_SRC" ]; then
   echo "找不到站点图标 $ICON_SRC，无法生成应用图标" >&2
@@ -117,6 +120,35 @@ base.save(target, format="ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (
 # 构建栽在一条日志上（CI 上一版就是死在这句的中文上）
 print("icon written to %s" % target)
 PY
+
+# .icns：只有 macOS 需要，也只在 macOS 上生成得出来 —— Pillow 的 ICNS 写出仅限
+# darwin，且 iconutil 是系统自带的。非 macOS 上直接跳过（那个平台也构建不了 mac 目标）。
+if [ "$(uname -s)" = "Darwin" ]; then
+  ICONSET="$DESKTOP/build/icon.iconset"
+  rm -rf "$ICONSET"
+  "$PYTHON" - "$ICON_SRC" "$ICONSET" <<'PY'
+import os
+import sys
+
+from PIL import Image
+
+source, iconset = sys.argv[1], sys.argv[2]
+os.makedirs(iconset, exist_ok=True)
+base = Image.open(source).convert("RGBA")
+# iconutil 只认这套固定文件名：icon_<n>x<n>.png 是 1x，@2x 是两倍像素的那张。
+# 源图只有 512，所以 512x512@2x（1024px）是放大出来的 —— 除了「显示简介」那种
+# 极端场景用不到，留着只为凑齐 iconutil 期望的完整图标集。
+for size in (16, 32, 128, 256, 512):
+    for scale, suffix in ((1, ""), (2, "@2x")):
+        pixels = size * scale
+        base.resize((pixels, pixels), Image.LANCZOS).save(
+            os.path.join(iconset, "icon_%dx%d%s.png" % (size, size, suffix))
+        )
+print("iconset written to %s" % iconset)
+PY
+  iconutil -c icns "$ICONSET" -o "$DESKTOP/build/icon.icns"
+  rm -rf "$ICONSET"
+fi
 
 echo "==> 打包 Electron 应用"
 ensure_node_deps "$DESKTOP"

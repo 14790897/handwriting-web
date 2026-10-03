@@ -40,12 +40,16 @@ def bundle_dir() -> Path:
 
 
 def data_dir() -> Path:
-    """可写的用户数据目录。Electron 通过 HANDWRITING_DATA_DIR 指定，独立运行时回退到 LOCALAPPDATA。"""
+    """可写的用户数据目录。Electron 通过 HANDWRITING_DATA_DIR 指定，独立运行时回退到平台默认位置。"""
     override = os.getenv("HANDWRITING_DATA_DIR")
     if override:
         return Path(override)
-    base = os.getenv("LOCALAPPDATA") or os.path.expanduser("~")
-    return Path(base) / APP_NAME
+    if sys.platform == "darwin":
+        # 与 desktop/main.js 的 dataDir() 保持一致
+        base = Path(os.getenv("HOME") or Path.home()) / "Library" / "Application Support"
+    else:
+        base = Path(os.getenv("LOCALAPPDATA") or os.path.expanduser("~"))
+    return base / APP_NAME
 
 
 def bind_listener(preferred: int = 57610) -> socket.socket:

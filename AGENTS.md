@@ -42,11 +42,11 @@ handwriting-web/
 │   ├── pdf.py                # PyMuPDF 生成 PDF
 │   └── schedule_clean.py     # 每日午夜清理 temp/
 ├── e2e/                      # Playwright 端到端测试 (真实前后端 + 少量 mock 分支)
-├── desktop/                  # Windows 桌面版 (Electron 外壳 + PyInstaller 打包的后端)
-│   ├── main.js               # Electron 主进程: 拉起后端 exe + 端口握手 + 开窗
+├── desktop/                  # 桌面版 (Windows / macOS)：Electron 外壳 + PyInstaller 打包的后端
+│   ├── main.js               # Electron 主进程: 拉起后端可执行文件 + 端口握手 + 开窗
 │   ├── splash.html           # 后端冷启动期间的等待页
 │   ├── backend.spec          # PyInstaller onedir 配置 (打包 dist/、字体与 VERSION)
-│   ├── build.sh              # 一键构建脚本 (前端 dist → 后端 exe → 安装包)
+│   ├── build.sh              # 一键构建脚本 (前端 dist → 后端可执行文件 → 安装包/.app)
 │   └── requirements-build.txt # 仅打包期依赖 (pyinstaller)
 ├── scripts/
 │   └── sync-version.js       # 发版时把发版号同步到 desktop/ 与 backend/VERSION
@@ -82,49 +82,65 @@ cd backend && ../venv/Scripts/python.exe -m uvicorn app:app --reload --host 0.0.
 cd e2e && npm test
 ```
 
-## 桌面版 (Windows exe)
+## 桌面版 (Windows / macOS)
 
-Electron 外壳 + PyInstaller 打包的后端 exe。后端在 127.0.0.1 上随机端口同时提供
+Electron 外壳 + PyInstaller 打包的后端。后端在 127.0.0.1 上随机端口同时提供
 SPA 与 `/api`（同源，前端无需跨域配置），Electron 只用 `BrowserWindow` 加载它。
+`build.sh` 按**当前平台**出包：Windows 是 NSIS / 便携版 exe，macOS 是 .app / DMG。
 
 ```bash
-# 一键构建 (前端 dist → 后端 exe → NSIS 安装包 + 便携版)
+# 一键构建 (前端 dist → 后端可执行文件 → 当前平台的安装包)
 bash desktop/build.sh
 
-# 只出 Electron 目录版（不生成 NSIS 安装包）/ 跳过依赖安装 / 指定解释器（CI 用）
+# 只出 Electron 目录版（不生成 NSIS / DMG）/ 跳过依赖安装 / 指定解释器（CI 用）
 bash desktop/build.sh --app-only
 bash desktop/build.sh --skip-deps
 PYTHON=python bash desktop/build.sh
 
-# 开发调试: 先单独构建后端 exe, 再用 Electron 直接跑
+# 开发调试: 先单独构建后端, 再用 Electron 直接跑
+bash desktop/build.sh --app-only
 cd desktop && npx electron .
 
 # 桌面版 E2E (Playwright _electron 驱动上面构建出来的真实打包产物, 跑不过就不挂 Release)
-bash desktop/build.sh --app-only
 cd e2e && npm run test:desktop
 ```
 
 产物：`desktop/build/backend/handwriting-backend/`（后端 onedir）、
-`desktop/build/installer/`（安装包与便携版）。
+`desktop/build/installer/`（Windows 是 `win-unpacked/` + 安装包/便携版 exe；
+macOS 是 `mac-arm64/HandwritingWeb.app` + DMG/zip）。
+
+**PyInstaller 不能交叉编译**，后端的架构由构建机的架构决定，所以每种目标架构都得在
+对应架构的机器上跑一遍完整构建：Windows 包在 `windows-latest` 出，macOS 包在
+`macos-14`（arm64）出。目前**只发 arm64 的 Mac 包**，Intel Mac 装不了 —— 要补 x64
+得再开一个 `macos-13` 的 job（`macos-latest` 现在也是 arm64，别拿它当 Intel 用）。
 
 **发版自动构建**：`.github/workflows/desktop_release.yml` 在 Semantic Release 工作流成功后，
-在 `windows-latest` 上构建并把安装包/便携版挂到对应 Release 上（PyInstaller 不能交叉编译，
-所以必须是 Windows runner）。用 `workflow_run` 而不是 `release: published` / `push: tags`，
+在 `windows-latest` 与 `macos-14` 上分别构建并把产物挂到对应 Release 上。
+用 `workflow_run` 而不是 `release: published` / `push: tags`，
 是因为 token 触发的 release/tag 事件不会再触发新工作流；`workflow_run` 不受该限制，
 所以不依赖 `secrets.GH_TOKEN` 是不是 PAT。
 
-三条路径，都已在 CI 上实测过：
+三个 job：`resolve-tag`（ubuntu，便宜的预检）→ `build-desktop`（windows）+ `build-desktop-mac`
+（macos-14）。预检**故意拆成独立 job**：这样「本次没发版」和「该 tag 还不支持 macOS」两条
+路径都不会去启动构建 runner —— macOS runner 的计费倍率是 Linux 的 10 倍，白起一次很贵。
+两个构建 job 都靠 `needs.resolve-tag.outputs` 判断自己要不要跑，不要再把版本校验逻辑
+复制进构建 job。
+
+三条路径，Windows 那侧都已在 CI 上实测过（macOS job 是 2026-10-03 跟着 macOS 打包一起
+加的，**它的第一次真实运行会是那次改动之后的第一个 release** —— 在那之前别把它当已验证的）：
 
 | 触发 | 行为 |
 |---|---|
 | 自动，本次有新版本 | 从 main 构建并上传；上传前核对 release tag 与检出代码的 `backend/VERSION` 一致，不一致直接报错退出 |
-| 自动，本次没发版 | 直接跳过（约 26s），不浪费一次 Windows 构建 |
+| 自动，本次没发版 | 直接跳过（约 26s），不浪费一次 Windows / macOS 构建 |
 | `workflow_dispatch` 填 tag | **检出该 tag** 构建后上传 —— 用来补传历史上构建失败的 release |
 
 **补传历史版本**：Actions → Desktop Release Assets → Run workflow，tag 填如 `v1.32.0`。
 因为检出的是那个 tag，产物就是从 tag 的代码构建的，与 release 一致；但 tag 里若没有
 `backend/VERSION` 会直接报错 —— 该文件是 v1.32.0 才引入的，**更早的 tag 补不了**，
-得手工处理。
+得手工处理。另外 `desktop/package.json` 里没有 `mac` 配置的旧 tag 会被自动跳过 macOS
+构建（那时 `pack`/`dist` 还是 `electron-builder --win`，在 macOS 上只会产出 win-unpacked，
+后面的桌面版 E2E 必然失败），判断在 `resolve-tag` 里做。
 
 ### 版本号
 
@@ -147,8 +163,11 @@ cd e2e && npm run test:desktop
 
 桌面版与线上差异（都靠 `DESKTOP_MODE` / 环境变量区分，Web 部署不受影响）：
 
-- 数据目录在 `%LOCALAPPDATA%\HandwritingWeb`（`tasks.db`、`temp/`、`logs/`、字体），
-  由 `backend/desktop_main.py` 在导入 `app` 之前设好环境变量并 `chdir`。
+- 数据目录：Windows 是 `%LOCALAPPDATA%\HandwritingWeb`，macOS 是
+  `~/Library/Application Support/HandwritingWeb`（`tasks.db`、`temp/`、`logs/`、字体），
+  由 `desktop/main.js` 的 `dataDir()` 定好后传给后端，`backend/desktop_main.py` 在导入
+  `app` 之前设好环境变量并 `chdir`。两边都从环境变量（`LOCALAPPDATA` / `HOME`）取基目录、
+  不用 Electron 的 `userData`，E2E 就是靠改这一个变量把数据目录挪进临时目录的。
   打包后 `__file__` 落在只读/临时的包内目录，不能再依赖它定位数据。
 - 前端 `frontend/src/desktop.js` 按 UA 判定 Electron，桌面版不加载 GA/Clarity/Chatwoot/Sentry。
 - 关掉上报上游 Sentry（`SENTRY_DSN=""`）、跳过 pandoc 自动下载（无 pandoc 时回退 python-docx）、
@@ -175,6 +194,37 @@ cd e2e && npm run test:desktop
   `export PYTHONUTF8=1` / `PYTHONIOENCODING=utf-8`；`desktop_release.yml` 的构建步骤 env
   里**也**钉了同样两个变量 —— 手动补传会检出旧 tag，那时它的 build.sh 还没有这个 export，
   只能靠工作流兜住。**改构建脚本时别把这层依赖去掉。**
+
+### macOS 版（改这块之前先读）
+
+- **未签名、也没公证**。`desktop/package.json` 里 `mac.identity: null` 明确关掉签名，
+  工作流的构建步骤另设 `CSC_IDENTITY_AUTO_DISCOVERY=false` 兜底（旧 tag 没有那个字段）。
+  这是**有意的**：仓库里没有 Apple 开发者证书。代价是用户下载 DMG 后首次打开会被
+  Gatekeeper 拦下 —— macOS 15+ 直接说「已损坏」，其实是隔离属性，不是真损坏。
+  让用户先执行一次：
+
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/HandwritingWeb.app
+  ```
+
+  或在「系统设置 → 隐私与安全性」里点「仍要打开」。**发版说明里要写这一步。**
+  要改成签名+公证，得先有 Developer ID 证书与 App Store Connect 凭据（存成 Secrets），
+  这跟「只是把包打出来」是两件事，不要顺手加。
+- **arm64 only**：`mac.target` 只列了 `arm64`，构建机也必须是 arm64（见上文交叉编译那条）。
+- **路径差异**：`desktop/main.js` 里三处按平台分支，改的时候别只看 Windows ——
+  `BACKEND_EXE` 在 macOS 上没有 `.exe` 后缀（PyInstaller 只给 Windows 加）；
+  `dataDir()` 见上一节；E2E 的可执行文件在 `mac-arm64/HandwritingWeb.app/Contents/MacOS/`
+  里，`e2e/desktop-tests/launch.js` 的 `defaultAppExe()` 负责翻译。
+- **macOS 的应用菜单必须显式建**：系统的第一个子菜单固定是应用菜单，不写 `role: "quit"`
+  就没有 Cmd+Q；更要紧的是**编辑菜单**——macOS 的 Cmd+C/V/A/Z 是走菜单 role 分发的，
+  缺了「编辑」这一栏，页面里的输入框连复制粘贴都不响应。改菜单时别把它删掉，
+  Windows 上没有这个问题、只在 Mac 上会露出来。
+- **图标**：Windows 要 `.ico`、macOS 要 `.icns`，都由 `build.sh` 从站点那张 512x512
+  合成（`iconutil` 是 macOS 自带的，非 Darwin 跳过这步）。源图的 512x512@2x 是放大出来的，
+  介意的话先换一张更大的方图。
+- **别把依赖钉成没有 macOS wheel 的版本**：后端依赖要能在 arm64 macOS 上直接装 wheel
+  （`Pillow` / `PyMuPDF` 这类钉了版本的尤其要看）。钉死了没有对应 wheel 的版本，
+  pip 会去本地编译，macOS 构建就会莫名其妙地慢或挂。
 
 ## 编码约定
 
