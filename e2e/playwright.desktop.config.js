@@ -1,5 +1,6 @@
-// 桌面版（打包产物）专属配置：驱动 desktop/build/installer/win-unpacked/ 里的真实
-// Electron 应用，没有 webServer、不启浏览器，所以本地要先把桌面版构建出来：
+// 桌面版（打包产物）专属配置：驱动 desktop/build/installer/ 里的真实 Electron 应用
+// （Windows 是 win-unpacked/HandwritingWeb.exe，macOS 是 mac-arm64/HandwritingWeb.app），
+// 没有 webServer、不启浏览器，所以本地要先把桌面版构建出来：
 //   bash desktop/build.sh --app-only     # 或完整构建 bash desktop/build.sh
 //   cd e2e && npm run test:desktop
 // 源码版（前后端 dev server）用的是 playwright.config.js，两者互不影响。

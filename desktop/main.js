@@ -5,7 +5,9 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 
-const BACKEND_EXE = "handwriting-backend.exe";
+// PyInstaller 只在 Windows 上给可执行文件加 .exe 后缀，macOS 上没有
+const BACKEND_EXE =
+  process.platform === "win32" ? "handwriting-backend.exe" : "handwriting-backend";
 const READY_TIMEOUT_MS = 90 * 1000;
 
 let backendProcess = null;
@@ -20,7 +22,13 @@ function backendDir() {
 }
 
 function dataDir() {
-  // 放 LOCALAPPDATA 而不是 Electron 默认的 Roaming，避免临时渲染数据被漫游同步
+  // 故意不用 Electron 默认的 userData：Windows 上要避开会被漫游同步的 Roaming，
+  // macOS 上则直接用约定的 ~/Library/Application Support。两边都从环境变量取基目录，
+  // 这样 E2E 改一个变量就能把整个数据目录挪进临时目录（见 e2e/desktop-tests/launch.js）。
+  if (process.platform === "darwin") {
+    const home = process.env.HOME || app.getPath("home");
+    return path.join(home, "Library", "Application Support", "HandwritingWeb");
+  }
   const base = process.env.LOCALAPPDATA || app.getPath("userData");
   return path.join(base, "HandwritingWeb");
 }
@@ -38,9 +46,9 @@ function startBackend() {
   });
   logStream.write(`\n===== ${new Date().toISOString()} 启动后端 =====\n`);
 
-  // windowsHide 抑制控制台窗口，但 stdout 管道仍然可用（端口握手靠它）。
-  // stdin 直接忽略：后端改成轮询父进程 PID 来判断 Electron 是否还在，
-  // 不再需要 stdin（在无控制台的 frozen 进程里阻塞读 stdin 会让它卡死）。
+  // windowsHide 抑制控制台窗口（只对 Windows 有效，其它平台忽略），但 stdout 管道
+  // 仍然可用（端口握手靠它）。stdin 直接忽略：后端改成轮询父进程 PID 来判断 Electron
+  // 是否还在，不再需要 stdin（在无控制台的 frozen 进程里阻塞读 stdin 会让它卡死）。
   const child = spawn(exe, [], {
     cwd: dir,
     windowsHide: true,
@@ -51,7 +59,8 @@ function startBackend() {
       // 页面上要显示的版本号：用安装的这个版本，而不是构建时写死的
       HANDWRITING_APP_VERSION: app.getVersion(),
       // Windows 上 Python 的管道/文件默认走 ANSI 代码页，中文日志会抛
-      // UnicodeEncodeError 或写成乱码；强制整个解释器用 UTF-8
+      // UnicodeEncodeError 或写成乱码；强制整个解释器用 UTF-8（macOS 本来就
+      // 是 UTF-8，这三个变量在那边只是无操作）
       PYTHONUTF8: "1",
       PYTHONIOENCODING: "utf-8",
       PYTHONUNBUFFERED: "1",
@@ -202,43 +211,76 @@ function createWindow() {
 }
 
 function buildMenu() {
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate([
-      {
-        label: "视图",
-        submenu: [
-          { role: "reload" },
-          { role: "forceReload" },
-          { role: "toggleDevTools" },
-          { type: "separator" },
-          { role: "resetZoom" },
-          { role: "zoomIn" },
-          { role: "zoomOut" },
-          { type: "separator" },
-          { role: "togglefullscreen" },
-        ],
-      },
-      {
-        label: "帮助",
-        submenu: [
-          {
-            label: "打开数据目录",
-            click: () => shell.openPath(dataDir()),
-          },
-          {
-            label: "关于",
-            click: () =>
-              dialog.showMessageBox({
-                type: "info",
-                title: "关于",
-                message: "手写体生成器 桌面版",
-                detail: `版本 ${app.getVersion()}\n数据目录：${dataDir()}`,
-              }),
-          },
-        ],
-      },
-    ])
+  const template = [];
+
+  if (process.platform === "darwin") {
+    // macOS 的第一个子菜单永远是应用菜单（名称取自 app.name），系统不给它补默认项，
+    // 所以隐藏/退出要自己列出来，否则 Cmd+H / Cmd+Q 都是死的。
+    // 这里不挂 role: "appMenu"，因为它的「关于」只是 Electron 自带的版本框 ——
+    // 下面「帮助」里的那个还会显示数据目录，留一个就够。
+    template.push({
+      label: app.name,
+      submenu: [
+        { role: "hide" },
+        { role: "hideOthers" },
+        { role: "unhide" },
+        { type: "separator" },
+        { role: "quit" },
+      ],
+    });
+    // 编辑菜单同样不能省：macOS 的 Cmd+C/V/A/Z 是走菜单 role 分发的，
+    // 没有这一栏，输入框里连复制粘贴都不响应。
+    template.push({
+      label: "编辑",
+      submenu: [
+        { role: "undo" },
+        { role: "redo" },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" },
+      ],
+    });
+  }
+
+  template.push(
+    {
+      label: "视图",
+      submenu: [
+        { role: "reload" },
+        { role: "forceReload" },
+        { role: "toggleDevTools" },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+    {
+      label: "帮助",
+      submenu: [
+        {
+          label: "打开数据目录",
+          click: () => shell.openPath(dataDir()),
+        },
+        {
+          label: "关于",
+          click: () =>
+            dialog.showMessageBox({
+              type: "info",
+              title: "关于",
+              message: "手写体生成器 桌面版",
+              detail: `版本 ${app.getVersion()}\n数据目录：${dataDir()}`,
+            }),
+        },
+      ],
+    }
   );
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 function stopBackend() {

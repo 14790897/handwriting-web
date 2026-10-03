@@ -1,4 +1,4 @@
-# 发版后自动构建 Windows 桌面版，并把安装包 / 便携版挂到对应的 GitHub Release 上。
+# 发版后自动构建 Windows / macOS 桌面版，并把安装包挂到对应的 GitHub Release 上。
 #
 # 为什么用 workflow_run 而不是 release: published / push: tags：
 # semantic-release 是用 token 创建 release 的，而 token 触发的 push / release 事件
@@ -28,13 +28,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-desktop:
-    # 没有新版本时不构建（省掉一次十几分钟的 Windows 构建）
+  # 先把「这次要不要构建、构建哪个版本、要不要出 mac 包」在一个便宜的 ubuntu runner 上
+  # 定下来，两个构建 job 只消费它的输出。拆出来是为了让「本次没发版」和「旧 tag 不支持
+  # macOS」这两条路径都不去启动对应的 runner —— macOS 的计费倍率是 Linux 的 10 倍。
+  resolve-tag:
     if: >-
       github.event_name == 'workflow_dispatch'
       || github.event.workflow_run.conclusion == 'success'
-    runs-on: windows-latest
-    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      mac_supported: ${{ steps.mac.outputs.supported }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,8 +47,7 @@ jobs:
           # 再挂到旧 release 上，产物的版本号和 release 对不上。
           # 自动触发时 inputs.tag 为空，checkout 走默认（触发运行所在的提交）。
           ref: ${{ inputs.tag }}
-          # 这个 job 有 contents: write，而后面要跑依赖安装与构建脚本；
-          # 别把 token 留在 git config 里供第三方脚本读取。
+          # contents: write 的 token 不该留在 git config 里供后续脚本读取。
           # gh 步骤用的是显式传的 GH_TOKEN。
           persist-credentials: false
 
@@ -91,26 +94,53 @@ jobs:
           echo "上传目标 ${TARGET}（与检出代码 v${VERSION} 一致）"
           echo "tag=${TARGET}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      # 补传历史版本时会检出**还没有 macOS 支持**的旧 tag：那时 desktop/package.json
+      # 的 pack/dist 还是 `electron-builder --win`，在 macOS 上只会产出 win-unpacked，
+      # 后面的桌面版 E2E 必然失败、把整个 workflow 拖红。那种 tag 本来也不该挂 mac 产物，
+      # 所以在这里就把 mac job 关掉（在 ubuntu 上判断，连 mac runner 都不会起）。
+      - name: 确认该 tag 支持 macOS 打包
+        id: mac
         if: steps.tag.outputs.tag != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -qE '"mac"[[:space:]]*:' desktop/package.json; then
+            echo "该 tag 已支持 macOS 打包"
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "该 tag 的 desktop/package.json 里没有 mac 配置，跳过 macOS 构建（macOS 版从有这个配置的版本起才有）"
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-desktop:
+    needs: resolve-tag
+    # 没有新版本时不构建（省掉一次十几分钟的 Windows 构建）
+    if: needs.resolve-tag.outputs.tag != ''
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - uses: actions/setup-node@v4
-        if: steps.tag.outputs.tag != ''
         with:
           node-version: "20"
 
       # build.sh 只装构建期依赖，运行期依赖要在这里先装好
       - name: 安装 Python 依赖
-        if: steps.tag.outputs.tag != ''
         shell: bash
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r backend/requirements.txt -r desktop/requirements-build.txt
 
       - name: 构建桌面版（前端 dist → 后端 exe → 安装包）
-        if: steps.tag.outputs.tag != ''
         shell: bash
         env:
           PYTHON: python
@@ -123,7 +153,6 @@ jobs:
         run: bash desktop/build.sh
 
       - name: 安装桌面版 E2E 依赖
-        if: steps.tag.outputs.tag != ''
         working-directory: e2e
         run: npm ci --no-audit --no-fund
 
@@ -131,15 +160,14 @@ jobs:
       # 和安装包里的文件是同一份），跑不过就不挂 Release。
       # _electron 驱动的是 Electron 二进制本身，不需要 playwright install 下载浏览器。
       - name: 桌面版 E2E（真实打包产物）
-        if: steps.tag.outputs.tag != ''
         working-directory: e2e
         run: npm run test:desktop
 
       - name: 上传桌面版 E2E 报告
-        if: always() && steps.tag.outputs.tag != ''
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-e2e-report
+          name: desktop-e2e-report-windows
           path: |
             e2e/desktop-tests/.report
             e2e/desktop-tests/.results
@@ -149,17 +177,94 @@ jobs:
           retention-days: 7
 
       - name: 挂到 Release 上
-        if: steps.tag.outputs.tag != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: ${{ needs.resolve-tag.outputs.tag }}
         run: |
           set -euo pipefail
           shopt -s nullglob
           files=(desktop/build/installer/*.exe)
           if [ ${#files[@]} -eq 0 ]; then
             echo "没有找到构建产物 desktop/build/installer/*.exe" >&2
+            exit 1
+          fi
+          printf '上传到 %s:\n' "$TAG"
+          printf '  %s\n' "${files[@]}"
+          gh release upload "$TAG" "${files[@]}" --clobber
+
+  build-desktop-mac:
+    needs: resolve-tag
+    if: needs.resolve-tag.outputs.mac_supported == 'true'
+    # 必须是 arm64 的 runner（macos-13 是 Intel）。PyInstaller 不能交叉编译，
+    # 后端的架构由构建机决定，而 electron-builder 也只能给 mac 出 arm64 目标，
+    # 所以 Intel 包得另开一个 macos-13 的 job 才行，目前没有。
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装 Python 依赖
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt -r desktop/requirements-build.txt
+
+      - name: 构建桌面版（前端 dist → 后端可执行文件 → .app / DMG）
+        shell: bash
+        env:
+          PYTHON: python
+          # 没有 Apple 开发者证书，明确别让 electron-builder 去找签名身份 ——
+          # 找不到时它本来就只是警告后跳过，但显式关掉可以避免 runner 上装了别的
+          # 证书时用错身份去签。package.json 里的 mac.identity: null 是第二道保险，
+          # 而旧 tag 没有那个字段，只能靠这里。
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: bash desktop/build.sh
+
+      - name: 安装桌面版 E2E 依赖
+        working-directory: e2e
+        run: npm ci --no-audit --no-fund
+
+      # 驱动刚构建出来的 mac-arm64/HandwritingWeb.app。未签名，但它是本机构建的、
+      # 没有 quarantine 属性（只有从浏览器下载的文件才会被加上），所以能直接启动。
+      - name: 桌面版 E2E（真实打包产物）
+        working-directory: e2e
+        run: npm run test:desktop
+
+      - name: 上传桌面版 E2E 报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-e2e-report-macos
+          path: |
+            e2e/desktop-tests/.report
+            e2e/desktop-tests/.results
+          include-hidden-files: true
+          retention-days: 7
+
+      - name: 挂到 Release 上
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.resolve-tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(desktop/build/installer/*.dmg desktop/build/installer/*.zip)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "没有找到构建产物 desktop/build/installer/*.dmg|*.zip" >&2
             exit 1
           fi
           printf '上传到 %s:\n' "$TAG"

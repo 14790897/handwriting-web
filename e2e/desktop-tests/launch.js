@@ -1,9 +1,10 @@
-// 桌面版（Electron 外壳 + PyInstaller 后端 exe）的启动/清理工具。
+// 桌面版（Electron 外壳 + PyInstaller 后端）的启动/清理工具。
 //
-// 这里驱动的是 electron-builder 出来的真实可执行文件
-// （desktop/build/installer/win-unpacked/HandwritingWeb.exe），不是 `electron .`
-// 的开发形态：后端 exe、asar 里的站点、extraResources 里的 backend 目录都按
-// 「用户装到的那个东西」的布局走。用 _electron 需要 Electron 二进制本身，
+// 这里驱动的是 electron-builder 出来的真实可执行文件（Windows 上是
+// desktop/build/installer/win-unpacked/HandwritingWeb.exe，macOS 上是
+// desktop/build/installer/mac-arm64/HandwritingWeb.app），不是 `electron .`
+// 的开发形态：后端可执行文件、asar 里的站点、extraResources 里的 backend 目录
+// 都按「用户装到的那个东西」的布局走。用 _electron 需要 Electron 二进制本身，
 // 不需要下载浏览器，也不需要 desktop/node_modules。
 const { _electron: electron } = require("@playwright/test");
 const crypto = require("crypto");
@@ -14,14 +15,20 @@ const os = require("os");
 const path = require("path");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
-const DEFAULT_EXE = path.join(
-  REPO_ROOT,
-  "desktop",
-  "build",
-  "installer",
-  "win-unpacked",
-  "HandwritingWeb.exe"
-);
+const APP_NAME = "HandwritingWeb";
+
+// electron-builder 在 macOS 上按架构分目录（mac-arm64 / mac / mac-universal），
+// 可执行文件埋在 .app 包里；Windows 则是平铺的 win-unpacked。
+function defaultAppExe() {
+  const installer = path.join(REPO_ROOT, "desktop", "build", "installer");
+  if (process.platform === "darwin") {
+    const candidates = ["mac-arm64", "mac", "mac-universal"].map((dir) =>
+      path.join(installer, dir, `${APP_NAME}.app`, "Contents", "MacOS", APP_NAME)
+    );
+    return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+  }
+  return path.join(installer, "win-unpacked", `${APP_NAME}.exe`);
+}
 
 // 后端冷启动要载入 sklearn/opencv（实测本机约 5-10 秒，CI 更慢），
 // 加载完之前窗口停在 splash.html
@@ -35,27 +42,31 @@ function appExePath() {
     }
     return path.resolve(override);
   }
-  if (!fs.existsSync(DEFAULT_EXE)) {
+  const fallback = defaultAppExe();
+  if (!fs.existsSync(fallback)) {
     throw new Error(
-      `找不到打包后的桌面版：${DEFAULT_EXE}\n` +
+      `找不到打包后的桌面版：${fallback}\n` +
         "先构建（bash desktop/build.sh --app-only），或用 DESKTOP_APP_EXE 指定可执行文件"
     );
   }
-  return DEFAULT_EXE;
+  return fallback;
 }
 
-// desktop/main.js 用 LOCALAPPDATA 定位后端数据目录（<LOCALAPPDATA>/HandwritingWeb），
-// 所以隔离要作用在 Electron 进程的环境上。
+// desktop/main.js 的 dataDir() 是按平台拼出来的：Windows 用 <LOCALAPPDATA>\HandwritingWeb，
+// macOS 用 $HOME/Library/Application Support/HandwritingWeb。所以隔离要作用在 Electron
+// 进程的那个环境变量上，隔离出来的目录就是应用真正会去写数据的地方。
 function prepareIsolatedEnv() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "hww-desktop-e2e-"));
-  const env = {
-    ...process.env,
-    LOCALAPPDATA: path.join(root, "localappdata"),
-  };
-  const dataDir = path.join(env.LOCALAPPDATA, "HandwritingWeb");
-  for (const dir of [env.LOCALAPPDATA, dataDir]) {
-    fs.mkdirSync(dir, { recursive: true });
+  const env = { ...process.env };
+  let dataDir;
+  if (process.platform === "darwin") {
+    env.HOME = path.join(root, "home");
+    dataDir = path.join(env.HOME, "Library", "Application Support", APP_NAME);
+  } else {
+    env.LOCALAPPDATA = path.join(root, "localappdata");
+    dataDir = path.join(env.LOCALAPPDATA, APP_NAME);
   }
+  fs.mkdirSync(dataDir, { recursive: true });
   return { root, env, dataDir };
 }
 
