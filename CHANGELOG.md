@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/14790897/handwriting-web/compare/v1.32.3...v1.33.0) (2026-10-03)
+
+
+### Features
+
+* **desktop:** 增加 macOS 打包（arm64、未签名） ([#88](https://github.com/14790897/handwriting-web/issues/88)) ([1a85571](https://github.com/14790897/handwriting-web/commit/1a85571442797a32532b307781e5d6db8cc94b39))
+
 ## [1.32.3](https://github.com/14790897/handwriting-web/compare/v1.32.2...v1.32.3) (2026-10-03)
 
 
