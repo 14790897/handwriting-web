@@ -67,13 +67,31 @@ class IdentifyDistanceTest(unittest.TestCase):
             self.assertIsInstance(value, int)
             self.assertGreaterEqual(value, 0)
 
-    @unittest.expectedFailure
     def test_line_spacing_is_the_walk_distance_not_the_stroke_thickness(self):
-        # 已知缺陷：一横画在 Canny 后是上下两条边缘，相距约等于笔画高度（这里 9px），
-        # 而 DBSCAN 取的是「最常见」的簇 —— 笔画厚度，不是 LINE_SPACING。
-        # 前端拿它当 line_spacing 用，所以这个返回值偏小得离谱。
-        # 修好了就把这条 expectedFailure 去掉。
+        # 一横画在 Canny 后是上下两条边缘，y 差约等于笔画高度（这里 9px）；直接取
+        # 相邻边缘 y 差的「最常见」簇，拿到的是笔画厚度而不是行距（以前返回 9）。
         *_, line_spacing = identify(self.page)
+        self.assertAlmostEqual(line_spacing, LINE_SPACING, delta=4)
+
+    def test_line_spacing_survives_a_row_with_more_than_two_strokes(self):
+        # 一行里有多条横（x-height 和 ascender 各一条）时，相邻边缘的 y 差会有三种
+        # （这里 9 / 13 / 39），既不属于「笔画厚度」也不属于「行距」；先并成行再量
+        # 才拿得到 LINE_SPACING
+        page = os.path.join(self.workdir, "two-strokes-per-row.png")
+        image = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), "white")
+        draw = ImageDraw.Draw(image)
+        y = MARGIN_TOP + 30
+        while y + STROKE_HEIGHT < PAGE_HEIGHT - MARGIN_BOTTOM:
+            draw.rectangle(
+                [MARGIN_LEFT, y - 30, PAGE_WIDTH - MARGIN_RIGHT, y - 22], fill=INK
+            )
+            draw.rectangle(
+                [MARGIN_LEFT, y - STROKE_HEIGHT, PAGE_WIDTH - MARGIN_RIGHT, y], fill=INK
+            )
+            y += LINE_SPACING
+        image.save(page)
+
+        *_, line_spacing = identify(page)
         self.assertAlmostEqual(line_spacing, LINE_SPACING, delta=4)
 
     def test_degrades_to_zero_when_no_lines_are_detected(self):

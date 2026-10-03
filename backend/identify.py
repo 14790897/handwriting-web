@@ -47,6 +47,39 @@ def get_avg_distance(distances):
     avg_distance = np.mean(selected_distances)
     return avg_distance
 
+def get_line_spacing(lines_rotated):
+    """相邻两行的行距（行到行），而不是单个笔画的粗细。
+
+    一横画过 Canny 会得到上下两条边缘，y 只差一个笔画高度。直接拿相邻边缘的 y 差
+    去取「最常见」的簇，笔画比行距细时选中的就是笔画厚度 —— 合成图上真实行距 70，
+    返回的却是 9。所以先把挨得足够近的边缘并成一「行」，再在行与行之间量距离。
+
+    lines_rotated: 已按 y 排好序的 (N, 4) 直线数组。10.3
+    """
+    ys = np.unique(lines_rotated[:, 1])
+    if len(ys) < 3:
+        return 0
+
+    # 行内边缘间距（笔画粗细）和行间距离各自成簇，两簇之间有个断档；取断档中点当
+    # 分界，这样不用对笔画高度或行距硬编码任何阈值
+    diffs = np.sort(np.diff(ys))
+    gaps = np.diff(diffs)
+    split = int(np.argmax(gaps))
+    threshold = (diffs[split] + diffs[split + 1]) / 2
+
+    rows = [[ys[0]]]
+    for prev, cur in zip(ys[:-1], ys[1:]):
+        if cur - prev > threshold:
+            rows.append([])
+        rows[-1].append(cur)
+
+    # 整页只有一行文字时谈不上行距，退化成 0
+    if len(rows) < 2:
+        return 0
+
+    row_centers = np.array([np.mean(row) for row in rows])
+    return get_avg_distance(np.diff(row_centers).tolist())
+
 def identify_distance(filename):
     # 读取图像
     image = cv2.imread(filename)
@@ -167,15 +200,7 @@ def identify_distance(filename):
     print('下边空白长度：', avg_b_whitespace)
 
 
-    distances = []
-
-    for i in range(1, len(lines_rotated)):
-        distance=lines_rotated[i][1] - lines_rotated[i-1][1]
-        if distance > 5:
-            distances.append(distance)
-            # print('行间距：', distance)
-            
-    avg_distance = get_avg_distance(distances)
+    avg_distance = get_line_spacing(lines_rotated)
     print('左边平均空白长度：', avg_l_whitespace)
     print('右边平均空白长度：', avg_r_whitespace)
     print('平均行间距：', avg_distance)
