@@ -706,6 +706,9 @@ export default {
       // 三栏宽度：null 表示这一栏还用 CSS 里的默认轨道（左 300px / 右 1fr），
       // 拖动过一次就钉成固定像素值，中栏吃掉剩余空间
       workspaceColumns: { left: null, right: null },
+      // 实际渲染用的宽度：窗口放得下时就等于 workspaceColumns，放不下才按比例收窄。
+      // 和上面分开，是为了窗口重新变宽后能还原用户自己拖出来的宽度
+      appliedColumns: { left: null, right: null },
       // 拖动中的临时状态：起始指针位置、起始栏宽、可用总宽，仅拖动期间存在
       resizeState: null,
       showLetterFormatter: false,
@@ -762,6 +765,7 @@ export default {
       left: readColumn(savedColumns && savedColumns.left),
       right: readColumn(savedColumns && savedColumns.right),
     };
+    this.appliedColumns = { ...this.workspaceColumns };
 
     this.$http.get('/api/version').then(response => {
       this.appVersion = response.data?.version || '';
@@ -805,7 +809,7 @@ export default {
     // 没拖动过就不写变量，由 CSS 里的默认轨道接管
     workspaceStyle() {
       const style = {};
-      const { left, right } = this.workspaceColumns;
+      const { left, right } = this.appliedColumns;
       if (left) style['--col-left'] = `${left}px`;
       if (right) style['--col-right'] = `${right}px`;
       return style;
@@ -1263,9 +1267,11 @@ export default {
         right: this.$refs.panelPreview.getBoundingClientRect().width,
       };
     },
-    // 左右两栏一起钉成固定像素宽度；中栏拿走剩下的空间
+    // 左右两栏一起钉成固定像素宽度；中栏拿走剩下的空间。拖出来的值同时是"用户要的宽度"和"当前渲染宽度"
     applyColumnWidths(left, right) {
-      this.workspaceColumns = { left: Math.round(left), right: Math.round(right) };
+      const columns = { left: Math.round(left), right: Math.round(right) };
+      this.workspaceColumns = columns;
+      this.appliedColumns = { ...columns };
     },
     persistWorkspaceColumns() {
       localStorage.setItem('workspaceColumns', JSON.stringify(this.workspaceColumns));
@@ -1318,8 +1324,12 @@ export default {
     },
     // 双击分隔条：这一栏退回 CSS 的弹性默认宽度（左 300px / 右 1fr）
     resetColumnWidth(side) {
-      this.workspaceColumns = { ...this.workspaceColumns, [side]: null };
+      const columns = { ...this.workspaceColumns, [side]: null };
+      this.workspaceColumns = columns;
+      this.appliedColumns = { ...columns };
       this.persistWorkspaceColumns();
+      // 另一栏还钉着的话，退回弹性列后可能放不下，按当前窗口再收一次
+      this.clampWorkspaceColumns();
     },
     onResizerKeydown(side, event) {
       // 方向键朝着分隔条该走的方向推：左分隔条按 → 加宽左栏，右分隔条按 ← 加宽右栏
@@ -1340,10 +1350,11 @@ export default {
       this.applyColumnWidths(side === 'left' ? next : metrics.left, side === 'right' ? next : metrics.right);
       this.persistWorkspaceColumns();
     },
-    // 窗口变窄时按比例收回钉死的栏宽，否则左右两栏会把中栏挤到最小宽度以下、整页横向溢出
+    // 窗口变窄时把渲染宽度按比例收回来，否则左右两栏会把中栏挤到最小宽度以下、整页横向溢出。
+    // 只改 appliedColumns，用户拖出来的值留在 workspaceColumns 里，窗口重新变宽时能还回去
     clampWorkspaceColumns() {
       const { left, right } = this.workspaceColumns;
-      if (!left || !right) return;
+      if (!left && !right) return;
       const workspace = this.$refs.workspace;
       if (!workspace) return;
       // 窄屏是单栏堆叠，栏宽存的是宽屏时的值，这时候不能拿当前宽度去压它
@@ -1353,15 +1364,20 @@ export default {
 
       const metrics = this.measureWorkspaceMetrics();
       if (!metrics) return;
+      // 没钉住的那一栏按 CSS 默认轨道渲染，但占的宽度也要算进来
+      const currentLeft = left || metrics.left;
+      const currentRight = right || metrics.right;
       const maxTotal = metrics.available - GUTTER_WIDTH * 2 - MIN_MIDDLE_WIDTH;
-      if (left + right <= maxTotal) return;
+      if (currentLeft + currentRight <= maxTotal) {
+        this.appliedColumns = { left, right };
+        return;
+      }
 
-      const scale = maxTotal / (left + right);
-      this.applyColumnWidths(
-        Math.max(MIN_COLUMN_WIDTH, left * scale),
-        Math.max(MIN_COLUMN_WIDTH, right * scale),
-      );
-      this.persistWorkspaceColumns();
+      const scale = maxTotal / (currentLeft + currentRight);
+      this.appliedColumns = {
+        left: Math.max(MIN_COLUMN_WIDTH, Math.round(currentLeft * scale)),
+        right: Math.max(MIN_COLUMN_WIDTH, Math.round(currentRight * scale)),
+      };
     },
     startQueueFullCountdown(seconds) {
       // 清掉旧计时器

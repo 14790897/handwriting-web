@@ -71,6 +71,20 @@ test.describe("三栏宽度调整", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
   });
 
+  test("窗口变窄只压缩显示，重新变宽后还回用户拖出来的宽度", async ({ page }) => {
+    await dragResizer(page, "resizer-settings", 160);
+    const widened = await settingsWidth(page);
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expect.poll(() => settingsWidth(page)).toBeLessThan(widened);
+    // 被压过的是渲染宽度，存的值不能被改小，否则用户在宽屏上拖出来的布局就没了
+    expect((await savedColumns(page)).left).toBeGreaterThan(widened - 5);
+    expect(await textWidth(page)).toBeGreaterThanOrEqual(295);
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect.poll(() => settingsWidth(page)).toBe(widened);
+  });
+
   test("窄屏单栏堆叠时分隔条不出现", async ({ page }) => {
     await page.setViewportSize({ width: 820, height: 1180 });
     await expect(page.getByTestId("resizer-settings")).toBeHidden();
