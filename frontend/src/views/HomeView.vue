@@ -1273,8 +1273,14 @@ export default {
       this.workspaceColumns = columns;
       this.appliedColumns = { ...columns };
     },
+    // 存储不可用（隐私模式 / 配额满）时 setItem 会抛异常。这里吞掉它，
+    // 否则 resetColumnWidth 里紧跟着的那次 clamp 会被跳过，布局可能停在放不下的状态
     persistWorkspaceColumns() {
-      localStorage.setItem('workspaceColumns', JSON.stringify(this.workspaceColumns));
+      try {
+        localStorage.setItem('workspaceColumns', JSON.stringify(this.workspaceColumns));
+      } catch (error) {
+        console.warn('保存栏宽失败:', error);
+      }
     },
     startResize(side, event) {
       const metrics = this.measureWorkspaceMetrics();
@@ -1374,10 +1380,18 @@ export default {
       }
 
       const scale = maxTotal / (currentLeft + currentRight);
-      this.appliedColumns = {
-        left: Math.max(MIN_COLUMN_WIDTH, Math.round(currentLeft * scale)),
-        right: Math.max(MIN_COLUMN_WIDTH, Math.round(currentRight * scale)),
-      };
+      let nextLeft = Math.max(MIN_COLUMN_WIDTH, Math.round(currentLeft * scale));
+      let nextRight = Math.max(MIN_COLUMN_WIDTH, Math.round(currentRight * scale));
+      // 两侧各自有 200px 下限，按比例缩完再抬到下限后可能仍超预算，多出来的从较宽的一侧扣掉
+      const excess = nextLeft + nextRight - maxTotal;
+      if (excess > 0) {
+        if (nextLeft > nextRight) {
+          nextLeft -= excess;
+        } else {
+          nextRight -= excess;
+        }
+      }
+      this.appliedColumns = { left: nextLeft, right: nextRight };
     },
     startQueueFullCountdown(seconds) {
       // 清掉旧计时器

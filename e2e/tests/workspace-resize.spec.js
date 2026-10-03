@@ -59,6 +59,11 @@ test.describe("三栏宽度调整", () => {
 
     await page.getByTestId("resizer-settings").dblclick();
     await expect.poll(() => settingsWidth(page)).toBe(defaultWidth);
+
+    // 复位也要落盘：只改渲染不改存档的话，刷新就又变回拖动后的宽度
+    await page.reload();
+    await expect(page.getByTestId("preview-btn")).toBeVisible();
+    expect(await settingsWidth(page)).toBe(defaultWidth);
   });
 
   test("两栏都不会把中栏挤到最小宽度以下，也不产生横向溢出", async ({ page }) => {
@@ -83,6 +88,21 @@ test.describe("三栏宽度调整", () => {
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect.poll(() => settingsWidth(page)).toBe(widened);
+  });
+
+  test("收窄时一侧缩到 200px 下限，也不能把中栏挤到 300px 以下", async ({ page }) => {
+    // 存档里一侧特别宽、另一侧按比例缩完会低于 200px 下限。
+    // 直接把下限抬到 200 会让两边之和超出预算，得从较宽的一侧扣回来
+    await page.evaluate(() =>
+      localStorage.setItem("workspaceColumns", JSON.stringify({ left: 1000, right: 250 })),
+    );
+    await page.reload();
+    await expect(page.getByTestId("preview-btn")).toBeVisible();
+
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await expect.poll(() => textWidth(page)).toBeGreaterThanOrEqual(295);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+    expect(await settingsWidth(page)).toBeGreaterThanOrEqual(200);
   });
 
   test("窄屏单栏堆叠时分隔条不出现", async ({ page }) => {
