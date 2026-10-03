@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/14790897/handwriting-web/compare/v1.33.1...v1.34.0) (2026-10-03)
+
+
+### Features
+
+* make the three workspace columns resizable and remembered ([#91](https://github.com/14790897/handwriting-web/issues/91)) ([316e1d8](https://github.com/14790897/handwriting-web/commit/316e1d8a81683b2bbe5bd4f16a3ca93ed2dc9da7)), closes [#c8d4e3](https://github.com/14790897/handwriting-web/issues/c8d4e3) [#9db3](https://github.com/14790897/handwriting-web/issues/9db3)
+
 ## [1.33.1](https://github.com/14790897/handwriting-web/compare/v1.33.0...v1.33.1) (2026-10-03)
 
 
