@@ -111,7 +111,20 @@ cd e2e && npm run test:desktop
 在 `windows-latest` 上构建并把安装包/便携版挂到对应 Release 上（PyInstaller 不能交叉编译，
 所以必须是 Windows runner）。用 `workflow_run` 而不是 `release: published` / `push: tags`，
 是因为 token 触发的 release/tag 事件不会再触发新工作流；`workflow_run` 不受该限制，
-所以不依赖 `secrets.GH_TOKEN` 是不是 PAT。也可以用 workflow_dispatch 手动补传历史版本。
+所以不依赖 `secrets.GH_TOKEN` 是不是 PAT。
+
+三条路径，都已在 CI 上实测过：
+
+| 触发 | 行为 |
+|---|---|
+| 自动，本次有新版本 | 从 main 构建并上传；上传前核对 release tag 与检出代码的 `backend/VERSION` 一致，不一致直接报错退出 |
+| 自动，本次没发版 | 直接跳过（约 26s），不浪费一次 Windows 构建 |
+| `workflow_dispatch` 填 tag | **检出该 tag** 构建后上传 —— 用来补传历史上构建失败的 release |
+
+**补传历史版本**：Actions → Desktop Release Assets → Run workflow，tag 填如 `v1.32.0`。
+因为检出的是那个 tag，产物就是从 tag 的代码构建的，与 release 一致；但 tag 里若没有
+`backend/VERSION` 会直接报错 —— 该文件是 v1.32.0 才引入的，**更早的 tag 补不了**，
+得手工处理。
 
 ### 版本号
 
@@ -155,6 +168,13 @@ cd e2e && npm run test:desktop
   `/api/imagefileprocess` 直接 500）或写成乱码。Electron 传 `PYTHONUTF8=1` +
   `PYTHONIOENCODING=utf-8`，`desktop_main.py` 另有一层 `reconfigure` 兜底，
   日志文件则显式用 `encoding="utf-8"`。新增往 stdout/文件写中文的代码时注意这条。
+- **Windows 编码（构建期同样中招）**：英文 Windows runner 的控制台代码页是 cp1252，
+  构建脚本里任何往 stdout 打中文的 Python 都会抛 `UnicodeEncodeError` —— 2026-09-29 的
+  Desktop Release Assets 就死在 `build.sh` 生成图标那句 `print(f"图标已写入 …")` 上，
+  害得 v1.32.0 的 release 没有安装包。所以 `desktop/build.sh` 顶部
+  `export PYTHONUTF8=1` / `PYTHONIOENCODING=utf-8`；`desktop_release.yml` 的构建步骤 env
+  里**也**钉了同样两个变量 —— 手动补传会检出旧 tag，那时它的 build.sh 还没有这个 export，
+  只能靠工作流兜住。**改构建脚本时别把这层依赖去掉。**
 
 ## 编码约定
 
