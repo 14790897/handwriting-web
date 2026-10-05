@@ -11,6 +11,9 @@ theme:
   # 站点自己的图标，直接取自 frontend/public（和主站、桌面版用的是同一张）。
   # 路径按 Material 的惯例放，正好覆盖掉主题自带的那个默认 favicon。
   favicon: assets/images/favicon.png
+  # 页眉图标。原图是近白底 + 黑笔迹的方图，直接放上去在黑顶栏里就是一块白方块，
+  # 所以换成反相后的透明版本（白笔迹、无底），两种配色下顶栏都是深色的，白色都看得清。
+  logo: assets/images/logo.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
