@@ -40,3 +40,5 @@ backend/pandoc-*-macOS.pkg
 # 桌面版打包产物
 desktop/build/
 desktop/dist/
+# 文档站构建产物（mkdocs build 默认输出到 site/）
+site/

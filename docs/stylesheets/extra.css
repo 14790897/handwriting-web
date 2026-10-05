@@ -1,0 +1,12 @@
+/* changelog.md 直接嵌入了仓库根的 CHANGELOG.md。那份文件把版本号写成 H1、
+   而且整个版本号包在链接里，照原样渲染会得到一串紫色大标题，跟正文混在一起。
+   这里把它压回接近正文的层级，颜色也交还给正文。 */
+.changelog h1 {
+  margin: 1.7em 0 0.4em;
+  font-size: 1.15rem;
+  color: var(--md-default-fg-color);
+}
+
+.changelog h1 > a {
+  color: inherit;
+}
