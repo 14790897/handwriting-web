@@ -8,6 +8,9 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   language: zh
+  # 站点自己的图标，直接取自 frontend/public（和主站、桌面版用的是同一张）。
+  # 路径按 Material 的惯例放，正好覆盖掉主题自带的那个默认 favicon。
+  favicon: assets/images/favicon.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

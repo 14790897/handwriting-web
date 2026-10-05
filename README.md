@@ -8,8 +8,15 @@
 
 网址：https://handwrite.sixiangjia.de
 视频介绍： https://www.bilibili.com/video/BV1DM4y1W7fp/
-![Alt text](image-generate.png)
 电报讨论群组：https://t.me/+zFImOziSNullOTE1
+
+新版界面把工作区分成三栏 —— 左边调参数、中间输入文字、右边看预览：
+
+![新版界面](image-new-ui.png)
+
+顶栏的「旧版界面」按钮可以切回老版式，两种界面改的是同一份内容：
+
+![旧版界面](image-generate.png)
 
 📖 **完整文档（使用指南 / 自部署 / 开发）：https://mygithub.sixiangjia.de/handwriting-web/**
 
