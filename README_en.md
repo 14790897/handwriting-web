@@ -7,6 +7,8 @@ Welcome to my handwritten text generation site! This platform allows you to use 
 URL: https://handwrite.sixiangjia.de
 ![Alt text](image.png)
 
+📖 **Full documentation (user guide / self-hosting / development): https://mygithub.sixiangjia.de/handwriting-web/en/**
+
 ## Function
 
 ### Custom Fonts

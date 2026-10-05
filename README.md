@@ -11,6 +11,8 @@
 ![Alt text](image-generate.png)
 电报讨论群组：https://t.me/+zFImOziSNullOTE1
 
+📖 **完整文档（使用指南 / 自部署 / 开发）：https://mygithub.sixiangjia.de/handwriting-web/**
+
 ## 功能
 
 ### 自定义字体

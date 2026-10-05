@@ -1,0 +1,103 @@
+site_name: 手写文字生成
+site_description: 把文字渲染成手写体图片，可调参数、支持分页、导出 PNG / PDF
+site_url: https://mygithub.sixiangjia.de/handwriting-web/
+repo_url: https://github.com/14790897/handwriting-web
+repo_name: 14790897/handwriting-web
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: zh
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: zh
+          default: true
+          name: 中文
+        - locale: en
+          name: English
+          nav_translations:
+            首页: Home
+            使用指南: User Guide
+            快速上手: Getting Started
+            参数详解: Parameters
+            排版标记: Layout Markers
+            中文书信排版: Chinese Letter Layout
+            预览与导出: Preview & Export
+            常见问题: FAQ
+            自己部署: Self-Hosting
+            Docker 部署: Docker Deployment
+            字体与资源限制: Fonts & Resource Limits
+            本地开发: Local Development
+            桌面版: Desktop App
+            更新日志: Changelog
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ["."]
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+      # 默认 slugify 会把中文标题削成 _1 / _2 这种按位置编号的锚点，
+      # 加一个标题就会全错位。pymdownx 的实现保留 Unicode，中文标题才有稳定锚点。
+      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
+  - attr_list
+  - md_in_html
+
+nav:
+  - 首页: index.md
+  - 使用指南:
+      - 快速上手: guide/getting-started.md
+      - 参数详解: guide/parameters.md
+      - 排版标记: guide/layout-markers.md
+      - 中文书信排版: guide/chinese-letter.md
+      - 预览与导出: guide/preview-export.md
+      - 常见问题: guide/faq.md
+  - 自己部署:
+      - Docker 部署: self-hosting/docker.md
+      - 字体与资源限制: self-hosting/fonts-and-limits.md
+  - 本地开发: development.md
+  - 桌面版: desktop.md
+  - 更新日志: changelog.md
