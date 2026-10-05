@@ -11,11 +11,6 @@ on:
       - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -23,8 +18,17 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 这个 job 只 clone 代码、pip install、跑 mkdocs，不需要写权限。
+    # 构建依赖（这里是从 PyPI 装的包）一旦被投毒，能拿到的就只是这些权限，
+    # 所以只给 contents: read，别把 pages / id-token 一起给它。
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 默认会把 GITHUB_TOKEN 写进 .git/config 供后续步骤使用，
+          # 这里不推代码，没必要留着给构建期的第三方代码读。
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -41,6 +45,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # 只有这一层需要发布权限
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

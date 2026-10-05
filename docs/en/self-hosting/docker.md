@@ -74,9 +74,18 @@ These fonts are what appears in the font dropdown.
 ## Stopping and cleaning up
 
 ```shell
-docker compose down          # stop and remove containers, keep volumes
-docker compose down -v       # remove the data too
+docker compose down          # stop and remove the containers
+docker compose down -v       # the same, plus remove Docker-managed volumes
 ```
+
+!!! note "`-v` does not delete your fonts or logs"
+    `ttf_files` and `logs` are **bind mounts** onto host directories, not Docker-managed volumes, so
+    `-v` leaves them alone. This Compose file defines no named volumes at all, so `-v` removes nothing
+    extra here. To wipe them, delete the host directories yourself:
+
+    ```shell
+    rm -rf ttf_files logs
+    ```
 
 ## Reverse proxy and HTTPS
 

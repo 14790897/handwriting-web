@@ -72,9 +72,18 @@ docker compose restart backend
 ## 停掉 / 清掉
 
 ```shell
-docker compose down          # 停掉并删除容器，数据卷保留
-docker compose down -v       # 连数据一起清掉
+docker compose down          # 停掉并删除容器
+docker compose down -v       # 同上，另外删掉 Docker 管理的卷
 ```
+
+!!! note "`-v` 删不掉你的字体和日志"
+    `ttf_files` 和 `logs` 是**绑定挂载**到宿主机目录的，不属于 Docker 管理的卷，
+    所以 `-v` 不会碰它们。这份 Compose 甚至没有定义任何具名卷，`-v` 在这里什么都不会额外删。
+    想彻底清干净，得自己删宿主机上的目录：
+
+    ```shell
+    rm -rf ttf_files logs
+    ```
 
 ## 反向代理和 HTTPS
 
