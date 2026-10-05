@@ -7,7 +7,7 @@ parameters, lay it out, then export a zip of PNGs or a PDF.
 - Video walkthrough (Chinese): <https://www.bilibili.com/video/BV1DM4y1W7fp/>
 - Telegram group (Chinese): <https://t.me/+zFImOziSNullOTE1>
 
-![Example output](https://raw.githubusercontent.com/14790897/handwriting-web/main/image-generate.png)
+![The interface](https://raw.githubusercontent.com/14790897/handwriting-web/main/image-new-ui.png)
 
 !!! note "The app's own English is partial"
     The interface is translatable (Chinese and English), but some runtime dialogs and toasts

@@ -6,7 +6,7 @@
 - 视频介绍：<https://www.bilibili.com/video/BV1DM4y1W7fp/>
 - 电报讨论群：<https://t.me/+zFImOziSNullOTE1>
 
-![生成效果](https://raw.githubusercontent.com/14790897/handwriting-web/main/image-generate.png)
+![新版界面](https://raw.githubusercontent.com/14790897/handwriting-web/main/image-new-ui.png)
 
 ## 能做什么
 
