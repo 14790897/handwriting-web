@@ -40,6 +40,13 @@
         <div v-if="uploadMessage" class="alert alert-info" role="alert" data-testid="message-upload">
           {{ uploadMessage }}
         </div>
+        <!-- 桌面版：文件由 Electron 自己落盘，路径只有主进程知道，这里如实报给用户 -->
+        <div v-if="downloadSavedPath" class="download-saved" data-testid="download-saved-hint">
+          <span>{{ $t('message.downloadSavedTo') }}</span>
+          <span class="download-saved-path" data-testid="download-saved-path">{{ downloadSavedPath }}</span>
+          <button class="action-btn secondary small" data-testid="open-download-folder-btn"
+            @click="openDownloadFolder">{{ $t('message.openDownloadFolder') }}</button>
+        </div>
       </div>
 
       <!-- 供 e2e 核对实际交付的 PDF 体积，平时不占位（见 e2e/tests/home-generate.spec.js） -->
@@ -582,6 +589,7 @@ import { mapState } from 'vuex';
 import TextInput from './TextInput.vue';
 import ChineseLetterFormatter from '../components/ChineseLetterFormatter.vue';
 import GenerationStatus from '../components/GenerationStatus.vue';
+import { hasDesktopBridge } from '../desktop';
 import Swal from 'sweetalert2';
 
 const BUILTIN_PRESETS = {
@@ -673,6 +681,7 @@ export default {
       message: '',  // 提示消息
       uploadMessage: '',  // 上传提示消息
       lastPdfDownloadBytes: 0,  // 最近一次 PDF 下载的字节数，供 e2e 核对
+      downloadSavedPath: '',  // 桌面版：主进程回传的最后一次下载的绝对路径，网页版永远是空
       selectedFontFileName: '',
       selectedImageFileName: '',
       //字体下拉选框
@@ -1509,6 +1518,16 @@ export default {
       }
       throw new Error('任务处理超时，请重试');
     },
+    // 桌面版的文件由 Electron 自己落盘，路径随后由主进程回传；网页版我们拿不到路径，
+    // 只能让用户去浏览器自己的下载目录找。
+    downloadedMessage() {
+      return hasDesktopBridge()
+        ? this.$t('message.fileDownloaded')
+        : this.$t('message.fileDownloadedBrowserHint');
+    },
+    openDownloadFolder() {
+      window.handwritingDesktop?.revealLastDownload();
+    },
     handleGenerationResultResponse(response) {
       const contentType = response.headers['content-type'] || '';
       if (contentType.includes('application/json')) {
@@ -1545,7 +1564,8 @@ export default {
         // 下载完成后，将链接删除，7.5
         document.body.removeChild(link);
         // 设置提示信息
-        this.message = '文件已下载。';
+        this.downloadSavedPath = '';  // 新的下载开始，先撤掉上次的路径
+        this.message = this.downloadedMessage();
         this.uploadMessage = '';
         this.errorMessage = '';
 
@@ -1563,7 +1583,8 @@ export default {
         // e2e 靠这个数字核对实际交付的 PDF 体积（见 e2e/tests/home-generate.spec.js）
         this.lastPdfDownloadBytes = pdfBlob.size;
         // 设置提示信息
-        this.message = '文件已下载。';
+        this.downloadSavedPath = '';  // 新的下载开始，先撤掉上次的路径
+        this.message = this.downloadedMessage();
         this.uploadMessage = '';
         this.errorMessage = '';
       } else {
@@ -2209,6 +2230,17 @@ export default {
     // 还原出来的栏宽是按当初那个窗口算的，进页面时先按当前窗口收一次
     this.clampWorkspaceColumns();
     window.addEventListener('resize', this.clampWorkspaceColumns);
+
+    // 桌面版：下载完成后主进程回传文件落在哪（见 desktop/main.js 的 setupDownloads）。
+    // 网页版没有这座桥，走 downloadedMessage() 里那句「去浏览器下载目录找」。
+    if (hasDesktopBridge()) {
+      window.handwritingDesktop.onDownloadFinished(({ file, state }) => {
+        this.downloadSavedPath = state === 'completed' ? file : '';
+        this.message = state === 'completed'
+          ? this.$t('message.fileDownloaded')
+          : this.$t('message.downloadFailed');
+      });
+    }
   },
 
   // 组件销毁时清理定时器
@@ -2363,6 +2395,28 @@ export default {
   margin-bottom: 0;
   padding: 8px 12px;
   font-size: 0.9rem;
+}
+
+/* 桌面版下载完成后的落盘路径：路径用等宽字体、允许折行，长路径也能一眼看清 */
+.download-saved {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+}
+
+.download-saved-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: Consolas, Menlo, monospace;
+  word-break: break-all;
 }
 
 /* ===== 三栏工作区 ===== */

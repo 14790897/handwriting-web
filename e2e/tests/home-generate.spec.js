@@ -25,6 +25,11 @@ test.describe("手写生成主流程（真实后端渲染）", () => {
     const buffer = fs.readFileSync(await download.path());
     expect(buffer.subarray(0, 2).toString("latin1")).toBe("PK");
     expect(buffer.length).toBeGreaterThan(1000);
+
+    // 网页版的落盘位置是浏览器说了算，页面拿不到绝对路径，但必须说清去哪儿找；
+    // 路径提示块只属于桌面版，这里不该出现（用户反馈「不知道文件在哪里」）
+    await expect(page.getByTestId("message-info")).toContainText("浏览器的「下载」文件夹");
+    await expect(page.getByTestId("download-saved-hint")).toHaveCount(0);
   });
 
   test("生成 PDF：下载的是 PDF 本身，且体积落在导出预算内", async ({ page }) => {

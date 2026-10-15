@@ -1,5 +1,5 @@
 // Electron 主进程：拉起打包好的后端 exe，等它就绪后开窗加载本地站点。
-const { app, BrowserWindow, Menu, dialog, shell } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, session, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const http = require("http");
@@ -13,6 +13,8 @@ const READY_TIMEOUT_MS = 90 * 1000;
 let backendProcess = null;
 let mainWindow = null;
 let shuttingDown = false;
+// 最近一次真正落盘成功的下载，供「打开文件夹」用（路径不经过页面，见 preload.js）
+let lastDownloadPath = "";
 
 function backendDir() {
   if (app.isPackaged) {
@@ -168,6 +170,64 @@ function openExternal(url) {
   if (/^https?:\/\//i.test(url)) shell.openExternal(url);
 }
 
+// 下载落盘目录：默认就是系统的「下载」文件夹（与 Electron 自己的默认位置一致），
+// E2E 用环境变量把它挪进临时目录，免得分不清测试产物和用户真实下载的文件
+// （见 e2e/desktop-tests/launch.js）。
+function downloadDir() {
+  return process.env.HANDWRITING_DOWNLOAD_DIR || app.getPath("downloads");
+}
+
+// 重名不覆盖：images.pdf → images (1).pdf，跟浏览器的习惯保持一致
+function uniquePath(target) {
+  if (!fs.existsSync(target)) return target;
+  const dir = path.dirname(target);
+  const ext = path.extname(target);
+  const base = path.basename(target, ext);
+  for (let i = 1; i < 1000; i += 1) {
+    const candidate = path.join(dir, `${base} (${i})${ext}`);
+    if (!fs.existsSync(candidate)) return candidate;
+  }
+  return path.join(dir, `${base}-${Date.now()}${ext}`);
+}
+
+// 下载由 Electron 自己落盘（页面只点了 blob 链接），所以「文件存到哪了」这件事只有
+// 主进程知道 —— 用户在页面上看到的必须是这里算出来的绝对路径，否则就是这次反馈的
+// 「点了下载，不知道文件在哪里」。
+function setupDownloads() {
+  session.defaultSession.on("will-download", (event, item) => {
+    const target = uniquePath(path.join(downloadDir(), item.getFilename()));
+    item.setSavePath(target);
+
+    item.once("done", (doneEvent, state) => {
+      let saved = target;
+      try {
+        // 以 DownloadItem 自己的 savePath 为准：E2E 等外部钩子可能改过它
+        saved = item.getSavePath() || target;
+      } catch {
+        // 读不到就用我们设的那个
+      }
+      lastDownloadPath = state === "completed" ? saved : "";
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("download:finished", {
+          file: lastDownloadPath,
+          state,
+        });
+      }
+    });
+  });
+
+  // 页面上的「打开文件夹」：只认主进程刚记下的那次下载
+  ipcMain.on("download:reveal", () => {
+    if (!lastDownloadPath) return;
+    if (fs.existsSync(lastDownloadPath)) {
+      shell.showItemInFolder(lastDownloadPath);
+    } else {
+      // 文件被移走/删了：至少把目录打开
+      shell.openPath(path.dirname(lastDownloadPath));
+    }
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -182,6 +242,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: false,
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
@@ -308,6 +369,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(async () => {
     createWindow();
     buildMenu();
+    setupDownloads();
     // 后端启动要几秒（PyInstaller 引导 + fastapi 等基础依赖载入），先给个等待页
     // 而不是白屏。opencv/sklearn/PyMuPDF 那些重家伙已经不在启动路径上了 ——
     // 见 backend/app.py 顶部的说明，它们改成了按需导入。
