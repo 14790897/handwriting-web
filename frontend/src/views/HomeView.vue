@@ -590,6 +590,7 @@ import TextInput from './TextInput.vue';
 import ChineseLetterFormatter from '../components/ChineseLetterFormatter.vue';
 import GenerationStatus from '../components/GenerationStatus.vue';
 import { hasDesktopBridge } from '../desktop';
+import { MAX_PAGES, buildPageLimitDialog, exceedsPageLimit } from '../utils/pageLimit.mjs';
 import Swal from 'sweetalert2';
 
 const BUILTIN_PRESETS = {
@@ -1631,13 +1632,13 @@ export default {
         // 检查是否为生产环境并进行页数限制
         if (!preview && this.isProductionSite()) {
           const estimatedPages = this.estimatePageCount();
-          if (estimatedPages > 15) {
+          if (exceedsPageLimit(estimatedPages)) {
             const confirmed = await this.showPageLimitDialog(estimatedPages);
             if (!confirmed) {
               return; // 用户取消生成
             }
-            // 用户确认继续，在前端截断文本到前15页
-            this.truncateTextToPages(15);
+            // 用户确认继续，在前端截断文本到上限页数
+            this.truncateTextToPages(MAX_PAGES);
           }
         }
 
@@ -2107,30 +2108,14 @@ export default {
 
     // 显示页数限制对话框
     async showPageLimitDialog(estimatedPages) {
+      const dialog = buildPageLimitDialog(estimatedPages);
       try {
         const result = await this.$swal.fire({
-          title: '页数限制提醒',
-          html: `
-            <div style="text-align: left; line-height: 1.6;">
-              <p><strong>检测到您的文本预计会生成 ${estimatedPages} 页</strong></p>
-              <p>由于服务器资源限制，在 <strong>handwrite.14790897.xyz</strong> 网站上单次最多只能生成 <strong>10页</strong>。</p>
-              <p>如果您选择继续：</p>
-              <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>系统将只生成前 10 页内容</li>
-                <li>超出部分将被自动截断</li>
-                <li>建议您分批处理长文本</li>
-              </ul>
-              <p style="color: #666; font-size: 14px;">
-                💡 提示：您可以将长文本分成多个部分，分别生成，或者自行搭建本项目来处理更长的文本
-              </p>
-              <p style="color: #888; font-size: 12px; margin-top: 10px;">
-                注：此限制仅适用于 handwrite.14790897.xyz 网站
-              </p>
-            </div>
-          `,
+          title: dialog.title,
+          html: dialog.html,
           icon: 'warning',
           showCancelButton: true,
-          confirmButtonText: '继续生成（前10页）',
+          confirmButtonText: dialog.confirmText,
           cancelButtonText: '取消',
           confirmButtonColor: '#f39c12',
           cancelButtonColor: '#d33',
@@ -2141,7 +2126,7 @@ export default {
       } catch (error) {
         console.error('SweetAlert2 error:', error);
         // 降级到原生 confirm
-        return confirm(`检测到您的文本预计会生成 ${estimatedPages} 页。\n\n由于服务器资源限制，在 handwrite.14790897.xyz 网站上单次最多只能生成 10页。\n\n是否继续生成前10页？`);
+        return confirm(dialog.fallbackConfirmText);
       }
     },
 
