@@ -6,7 +6,8 @@
     "serve": "vue-cli-service serve --host 0.0.0.0 --port 8080",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test:letter-format": "node tests/chineseLetterFormatter.test.js"
+    "test:letter-format": "node tests/chineseLetterFormatter.test.js",
+    "test:page-limit": "node tests/pageLimit.test.js"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
