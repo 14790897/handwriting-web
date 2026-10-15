@@ -1,3 +1,10 @@
+## [1.34.1](https://github.com/14790897/handwriting-web/compare/v1.34.0...v1.34.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* tell users where the downloaded file was saved ([#97](https://github.com/14790897/handwriting-web/issues/97)) ([8946e51](https://github.com/14790897/handwriting-web/commit/8946e5172bc856eae6bfd51ba9f55a1cc065d091))
+
 # [1.34.0](https://github.com/14790897/handwriting-web/compare/v1.33.1...v1.34.0) (2026-10-03)
 
 
