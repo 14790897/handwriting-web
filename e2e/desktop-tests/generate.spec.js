@@ -35,6 +35,13 @@ test.describe("打包版的手写生成主流程（真实渲染）", () => {
     const buffer = fs.readFileSync(await waitForDownload(desktop, "images.zip"));
     expect(buffer.subarray(0, 2).toString("latin1")).toBe("PK");
     expect(buffer.length).toBeGreaterThan(1000);
+
+    // 桌面版的文件是 Electron 自己落盘的（页面只点了 blob 链接），所以页面必须把主进程
+    // 回传的绝对路径写出来，并给出打开所在文件夹的入口 —— 用户反馈过「点了下载，
+    // 不知道文件在哪里」。（这里不点那个按钮：真的会弹出系统文件管理器。）
+    await expect(page.getByTestId("download-saved-hint")).toBeVisible();
+    await expect(page.getByTestId("download-saved-path")).toContainText("images.zip");
+    await expect(page.getByTestId("open-download-folder-btn")).toBeVisible();
   });
 
   test("生成 PDF：直接拿到 PDF，体积落在导出预算内", async ({ desktop }) => {

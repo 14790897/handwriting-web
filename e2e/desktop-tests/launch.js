@@ -67,7 +67,14 @@ function prepareIsolatedEnv() {
     dataDir = path.join(env.LOCALAPPDATA, APP_NAME);
   }
   fs.mkdirSync(dataDir, { recursive: true });
-  return { root, env, dataDir };
+
+  // 下载落盘目录：main.js 的 downloadDir() 认这个变量，默认是系统的「下载」文件夹。
+  // 不隔离的话测试会往用户真实的下载文件夹里丢文件。
+  const downloadsDir = path.join(root, "downloads");
+  env.HANDWRITING_DOWNLOAD_DIR = downloadsDir;
+  fs.mkdirSync(downloadsDir, { recursive: true });
+
+  return { root, env, dataDir, downloadsDir };
 }
 
 function logTail(dataDir, lines = 40) {
@@ -100,7 +107,7 @@ async function waitForHome(page) {
 
 async function launchDesktopApp() {
   const exe = appExePath();
-  const { root, env, dataDir } = prepareIsolatedEnv();
+  const { root, env, dataDir, downloadsDir } = prepareIsolatedEnv();
   // Electron 的 userData（单实例锁、缓存）由 Chromium 走 shell API 解析，改 APPDATA
   // 环境变量没有用 —— 只有 --user-data-dir 能换掉它。不隔离的话，本机正开着正式版、
   // 或上一个用例的实例还没退干净时，新实例会被判成「第二个实例」拿到锁失败后
@@ -112,24 +119,23 @@ async function launchDesktopApp() {
   });
 
   // 桌面版的下载是 Electron 自己落盘的：Playwright 的 download 事件在 Electron 下
-  // 不会触发（实测），所以挂主进程的 will-download，把文件收进测试目录再看。（也用
-  // setSavePath 避免测试往用户真实的下载文件夹里丢文件。）
-  // 同时把每个 DownloadItem 的最终状态记在主进程里：光看文件大小稳定不够 ——
+  // 不会触发（实测），所以只能挂主进程的 will-download 看结果。落盘目录已经由
+  // HANDWRITING_DOWNLOAD_DIR（见 prepareIsolatedEnv）挪进临时目录，这里**不要**再
+  // setSavePath —— 那会跟 main.js 里的 setSavePath 抢同一个 savePath，谁赢取决于监听器
+  // 注册顺序，文件可能落到用户真实的下载文件夹里去。
+  // 这里只把每个 DownloadItem 的最终状态记在主进程里：光看文件大小稳定不够 ——
   // 中断的半截 PDF 同样以 %PDF- 开头，会被当成结果读进来。
-  const downloadsDir = path.join(root, "downloads");
-  fs.mkdirSync(downloadsDir, { recursive: true });
-  await app.evaluate(({ session }, target) => {
+  await app.evaluate(({ session }) => {
     const states = (globalThis.__hwwDownloads = {});
     session.defaultSession.on("will-download", (event, item) => {
       const name = item.getFilename();
-      item.setSavePath(`${target}/${name}`);
       states[name] = "started";
       // done 的第二个参数是 completed / cancelled / interrupted
       item.once("done", (doneEvent, state) => {
         states[name] = state;
       });
     });
-  }, downloadsDir);
+  });
 
   const page = await app.firstWindow();
 

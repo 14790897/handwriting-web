@@ -4,4 +4,9 @@
 export const isDesktop = () =>
   typeof navigator !== "undefined" && navigator.userAgent.includes("Electron");
 
+// 主进程通过 preload 暴露的桥（见 desktop/preload.js）。桌面版的下载是 Electron 自己
+// 落盘的，只有它能告诉我们文件存到了哪个绝对路径；网页版拿不到。
+export const hasDesktopBridge = () =>
+  typeof window !== "undefined" && Boolean(window.handwritingDesktop?.onDownloadFinished);
+
 export default isDesktop;
