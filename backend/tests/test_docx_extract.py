@@ -1,0 +1,102 @@
+import shutil
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from docx import Document
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls
+
+import app
+from app import convert_docx_to_text, read_docx
+
+
+class DocxExtractTest(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
+    def _path(self, name):
+        return str(Path(self.tmpdir) / name)
+
+    def test_table_text_kept_in_document_order(self):
+        doc = Document()
+        doc.add_paragraph("表格前正文")
+        table = doc.add_table(rows=2, cols=2)
+        table.cell(0, 0).text = "姓名"
+        table.cell(0, 1).text = "年龄"
+        table.cell(1, 0).text = "张三"
+        table.cell(1, 1).text = "三十"
+        doc.add_paragraph("表格后正文")
+        doc.save(self._path("table.docx"))
+
+        self.assertEqual(
+            read_docx(self._path("table.docx")),
+            "表格前正文\n姓名 年龄\n张三 三十\n表格后正文",
+        )
+
+    def test_merged_cells_are_not_duplicated(self):
+        doc = Document()
+        doc.add_paragraph("开头")
+        table = doc.add_table(rows=3, cols=3)
+        table.cell(0, 0).text = "合并表头"
+        table.cell(0, 0).merge(table.cell(0, 2))
+        table.cell(1, 0).text = "竖合并"
+        table.cell(1, 0).merge(table.cell(2, 0))
+        table.cell(1, 1).text = "B1"
+        table.cell(1, 2).text = "C1"
+        table.cell(2, 1).text = "B2"
+        table.cell(2, 2).text = "C2"
+        inner = table.cell(2, 2).add_table(rows=1, cols=2)
+        inner.cell(0, 0).text = "嵌套甲"
+        inner.cell(0, 1).text = "嵌套乙"
+        doc.add_paragraph("结尾")
+        doc.save(self._path("merge.docx"))
+
+        text = read_docx(self._path("merge.docx"))
+
+        self.assertEqual(text.count("合并表头"), 1)
+        self.assertEqual(text.count("竖合并"), 1)
+        self.assertIn("嵌套甲 嵌套乙", text)
+        self.assertEqual(text.splitlines()[0], "开头")
+        self.assertEqual(text.splitlines()[-1], "结尾")
+
+    def test_hyperlink_text_is_not_dropped(self):
+        doc = Document()
+        paragraph = doc.add_paragraph("点击 ")
+        paragraph._p.append(
+            parse_xml(
+                '<w:hyperlink %s r:id="rId999"><w:r><w:t>这个链接</w:t></w:r></w:hyperlink>'
+                % nsdecls("w", "r")
+            )
+        )
+        doc.save(self._path("link.docx"))
+
+        self.assertEqual(read_docx(self._path("link.docx")), "点击 这个链接")
+
+    def test_document_with_table_skips_pandoc(self):
+        # pandoc 的 plain 输出会把表格画成一行行横线，这些横线会被当成分页标记
+        doc = Document()
+        doc.add_table(rows=1, cols=1).cell(0, 0).text = "单元格"
+        doc.save(self._path("table_only.docx"))
+
+        with patch.object(app, "_pandoc_available", True), patch.object(
+            app.pypandoc, "convert_file", side_effect=AssertionError("带表格时不应调用 pandoc")
+        ):
+            self.assertEqual(convert_docx_to_text(self._path("table_only.docx")), "单元格")
+
+    def test_document_without_table_still_uses_pandoc(self):
+        doc = Document()
+        doc.add_paragraph("正文")
+        doc.save(self._path("plain.docx"))
+
+        with patch.object(app, "_pandoc_available", True), patch.object(
+            app.pypandoc, "convert_file", return_value="pandoc 结果"
+        ) as convert:
+            self.assertEqual(convert_docx_to_text(self._path("plain.docx")), "pandoc 结果")
+        convert.assert_called_once()
+
+
+if __name__ == "__main__":
+    unittest.main()
