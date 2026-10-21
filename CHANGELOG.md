@@ -1,3 +1,11 @@
+## [1.34.3](https://github.com/14790897/handwriting-web/compare/v1.34.2...v1.34.3) (2026-10-21)
+
+
+### Bug Fixes
+
+* 识别不到横线时给提示，而不是覆盖用户边距 ([#95](https://github.com/14790897/handwriting-web/issues/95)) ([f38593d](https://github.com/14790897/handwriting-web/commit/f38593d60da26929e5970c14b564461a80acd9ca)), closes [#71](https://github.com/14790897/handwriting-web/issues/71)
+* 页数上限统一为 10 页，文案与截断不再各说各话 ([#98](https://github.com/14790897/handwriting-web/issues/98)) ([5b4c861](https://github.com/14790897/handwriting-web/commit/5b4c8619904ad5b1d2d3dfa728ce264304b9e061)), closes [#72](https://github.com/14790897/handwriting-web/issues/72) [#72](https://github.com/14790897/handwriting-web/issues/72) [#72](https://github.com/14790897/handwriting-web/issues/72)
+
 ## [1.34.2](https://github.com/14790897/handwriting-web/compare/v1.34.1...v1.34.2) (2026-10-21)
 
 
