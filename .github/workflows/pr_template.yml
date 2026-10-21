@@ -1,0 +1,34 @@
+# 校验 PR 标题与描述是否符合 .github/pull_request_template.md。
+#
+# 描述可以随时改：改完会触发 edited 事件重新跑，不需要推送新提交。
+# 校验规则从模板文件派生（见 scripts/check_pr_template.py），改模板不用改脚本。
+name: PR Template
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-template-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pr-template:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check PR title and description against the template
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: python3 scripts/check_pr_template.py
