@@ -511,14 +511,110 @@ def create_notebook_image(
     return image
 
 
+def _docx_paragraph_text(paragraph):
+    """取 w:p 元素的文字，顺带收进超链接与修订插入里的 run。
+
+    2026-10-21：python-docx 0.8.11 的 paragraph.text 只认段落的直属 w:r，
+    w:hyperlink / w:ins 里的文字会被整段丢掉（一份带链接的文档会少字且不报错），
+    这里按文档顺序把它们的文字一并取出。
+    """
+    from docx.oxml.ns import qn
+
+    def run_text(run):
+        parts = []
+        for node in run:
+            if node.tag == qn("w:t"):
+                parts.append(node.text or "")
+            elif node.tag == qn("w:tab"):
+                parts.append(" ")
+            elif node.tag in (qn("w:br"), qn("w:cr")):
+                parts.append("\n")
+        return "".join(parts)
+
+    inline_wrappers = tuple(
+        qn(tag) for tag in ("w:hyperlink", "w:ins", "w:smartTag", "w:sdt", "w:fldSimple")
+    )
+    parts = []
+    for child in paragraph.iterchildren():
+        if child.tag == qn("w:r"):
+            parts.append(run_text(child))
+        elif child.tag in inline_wrappers:
+            # w:sdt（内容控件）与 w:fldSimple（域）把可见文字包在更深的层里，顺着取；
+            # 删除的修订文字用的是 w:delText，不会被带进来
+            for run in child.iter(qn("w:r")):
+                parts.append(run_text(run))
+    return "".join(parts)
+
+
+def _docx_unwrapped(container, tag):
+    """按文档顺序取出 container 下的 tag 元素，内容控件包着的往下拆一层"""
+    from docx.oxml.ns import qn
+
+    for child in container:
+        if child.tag == tag:
+            yield child
+        elif child.tag == qn("w:sdt"):
+            # 内容控件不只能包正文，也能包整行（w:sdtRow）或整格（w:sdtCell）
+            sdt_content = child.find(qn("w:sdtContent"))
+            if sdt_content is not None:
+                yield from _docx_unwrapped(sdt_content, tag)
+
+
+def _docx_block_lines(container, lines):
+    """按文档顺序收集段落与表格，表格的一行输出成一行文字"""
+    from docx.oxml.ns import qn
+
+    for child in container:
+        if child.tag == qn("w:p"):
+            lines.append(_docx_paragraph_text(child))
+        elif child.tag == qn("w:sdt"):
+            # 块级内容控件会把段落、表格整个包进 w:sdtContent
+            sdt_content = child.find(qn("w:sdtContent"))
+            if sdt_content is not None:
+                _docx_block_lines(sdt_content, lines)
+        elif child.tag == qn("w:tbl"):
+            # 这里直接按 w:tc 取单元格，不用 python-docx 的 row.cells：
+            # 它会把横向合并的格子重复返回，而竖向合并的续格带着空文字也照样返回
+            for tr in _docx_unwrapped(child, qn("w:tr")):
+                cell_lines_list = []
+                for tc in _docx_unwrapped(tr, qn("w:tc")):
+                    tc_pr = tc.find(qn("w:tcPr"))
+                    v_merge = tc_pr.find(qn("w:vMerge")) if tc_pr is not None else None
+                    # w:vMerge 不写 val 时默认就是 continue（竖向合并的续格），
+                    # 文字在上面那个起始格里，跳过它免得每行重复一遍
+                    if v_merge is not None and v_merge.get(qn("w:val"), "continue") == "continue":
+                        continue
+                    cell_lines = []
+                    _docx_block_lines(tc, cell_lines)
+                    # 单元格里可能有多个段落、段内换行或嵌套表格的几行：逐行保留，
+                    # 再由下面按行号把各列拼起来，行不会挤成一行
+                    cell_lines = [
+                        part.strip() for line in cell_lines for part in line.split("\n")
+                    ]
+                    # 连续换行会在中间留下空行，它是列对齐的占位，不能丢；
+                    # 只有首尾的空行去掉，免得单元格开头/结尾的空段落把整行推偏
+                    while cell_lines and not cell_lines[0]:
+                        cell_lines.pop(0)
+                    while cell_lines and not cell_lines[-1]:
+                        cell_lines.pop()
+                    cell_lines_list.append(cell_lines)
+                row_height = max((len(cell) for cell in cell_lines_list), default=0)
+                for index in range(row_height):
+                    parts = [cell[index] for cell in cell_lines_list if index < len(cell)]
+                    # 整行都是空占位时不输出，但空占位不会让后面的行往前挪
+                    if any(parts):
+                        lines.append(" ".join(part for part in parts if part))
+
+
 def read_docx(file_path):
     from docx import Document
 
     document = Document(file_path)
     # 必须保留段落换行：正文里的 "---"（分页）与 ">>>"（右对齐）是按行匹配的标记，
     # 用空格拼接会把整篇压成一行，标记永远不生效，而且不会报任何错
-    text = "\n".join([paragraph.text for paragraph in document.paragraphs])
-    return text
+    lines = []
+    _docx_block_lines(document.element.body, lines)
+    return "\n".join(lines)
 
 
 import pypandoc
@@ -545,17 +641,28 @@ except OSError:
         except Exception as exc:  # noqa: BLE001 下载失败不应阻断启动
             print(f"Pandoc download failed: {exc}. Falling back to python-docx.")
 
+
+def _docx_has_table(file_path):
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    return next(Document(file_path).element.body.iter(qn("w:tbl")), None) is not None
+
+
 def convert_docx_to_text(docx_file_path):
     # 转换文件为纯文本格式，并返回转换后的文本内容
+    # 2026-10-21：pandoc 的 plain writer 会把表格画成一行行横线（"  ----------..."），
+    # 这些行正好命中分页标记 _PAGE_BREAK_RE（只含 3 个以上横线的行），
+    # 于是文档里有几个表格就多出几处分页，单元格之间还夹着大段对齐空格。
+    # 带表格的文档改用自己的提取，逐行输出单元格文字。
+    if _pandoc_available and not _docx_has_table(docx_file_path):
+        return pypandoc.convert_file(docx_file_path, 'plain')
     if not _pandoc_available:
         logger.warning(
-            "pandoc 不可用，改用 python-docx 提取 %s（保留段落换行，但表格/列表等结构会丢失）",
+            "pandoc 不可用，改用 python-docx 提取 %s（保留段落换行与表格文字，列表符号等格式会丢失）",
             docx_file_path,
         )
-        return read_docx(docx_file_path)
-    text = pypandoc.convert_file(docx_file_path, 'plain')
-    return text
-    # return None
+    return read_docx(docx_file_path)
 
 
 def read_pdf(file_path):
