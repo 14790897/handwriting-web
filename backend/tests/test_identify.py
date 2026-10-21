@@ -121,6 +121,20 @@ class IdentifyDistanceTest(unittest.TestCase):
         with self.assertRaises(ImageIdentificationError):
             identify(gradient)
 
+    def test_a_page_with_a_single_line_asks_for_manual_input(self):
+        # 只有一条线时量不出行距：Canny 给出这条线上下两条边缘，间距只有几像素，
+        # 会被 distance > 5 的过滤条件丢掉，distances 为空。此时不能把 lineSpacing
+        # 报成 0，否则前端会拿 0 覆盖用户设置（随后还会被「字体大小不能大于行间距」拦住）。
+        one_line = os.path.join(self.workdir, "one-line.png")
+        image = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), "white")
+        ImageDraw.Draw(image).rectangle(
+            [MARGIN_LEFT, 400, PAGE_WIDTH - MARGIN_RIGHT, 402], fill=INK
+        )
+        image.save(one_line)
+
+        with self.assertRaises(ImageIdentificationError):
+            identify(one_line)
+
 
 if __name__ == "__main__":
     unittest.main()

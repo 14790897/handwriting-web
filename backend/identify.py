@@ -180,16 +180,10 @@ def identify_distance(filename):
             distances.append(distance)
             # print('行间距：', distance)
 
-    # Otsu 之后，没有横线的背景（渐变、照片）也可能被 Hough 捡到一两条伪线，
-    # 但四周空白和行距一个样本都算不出来。这时若继续算，get_avg_distance([])
-    # 会退回 0，前端又会把 0 当成真实边距去覆盖用户参数 —— 和「找不到线」是同一个坑。
-    if not (
-        l_whitespaces
-        or r_whitespaces
-        or t_whitespaces
-        or b_whitespaces
-        or distances
-    ):
+    # 行距是必填结果：只有一条线、或相邻线间距都 <= 5px 时 distances 为空，
+    # get_avg_distance([]) 会退回 0，前端又拿 0 去覆盖用户的行距——和「找不到线」
+    # 是同一个坑。四周空白返回 0 可能是合法结果（内容铺满整页），所以只对行距判空。
+    if not distances:
         raise ImageIdentificationError("未识别到横线，请手动填写边距")
 
     avg_distance = get_avg_distance(distances)
