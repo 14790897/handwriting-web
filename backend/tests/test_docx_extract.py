@@ -48,19 +48,63 @@ class DocxExtractTest(unittest.TestCase):
         table.cell(1, 2).text = "C1"
         table.cell(2, 1).text = "B2"
         table.cell(2, 2).text = "C2"
-        inner = table.cell(2, 2).add_table(rows=1, cols=2)
+        inner = table.cell(2, 2).add_table(rows=2, cols=1)
         inner.cell(0, 0).text = "嵌套甲"
-        inner.cell(0, 1).text = "嵌套乙"
+        inner.cell(1, 0).text = "嵌套乙"
         doc.add_paragraph("结尾")
         doc.save(self._path("merge.docx"))
 
-        text = read_docx(self._path("merge.docx"))
+        self.assertEqual(
+            read_docx(self._path("merge.docx")),
+            "开头\n合并表头\n竖合并 B1 C1\nB2 C2\n嵌套甲\n嵌套乙\n结尾",
+        )
 
-        self.assertEqual(text.count("合并表头"), 1)
-        self.assertEqual(text.count("竖合并"), 1)
-        self.assertIn("嵌套甲 嵌套乙", text)
-        self.assertEqual(text.splitlines()[0], "开头")
-        self.assertEqual(text.splitlines()[-1], "结尾")
+    def test_inline_content_control_and_field_text_kept(self):
+        doc = Document()
+        paragraph = doc.add_paragraph("前")
+        paragraph._p.append(
+            parse_xml(
+                '<w:sdt %s><w:sdtPr/><w:sdtContent><w:r><w:t>控件</w:t></w:r>'
+                "</w:sdtContent></w:sdt>" % nsdecls("w")
+            )
+        )
+        paragraph._p.append(parse_xml("<w:r %s><w:t>后</w:t></w:r>" % nsdecls("w")))
+        # 删除的修订不该出现在结果里：它的文字在 w:delText 而不是 w:t
+        paragraph._p.append(
+            parse_xml("<w:del %s><w:r><w:delText>删掉的</w:delText></w:r></w:del>" % nsdecls("w"))
+        )
+        field = doc.add_paragraph("页码 ")
+        field._p.append(
+            parse_xml(
+                '<w:fldSimple %s w:instr=" PAGE "><w:r><w:t>3</w:t></w:r></w:fldSimple>'
+                % nsdecls("w")
+            )
+        )
+        doc.save(self._path("sdt.docx"))
+
+        self.assertEqual(read_docx(self._path("sdt.docx")), "前控件后\n页码 3")
+
+    def test_block_content_control_contents_are_read(self):
+        doc = Document()
+        doc.add_paragraph("控件外")
+        body = doc.element.body
+        # 块级内容控件把段落和表格整个包在 w:sdtContent 里
+        body.insert(
+            len(body) - 1,
+            parse_xml(
+                "<w:sdt %s><w:sdtPr/><w:sdtContent>"
+                "<w:p><w:r><w:t>控件里的正文</w:t></w:r></w:p>"
+                "<w:tbl><w:tr><w:tc><w:p><w:r><w:t>控件里的表格</w:t></w:r></w:p>"
+                "</w:tc></w:tr></w:tbl>"
+                "</w:sdtContent></w:sdt>" % nsdecls("w")
+            ),
+        )
+        doc.save(self._path("block_sdt.docx"))
+
+        self.assertEqual(
+            read_docx(self._path("block_sdt.docx")),
+            "控件外\n控件里的正文\n控件里的表格",
+        )
 
     def test_hyperlink_text_is_not_dropped(self):
         doc = Document()

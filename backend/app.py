@@ -531,11 +531,16 @@ def _docx_paragraph_text(paragraph):
                 parts.append("\n")
         return "".join(parts)
 
+    inline_wrappers = tuple(
+        qn(tag) for tag in ("w:hyperlink", "w:ins", "w:smartTag", "w:sdt", "w:fldSimple")
+    )
     parts = []
     for child in paragraph.iterchildren():
         if child.tag == qn("w:r"):
             parts.append(run_text(child))
-        elif child.tag in (qn("w:hyperlink"), qn("w:ins"), qn("w:smartTag")):
+        elif child.tag in inline_wrappers:
+            # w:sdt（内容控件）与 w:fldSimple（域）把可见文字包在更深的层里，顺着取；
+            # 删除的修订文字用的是 w:delText，不会被带进来
             for run in child.iter(qn("w:r")):
                 parts.append(run_text(run))
     return "".join(parts)
@@ -548,11 +553,16 @@ def _docx_block_lines(container, lines):
     for child in container:
         if child.tag == qn("w:p"):
             lines.append(_docx_paragraph_text(child))
+        elif child.tag == qn("w:sdt"):
+            # 块级内容控件会把段落、表格整个包进 w:sdtContent
+            sdt_content = child.find(qn("w:sdtContent"))
+            if sdt_content is not None:
+                _docx_block_lines(sdt_content, lines)
         elif child.tag == qn("w:tbl"):
             # 这里直接按 w:tc 取单元格，不用 python-docx 的 row.cells：
             # 它会把横向合并的格子重复返回，而竖向合并的续格带着空文字也照样返回
             for tr in child.iterchildren(qn("w:tr")):
-                cells = []
+                cell_lines_list = []
                 for tc in tr.iterchildren(qn("w:tc")):
                     tc_pr = tc.find(qn("w:tcPr"))
                     v_merge = tc_pr.find(qn("w:vMerge")) if tc_pr is not None else None
@@ -562,9 +572,14 @@ def _docx_block_lines(container, lines):
                         continue
                     cell_lines = []
                     _docx_block_lines(tc, cell_lines)
-                    cells.append(" ".join(part.strip() for part in cell_lines if part.strip()))
-                if any(cells):
-                    lines.append(" ".join(cells))
+                    # 单元格里可能有多个段落，或嵌套表格的几行：逐行保留，
+                    # 再由下面按行号把各列拼起来，嵌套表格的行不会挤成一行
+                    cell_lines_list.append([line.strip() for line in cell_lines if line.strip()])
+                row_height = max((len(cell) for cell in cell_lines_list), default=0)
+                for index in range(row_height):
+                    parts = [cell[index] for cell in cell_lines_list if index < len(cell)]
+                    if parts:
+                        lines.append(" ".join(parts))
 
 
 def read_docx(file_path):
