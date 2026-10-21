@@ -119,6 +119,23 @@ class DocxExtractTest(unittest.TestCase):
         # 同一个单元格里的换行也要参与按行对齐，不能把 "A\nB" 整块当成一行
         self.assertEqual(read_docx(self._path("cell_break.docx")), "A X\nB")
 
+    def test_internal_blank_line_in_cell_keeps_alignment(self):
+        doc = Document()
+        table = doc.add_table(rows=1, cols=2)
+        paragraph = table.cell(0, 0).paragraphs[0]
+        paragraph.add_run("A")
+        paragraph.add_run().add_break()
+        paragraph.add_run().add_break()
+        paragraph.add_run("B")
+        table.cell(0, 1).text = "X\nY\nZ"
+        doc.save(self._path("cell_blank_line.docx"))
+
+        # 连续换行留下的空行是列对齐的占位，丢了 B 就会错配到 Y 那一行
+        self.assertEqual(
+            read_docx(self._path("cell_blank_line.docx")),
+            "A X\nY\nB Z",
+        )
+
     def test_content_controls_around_rows_and_cells_are_read(self):
         doc = Document()
         table = doc.add_table(rows=2, cols=2)

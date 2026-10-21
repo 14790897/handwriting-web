@@ -588,19 +588,22 @@ def _docx_block_lines(container, lines):
                     _docx_block_lines(tc, cell_lines)
                     # 单元格里可能有多个段落、段内换行或嵌套表格的几行：逐行保留，
                     # 再由下面按行号把各列拼起来，行不会挤成一行
-                    cell_lines_list.append(
-                        [
-                            part.strip()
-                            for line in cell_lines
-                            for part in line.split("\n")
-                            if part.strip()
-                        ]
-                    )
+                    cell_lines = [
+                        part.strip() for line in cell_lines for part in line.split("\n")
+                    ]
+                    # 连续换行会在中间留下空行，它是列对齐的占位，不能丢；
+                    # 只有首尾的空行去掉，免得单元格开头/结尾的空段落把整行推偏
+                    while cell_lines and not cell_lines[0]:
+                        cell_lines.pop(0)
+                    while cell_lines and not cell_lines[-1]:
+                        cell_lines.pop()
+                    cell_lines_list.append(cell_lines)
                 row_height = max((len(cell) for cell in cell_lines_list), default=0)
                 for index in range(row_height):
                     parts = [cell[index] for cell in cell_lines_list if index < len(cell)]
-                    if parts:
-                        lines.append(" ".join(parts))
+                    # 整行都是空占位时不输出，但空占位不会让后面的行往前挪
+                    if any(parts):
+                        lines.append(" ".join(part for part in parts if part))
 
 
 def read_docx(file_path):
