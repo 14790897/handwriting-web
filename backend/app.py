@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import itertools
+import json
 import re
 import time
 from typing import Any, Optional, Union
@@ -1159,6 +1160,27 @@ async def generate_handwriting_impl(
         # )
 
 
+def _extract_error_message(response_body: bytes) -> Optional[str]:
+    """从业务错误响应体里取出可以直接展示给用户的 message。
+
+    generate_handwriting_impl 的业务错误都是 JSONResponse，形状为
+    {"status": "error", "message": "..."}（少数几处用 "error"）。解析不出来就返回
+    None，由调用方兜底，避免因为一个坏响应体把任务状态写成空错误。
+    """
+    if not response_body:
+        return None
+    try:
+        payload = json.loads(response_body)
+    except ValueError:
+        return None
+    if isinstance(payload, dict):
+        for key in ("message", "error", "detail"):
+            value = payload.get(key)
+            if isinstance(value, str) and value:
+                return value
+    return None
+
+
 async def run_generation_task(task_id, base_url, payload):
     set_generation_task(
         task_id,
@@ -1189,6 +1211,28 @@ async def run_generation_task(task_id, base_url, payload):
             response_headers["Content-Disposition"] = response.headers[
                 "content-disposition"
             ]
+        # generate_handwriting_impl 的业务错误（缺背景图 400、CPU 过高 429、非法
+        # 图片 400…）是 JSONResponse，不是抛异常，所以这里必须自己看状态码。以前
+        # 一律写成 completed，前端把它当成功、再去拉 result 只拿到笼统失败，看不到
+        # 「缺少背景图」这类真实原因。结果接口本来就有 failed 分支，标成 failed
+        # 就能让前端走已有的失败提示，直接把 message 显示出来。
+        if response.status_code >= 400:
+            set_generation_task(
+                task_id,
+                status="failed",
+                error_message=_extract_error_message(response_body)
+                or f"任务处理失败（HTTP {response.status_code}）",
+                stage="failed",
+                message="任务处理失败",
+                response_status_code=response.status_code,
+                response_content_type=response.headers.get("content-type")
+                or response.media_type
+                or "application/octet-stream",
+                response_headers=response_headers,
+            )
+            await push_task_status_update(task_id)
+            return
+
         set_generation_task(
             task_id,
             status="completed",
