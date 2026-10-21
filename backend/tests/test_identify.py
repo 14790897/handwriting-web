@@ -109,6 +109,18 @@ class IdentifyDistanceTest(unittest.TestCase):
         with self.assertRaises(ImageIdentificationError):
             identify(broken)
 
+    def test_a_gradient_without_ruled_lines_asks_for_manual_input(self):
+        # Otsu 之后，没有横线的背景（渐变、照片）也可能被 Hough 捡到一两条伪线，
+        # 但四周空白和行距一个样本都算不出来。这种页面同样不能退回全 0，
+        # 否则前端会拿 0 覆盖用户已经填好的参数。
+        gradient = os.path.join(self.workdir, "gradient.png")
+        Image.linear_gradient("L").resize((PAGE_WIDTH, PAGE_HEIGHT)).convert("RGB").save(
+            gradient
+        )
+
+        with self.assertRaises(ImageIdentificationError):
+            identify(gradient)
+
 
 if __name__ == "__main__":
     unittest.main()
