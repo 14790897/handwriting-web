@@ -1,3 +1,10 @@
+## [1.34.2](https://github.com/14790897/handwriting-web/compare/v1.34.1...v1.34.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* 业务错误标记为 failed，前端能看到失败原因 ([#96](https://github.com/14790897/handwriting-web/issues/96)) ([e9eb645](https://github.com/14790897/handwriting-web/commit/e9eb645b82e225da072791017b9001e6d698dd4e)), closes [#70](https://github.com/14790897/handwriting-web/issues/70)
+
 ## [1.34.1](https://github.com/14790897/handwriting-web/compare/v1.34.0...v1.34.1) (2026-10-15)
 
 
