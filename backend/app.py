@@ -546,6 +546,20 @@ def _docx_paragraph_text(paragraph):
     return "".join(parts)
 
 
+def _docx_unwrapped(container, tag):
+    """按文档顺序取出 container 下的 tag 元素，内容控件包着的往下拆一层"""
+    from docx.oxml.ns import qn
+
+    for child in container:
+        if child.tag == tag:
+            yield child
+        elif child.tag == qn("w:sdt"):
+            # 内容控件不只能包正文，也能包整行（w:sdtRow）或整格（w:sdtCell）
+            sdt_content = child.find(qn("w:sdtContent"))
+            if sdt_content is not None:
+                yield from _docx_unwrapped(sdt_content, tag)
+
+
 def _docx_block_lines(container, lines):
     """按文档顺序收集段落与表格，表格的一行输出成一行文字"""
     from docx.oxml.ns import qn
@@ -561,9 +575,9 @@ def _docx_block_lines(container, lines):
         elif child.tag == qn("w:tbl"):
             # 这里直接按 w:tc 取单元格，不用 python-docx 的 row.cells：
             # 它会把横向合并的格子重复返回，而竖向合并的续格带着空文字也照样返回
-            for tr in child.iterchildren(qn("w:tr")):
+            for tr in _docx_unwrapped(child, qn("w:tr")):
                 cell_lines_list = []
-                for tc in tr.iterchildren(qn("w:tc")):
+                for tc in _docx_unwrapped(tr, qn("w:tc")):
                     tc_pr = tc.find(qn("w:tcPr"))
                     v_merge = tc_pr.find(qn("w:vMerge")) if tc_pr is not None else None
                     # w:vMerge 不写 val 时默认就是 continue（竖向合并的续格），
@@ -572,9 +586,16 @@ def _docx_block_lines(container, lines):
                         continue
                     cell_lines = []
                     _docx_block_lines(tc, cell_lines)
-                    # 单元格里可能有多个段落，或嵌套表格的几行：逐行保留，
-                    # 再由下面按行号把各列拼起来，嵌套表格的行不会挤成一行
-                    cell_lines_list.append([line.strip() for line in cell_lines if line.strip()])
+                    # 单元格里可能有多个段落、段内换行或嵌套表格的几行：逐行保留，
+                    # 再由下面按行号把各列拼起来，行不会挤成一行
+                    cell_lines_list.append(
+                        [
+                            part.strip()
+                            for line in cell_lines
+                            for part in line.split("\n")
+                            if part.strip()
+                        ]
+                    )
                 row_height = max((len(cell) for cell in cell_lines_list), default=0)
                 for index in range(row_height):
                     parts = [cell[index] for cell in cell_lines_list if index < len(cell)]

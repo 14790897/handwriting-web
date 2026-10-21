@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from docx import Document
 from docx.oxml import parse_xml
-from docx.oxml.ns import nsdecls
+from docx.oxml.ns import nsdecls, qn
 
 import app
 from app import convert_docx_to_text, read_docx
@@ -104,6 +104,49 @@ class DocxExtractTest(unittest.TestCase):
         self.assertEqual(
             read_docx(self._path("block_sdt.docx")),
             "控件外\n控件里的正文\n控件里的表格",
+        )
+
+    def test_line_break_in_cell_is_aligned_with_neighbour_cells(self):
+        doc = Document()
+        table = doc.add_table(rows=1, cols=2)
+        paragraph = table.cell(0, 0).paragraphs[0]
+        paragraph.add_run("A")
+        paragraph.add_run().add_break()
+        paragraph.add_run("B")
+        table.cell(0, 1).text = "X"
+        doc.save(self._path("cell_break.docx"))
+
+        # 同一个单元格里的换行也要参与按行对齐，不能把 "A\nB" 整块当成一行
+        self.assertEqual(read_docx(self._path("cell_break.docx")), "A X\nB")
+
+    def test_content_controls_around_rows_and_cells_are_read(self):
+        doc = Document()
+        table = doc.add_table(rows=2, cols=2)
+        table.cell(0, 0).text = "普通甲"
+        table.cell(0, 1).text = "普通乙"
+        table.cell(1, 0).text = "控件甲"
+        table.cell(1, 1).text = "控件乙"
+
+        tbl = table._tbl
+        # 第二行整行包进内容控件（w:sdtRow）
+        row = tbl.tr_lst[-1]
+        tbl.remove(row)
+        row_wrapper = parse_xml("<w:sdt %s><w:sdtPr/><w:sdtContent/></w:sdt>" % nsdecls("w"))
+        row_wrapper.find(qn("w:sdtContent")).append(row)
+        tbl.append(row_wrapper)
+
+        # 第一行第二格单独包进内容控件（w:sdtCell）
+        first_row = tbl.tr_lst[0]
+        cell = first_row.tc_lst[-1]
+        first_row.remove(cell)
+        cell_wrapper = parse_xml("<w:sdt %s><w:sdtPr/><w:sdtContent/></w:sdt>" % nsdecls("w"))
+        cell_wrapper.find(qn("w:sdtContent")).append(cell)
+        first_row.append(cell_wrapper)
+        doc.save(self._path("row_cell_sdt.docx"))
+
+        self.assertEqual(
+            read_docx(self._path("row_cell_sdt.docx")),
+            "普通甲 普通乙\n控件甲 控件乙",
         )
 
     def test_hyperlink_text_is_not_dropped(self):
