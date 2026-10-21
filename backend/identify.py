@@ -2,8 +2,22 @@ import cv2
 import numpy as np
 from sklearn.cluster import DBSCAN
 
+
+class ImageIdentificationError(Exception):
+    """这张图识别不出页边距：要么读不出图片，要么整页找不到可用横线。
+
+    调用方（/api/imagefileprocess）应当把它转成给用户看的提示、让用户手动填写，
+    而不是当成 500；更不能用全 0 之类的占位值去覆盖用户已经填好的参数。
+    """
+
+
 #有bug时，别忘了打断点 7.6
 def get_avg_distance(distances):
+    # 空输入直接退化为 0：整页找不到直线（纯白图）时下游不该崩，
+    # 否则 DBSCAN 拿到空簇、np.argmax 会对空数组抛 ValueError
+    if len(distances) == 0:
+        return 0
+
     # 将列表转化为 N x 1 的矩阵，因为DBSCAN需要这种格式的输入
     distances_np = np.array(distances).reshape(-1, 1)
 
@@ -31,11 +45,18 @@ def identify_distance(filename):
     # 读取图像
     image = cv2.imread(filename)
 
+    # 扩展名是图片但内容不是图片（或被截断）时 imread 返回 None，
+    # 紧接着的 cvtColor 会抛 cv2.error 变成 500
+    if image is None:
+        raise ImageIdentificationError("图片无法读取，请确认上传的是有效的图片文件")
+
     # 转化为灰度图像
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # 二值化
-    _, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
+    # 固定阈值 150 会把亮于 150 的像素整片抹掉，于是浅色背景（浅灰纸、浅桌上的白纸）
+    # 一条横线都留不下来；Otsu 从直方图自适应取阈值，深墨线/白纸的既有结果不变
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     # 使用形态学操作来连接线条的两侧
     kernel = np.ones((5,5),np.uint8)
@@ -47,6 +68,12 @@ def identify_distance(filename):
 
     # 直线检测
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, 100, minLineLength=100, maxLineGap=10)
+
+    # 整页没有可识别直线时 HoughLinesP 返回 None。这里不能退化成全 0：
+    # 前端拿到 0 会当成真实边距去覆盖用户的参数框，再弹一个假的成功提示。
+    # 交给调用方提示用户手动填写，用户填好的值原样保留。
+    if lines is None:
+        raise ImageIdentificationError("未识别到横线，请手动填写边距")
 
     lines = sorted(lines, key=lambda x: x[0][1])
 
@@ -77,14 +104,18 @@ def identify_distance(filename):
     # 转换为灰度图像
     gray_rotated = cv2.cvtColor(rotated, cv2.COLOR_BGR2GRAY)
 
-    # 二值化
-    _, binary_rotated = cv2.threshold(gray_rotated, 150, 255, cv2.THRESH_BINARY_INV)
+    # 二值化（同上，用 Otsu 以适应浅色背景）
+    _, binary_rotated = cv2.threshold(gray_rotated, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     # 边缘检测
     edges_rotated = cv2.Canny(binary_rotated, 50, 150, apertureSize=3)
 
     # 直线检测
     lines_rotated = cv2.HoughLinesP(edges_rotated, 1, np.pi/180, 100, minLineLength=100, maxLineGap=10)
+
+    # 旋转后同样可能一条直线都找不到，处理方式与上面一致
+    if lines_rotated is None:
+        raise ImageIdentificationError("未识别到横线，请手动填写边距")
 
     # 对直线的y坐标进行排序
     lines_rotated = sorted(lines_rotated, key=lambda x: x[0][1])
@@ -148,7 +179,13 @@ def identify_distance(filename):
         if distance > 5:
             distances.append(distance)
             # print('行间距：', distance)
-            
+
+    # 行距是必填结果：只有一条线、或相邻线间距都 <= 5px 时 distances 为空，
+    # get_avg_distance([]) 会退回 0，前端又拿 0 去覆盖用户的行距——和「找不到线」
+    # 是同一个坑。四周空白返回 0 可能是合法结果（内容铺满整页），所以只对行距判空。
+    if not distances:
+        raise ImageIdentificationError("未识别到横线，请手动填写边距")
+
     avg_distance = get_avg_distance(distances)
     print('左边平均空白长度：', avg_l_whitespace)
     print('右边平均空白长度：', avg_r_whitespace)

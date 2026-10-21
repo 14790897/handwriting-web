@@ -1490,15 +1490,22 @@ async def imagefileprocess(request: Request, file: UploadFile = File(...)):
         with open(filepath, "wb") as f:
             f.write(content)
         # opencv + sklearn 只在图片边距检测这条路径上用到（见文件顶部说明）
-        from identify import identify_distance
+        from identify import ImageIdentificationError, identify_distance
 
-        (
-            avg_l_whitespace,
-            avg_r_whitespace,
-            avg_t_whitespace,
-            avg_b_whitespace,
-            avg_distance,
-        ) = identify_distance(filepath)
+        try:
+            (
+                avg_l_whitespace,
+                avg_r_whitespace,
+                avg_t_whitespace,
+                avg_b_whitespace,
+                avg_distance,
+            ) = identify_distance(filepath)
+        except ImageIdentificationError as exc:
+            # 识别不出来是正常结果，不是服务端故障：回 422 让前端把原因告诉用户，
+            # 且不要返回任何占位边距，免得覆盖用户已经填好的参数
+            safe_remove_file(filepath)
+            return JSONResponse({"error": str(exc)}, status_code=422)
+
         safe_remove_file(filepath)
         return JSONResponse(
             {
