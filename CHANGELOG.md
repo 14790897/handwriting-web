@@ -1,3 +1,10 @@
+## [1.34.4](https://github.com/14790897/handwriting-web/compare/v1.34.3...v1.34.4) (2026-10-21)
+
+
+### Bug Fixes
+
+* 读取 docx 时把表格里的文字也提取出来 ([#100](https://github.com/14790897/handwriting-web/issues/100)) ([240c26a](https://github.com/14790897/handwriting-web/commit/240c26af1cfb571f227bc9288bc4b0bd96639216))
+
 ## [1.34.3](https://github.com/14790897/handwriting-web/compare/v1.34.2...v1.34.3) (2026-10-21)
 
 
