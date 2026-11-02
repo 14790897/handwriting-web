@@ -494,7 +494,12 @@ def create_notebook_image(
     right_margin,
     font_size,
     isUnderlined,
+    transparent=False,
 ):
+    if transparent:
+        # 透明导出只要笔画：纸张连同横线都不要，整张画布 alpha 为 0
+        return Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
     image = Image.new("RGB", (width, height), "white")
 
     if isUnderlined == "true":
@@ -928,6 +933,13 @@ async def generate_handwriting_impl(
     # height=int(data["height"]),
     # width=int(data["width"]),
 
+    # 透明背景导出：只保留笔画，不要纸张和背景图。PDF 没有 alpha 通道，
+    # 这条路径忽略该开关，仍然按原来的白纸输出。
+    transparent_background = (
+        data.get("transparent_background", "false").lower() == "true"
+        and data["pdf_save"] != "true"
+    )
+
     # 如果用户提供了宽度和高度，创建一个新的笔记本背景图像
     if "width" in data and "height" in data:
         report_progress("prepare_background", "正在创建背景图", 20)
@@ -950,6 +962,7 @@ async def generate_handwriting_impl(
             right_margin,
             font_size,
             isUnderlined,
+            transparent=transparent_background,
         )
 
     else:
@@ -972,8 +985,13 @@ async def generate_handwriting_impl(
         try:
             background_image_obj = Image.open(image_data)
 
+            if transparent_background:
+                # 透明导出不关心背景图的内容，只沿用它的尺寸
+                background_image_obj = Image.new(
+                    "RGBA", background_image_obj.size, (0, 0, 0, 0)
+                )
             # 如果图像包含 Alpha 通道（模式为 'RGBA' 或 'LA'），则去除 Alpha 通道
-            if background_image_obj.mode in ("RGBA", "LA"):
+            elif background_image_obj.mode in ("RGBA", "LA"):
                 # 将图像转换为 'RGB' 模式
                 background_image_obj = background_image_obj.convert("RGB")
 
@@ -1070,6 +1088,9 @@ async def generate_handwriting_impl(
     template = Template(
         background=background_image_obj,
         font=font,
+        # 透明画布是 RGBA，handright 按通道数推出的默认 fill 是 (0, 0, 0, 0)，
+        # 笔画会完全透明，这里显式给不透明的黑色
+        fill=(0, 0, 0, 255) if transparent_background else None,
         line_spacing=int(data["line_spacing"]),  # + int(data["font_size"])
         # fill=ast.literal_eval(data["fill"])[:3],  # Ignore the alpha value
         # fill=(0),#如果feel是只有一个颜色的话那么在改变墨水的时候会导致R变化而GB不变化,颜色会变红 9.17

@@ -109,6 +109,9 @@ const messages = {
       strikethrough_width: "Width of strikethrough",
       ink_depth_sigma: "Standard deviation of ink depth",
       enableEnglishSpacing: "Auto-adjust English spacing",
+      transparentBackground: "Transparent background (strokes only)",
+      transparentBackgroundHint:
+        "Drops the paper and ruled lines so the PNG only keeps the strokes, ready to be composited onto another image. PNG export only; PDF export is unaffected.",
       email: "Email",
       feedback: "Feedback",
       introduce: "Introduce",
@@ -217,6 +220,9 @@ const messages = {
       strikethrough_width: "涂改线宽度",
       ink_depth_sigma: "墨汁深度标准差",
       enableEnglishSpacing: "增大英文单词间距",
+      transparentBackground: "透明背景（只导出文字）",
+      transparentBackgroundHint:
+        "去掉纸张和横线，只保留笔迹，方便叠加到其他图片上。仅对 PNG 导出生效，导出 PDF 时不生效。",
       email: "邮箱",
       feedback: "反馈",
       introduce: "介绍",
