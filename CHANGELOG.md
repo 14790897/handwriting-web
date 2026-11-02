@@ -1,3 +1,10 @@
+# [1.35.0](https://github.com/14790897/handwriting-web/compare/v1.34.4...v1.35.0) (2026-11-02)
+
+
+### Features
+
+* 支持只导出文字（透明背景 PNG） ([#101](https://github.com/14790897/handwriting-web/issues/101)) ([a199d58](https://github.com/14790897/handwriting-web/commit/a199d5866394da8e5500469abfe3e9a3b44324f9)), closes [#55](https://github.com/14790897/handwriting-web/issues/55)
+
 ## [1.34.4](https://github.com/14790897/handwriting-web/compare/v1.34.3...v1.34.4) (2026-10-21)
 
 
