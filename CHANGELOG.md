@@ -1,3 +1,10 @@
+# [1.36.0](https://github.com/14790897/handwriting-web/compare/v1.35.0...v1.36.0) (2026-11-04)
+
+
+### Features
+
+* 英文按单词换行，标点不再出现在行首 ([#102](https://github.com/14790897/handwriting-web/issues/102)) ([dc0ad1d](https://github.com/14790897/handwriting-web/commit/dc0ad1dd27c17758b40c04a84abe97b77c2606e3))
+
 # [1.35.0](https://github.com/14790897/handwriting-web/compare/v1.34.4...v1.35.0) (2026-11-02)
 
 
