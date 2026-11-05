@@ -122,8 +122,8 @@ python app.py
 
 ```shell
 cd frontend
-npm install
-npm run serve
+pnpm install
+pnpm run serve
 ```
 
 4. 打开浏览器，输入 http://localhost:8080 ，即可访问网站
@@ -136,20 +136,20 @@ npm run serve
 
 ```shell
 cd e2e
-npm install
-npx playwright install chromium
+pnpm install
+pnpm exec playwright install chromium
 ```
 
 然后直接在 `e2e` 目录下运行（会自动拉起后端 5005 和前端 8080，跑完自动关掉）：
 
 ```shell
-npm test
+pnpm test
 ```
 
-- 需要数据库/依赖已就绪的后端解释器：脚本会自动探测仓库根目录的 `venv`，探测不到时用 `E2E_PYTHON` 指定，例如 `E2E_PYTHON=./venv/Scripts/python.exe npm test`
+- 需要数据库/依赖已就绪的后端解释器：脚本会自动探测仓库根目录的 `venv`，探测不到时用 `E2E_PYTHON` 指定，例如 `E2E_PYTHON=./venv/Scripts/python.exe pnpm test`
 - 本地已在跑的开发服务器会被直接复用，不会重复启动
 - 测试时会设置 `CPU_USAGE_LIMIT=100`，避免开发机被 webpack/浏览器占满 CPU 时误触发后端的过载保护（429）
-- 失败时的截图、录像和 trace 在 `e2e/test-results/`，HTML 报告用 `npm run report` 打开
+- 失败时的截图、录像和 trace 在 `e2e/test-results/`，HTML 报告用 `pnpm run report` 打开
 - 每次 PR 会由 `.github/workflows/e2e.yml` 自动跑一遍
 
 ## 后端架构
