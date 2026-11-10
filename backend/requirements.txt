@@ -11,7 +11,7 @@ numpy
 scikit-learn
 PyMuPDF==1.23.5
 PyPDF2==3.0.1
-pypandoc==1.12
+pypandoc==1.17
 python-docx==0.8.11
 python-dotenv==1.0.0
 jinja2
