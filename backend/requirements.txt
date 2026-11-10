@@ -9,7 +9,7 @@ Pillow==10.0.1
 opencv-python<5
 numpy
 scikit-learn
-PyMuPDF==1.23.5
+PyMuPDF==2.1
 PyPDF2==3.0.1
 pypandoc==1.12
 python-docx==0.8.11
