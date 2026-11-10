@@ -3,7 +3,7 @@ uvicorn[standard]
 python-multipart
 slowapi
 handrightbeta==8.7.0
-Pillow==10.0.1
+Pillow==13.0.0
 # OpenCV 5 changed HoughLinesP to return (N, 4) instead of (N, 1, 4);
 # identify.py indexes x[0][1] and raises IndexError on that shape.
 opencv-python<5
