@@ -18,5 +18,5 @@ jinja2
 sentry-sdk==1.27.1
 schedule==1.2.1
 psutil
-Werkzeug==2.3.6
+Werkzeug==3.1.9
 pytest
